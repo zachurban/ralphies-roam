@@ -87,3 +87,14 @@ OSM edits that split or redraw a way reset progress on that way.
   a zone, keep a streak, pass the person above you, nearby stairs or bridges). Tap it to fly there.
 - **Dorm list** comes from OpenStreetMap residence halls (`dorms` in `paths.geojson`), plus
   Off-campus, Faculty & staff, and Other.
+
+## Student-named paths
+
+Tap any path (long-press in simulated mode) to see it. A signed-in student who has walked any part
+of a path with no official OpenStreetMap name can name it. The first name sticks; only its author
+can rename or remove it. Names appear on everyone's map at zoom 17+, signed in or not, and in
+toasts and nudges. Limit: 10 new names per student per day.
+
+The profanity/spam filter (`rr_name_problem` in the database) is the real gate; the app runs a copy
+for instant feedback. To remove a name: `delete from public.path_names where path_id = 'w123';`
+To ban a word, add it to the lists in both `rr_name_problem` (new migration) and `NF` in `index.html`.

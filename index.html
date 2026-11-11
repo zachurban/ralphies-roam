@@ -170,6 +170,13 @@ textarea.field{min-height:70px;resize:vertical}
 .tz .d.lead{color:var(--text);font-weight:700}
 .tz .d.mine{color:var(--gold)}
 .ping{width:26px;height:26px;border-radius:50%;border:3px solid var(--gold);animation:pulse 1.2s ease-out infinite}
+.leaflet-tooltip.pname{background:rgba(13,15,20,.82);color:var(--gold2);border:1px solid rgba(207,184,124,.5);
+  border-radius:8px;padding:1px 7px;font-size:11.5px;font-weight:700;box-shadow:none;white-space:nowrap}
+.leaflet-tooltip.pname:before{display:none}
+.pmeta{font-size:13px;color:var(--muted);margin:0 0 10px}
+.pmsg{font-size:12.5px;min-height:17px;margin:2px 0 0}
+.pmsg.bad{color:var(--red)} .pmsg.good{color:var(--green)}
+#modal .btn[disabled]{opacity:.45}
 .hz{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 .leaflet-popup-content{font-size:13.5px}
 
@@ -341,16 +348,18 @@ function distToSeg(p,s){
   return Math.hypot(p[0]-(s.ax+t*dx), p[1]-(s.ay+t*dy));
 }
 let SEGS=[], SEG_BY_ID={}, TOTAL_LEN=0;
+let PATH_BY_ID={};
 function buildSegments(){
-  SEGS=[]; SEG_BY_ID={}; TOTAL_LEN=0;
+  SEGS=[]; SEG_BY_ID={}; TOTAL_LEN=0; PATH_BY_ID={};
   PATHS.forEach(p=>{
+    PATH_BY_ID[p.id]=p;
     for(let i=0;i<p.pts.length-1;i++){
       const A=p.pts[i], B=p.pts[i+1], d=distM(A,B), n=Math.max(1,Math.ceil(d/SEG_MAX_M));
       for(let j=0;j<n;j++){
         const a=[A[0]+(B[0]-A[0])*j/n, A[1]+(B[1]-A[1])*j/n];
         const b=[A[0]+(B[0]-A[0])*(j+1)/n, A[1]+(B[1]-A[1])*(j+1)/n];
         const axy=toXY(a[0],a[1]), bxy=toXY(b[0],b[1]);
-        const s={id:p.id+'.'+i+'.'+j, zone:p.zone, name:p.name, tags:p.tags||[], a, b,
+        const s={id:p.id+'.'+i+'.'+j, pid:p.id, zone:p.zone, name:p.name, tags:p.tags||[], a, b,
                  mid:[(a[0]+b[0])/2,(a[1]+b[1])/2], ax:axy[0], ay:axy[1], bx:bxy[0], by:bxy[1], len:d/n,
                  cx:(axy[0]+bxy[0])/2, cy:(axy[1]+bxy[1])/2, rr:d/n/2+CLAIM_M};
         SEGS.push(s); SEG_BY_ID[s.id]=s; TOTAL_LEN+=s.len;
@@ -453,6 +462,7 @@ const BADGES = [
   {id:'streak3', ic:'🔥', name:'On Fire',           how:'3-day walking streak', test:p=>p.best>=3},
   {id:'streak7', ic:'📅', name:'Week Warrior',      how:'7-day walking streak', test:p=>p.best>=7},
   {id:'streak30',ic:'⚡', name:'Unstoppable',       how:'30-day walking streak', test:p=>p.best>=30},
+  {id:'namer',   ic:'✏️', name:'Cartographer',      how:'Name a path you walked', test:()=>Object.keys(NAMES).some(k=>NAMES[k].mine)},
   {id:'flag',    ic:'🚩', name:'Flag Planter',      how:'Help your dorm own a zone for the week', test:()=>helpedOwnZone()},
   {id:'dawn',    ic:'🌅', name:'Dawn Patrol',       how:'Claim a segment before 7 am', test:(p,c)=>c.claimedNow&&c.hr>=4&&c.hr<7}
 ].concat(ZONES.map(z=>({id:'zone-'+z.id, ic:z.icon, name:z.name+' Complete', how:'Claim every path in '+z.name,
@@ -618,7 +628,7 @@ function onFix(lat,lng,acc,src){
     if(fresh.length){
       fresh.forEach(s=>segLines[s.id]&&segLines[s.id].setStyle(ST_DONE));
       const special=fresh.find(s=>s.tags.length);
-      toast('+'+fresh.length+' segment'+(fresh.length>1?'s':'')+' · '+(special||fresh[0]).name);
+      toast('+'+fresh.length+' segment'+(fresh.length>1?'s':'')+' · '+nameOf(special||fresh[0]));
       buzz(30);
     }
     if(fresh.length) nearMissToasts(fresh);
@@ -711,10 +721,14 @@ function toast(msg){
   while($('toasts').children.length>3) $('toasts').firstChild.remove();
   setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),450); },2600);
 }
-function modal(title,html,btns){
+let modalClose=null;
+function modal(title,html,btns,onClose){
+  if(modalClose){ const f=modalClose; modalClose=null; f(); }
   $('mTitle').textContent=title; $('mBody').innerHTML=html; const box=$('mBtns'); box.innerHTML='';
   btns.forEach(b=>{ const el=document.createElement('button'); el.className='btn '+b[1]; el.textContent=b[0];
-    el.onclick=()=>{ $('modal').classList.remove('show'); b[2](); }; box.appendChild(el); });
+    if(b[3]) el.id=b[3];
+    el.onclick=()=>{ $('modal').classList.remove('show'); if(modalClose){ const f=modalClose; modalClose=null; f(); } b[2](); }; box.appendChild(el); });
+  modalClose=onClose||null;
   $('modal').classList.add('show');
 }
 function ring(pct,color){
@@ -739,7 +753,7 @@ function render(){
     const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
     return '<button class="zone'+(zz.n&&zz.gotN===zz.n?' done':'')+'" data-zone="'+z.id+'">'+ring(pct,z.color)+
       '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p>'+territoryLine(z.id)+'</div></button>';
-  }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog.</p>';
+  }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog. Tap any path (or long-press in simulated mode) to see or name it.</p>';
 
   $('tab-badges').innerHTML='<div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
     '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="ic">'+b.ic+'</div><b>'+b.name+'</b><small>'+b.how+'</small></div>').join('')+'</div>';
@@ -872,11 +886,17 @@ function buildNudges(p){
   [[1,'First Mile'],[5,'Five-Miler'],[13.1,'Half Marathon']].forEach(m=>{ const r=m[0]-p.miles; if(r>0&&r<=0.25) add(50,'🥾 '+r.toFixed(2)+' mi to '+m[1]); });
   // fallback
   const n=nearest(s=>!S.claimed[s.id]);
-  if(n) add(10,'🧭 Nearest new path: '+n.s.name+where(n),n);
+  if(n) add(10,'🧭 Nearest new path: '+nameOf(n.s)+where(n),n);
+  // naming rights
+  if(typeof cloud!=='undefined' && cloud.user && pos){
+    const nm=nearest(s=>S.claimed[s.id] && canBeNamed(s.pid) && !NAMES[s.pid]);
+    if(nm && nm.d<120){ out.push({score:48, text:'✏️ Name the path you walked — it\'ll show on everyone\'s map', target:nm.s.mid, seg:nm.s}); }
+  }
   return out.sort((a,b)=>b.score-a.score);
 }
 function goNudge(n){
   if(!n) return;
+  if(n.seg){ openPath(n.seg); return; }
   if(!n.target){ if(n.tab) document.querySelector('.tabs [data-tab='+n.tab+']').click(); return; }
   follow=false; $('fabFollow').classList.remove('on'); $('panel').classList.remove('open');
   setTimeout(()=>{ map.invalidateSize(); map.flyTo(n.target, Math.max(map.getZoom(),18), {duration:.8});
@@ -885,6 +905,112 @@ function goNudge(n){
     setTimeout(()=>{ if(pingMarker){ map.removeLayer(pingMarker); pingMarker=null; } },6000); },60);
 }
 $('nudge').onclick=()=>goNudge(NUDGES[0]);
+
+/* =====================================================================
+   PATH NAMES — students name paths they've walked; everyone sees them.
+   The real filter runs in the database; this copy only gives instant feedback.
+   ===================================================================== */
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const GENERIC_NAMES=new Set(['Walkway','Sidewalk','Stairs','Footbridge','Crosswalk','Trail','Bike & walk path']);
+let NAMES={}; try{ NAMES=JSON.parse(localStorage.getItem('rr-names')||'{}')||{}; }catch(e){ NAMES={}; }
+function nameOf(seg){ const n=NAMES[seg.pid]; return n ? n.name : seg.name; }
+function canBeNamed(pid){ const p=PATH_BY_ID[pid]; return !!p && /^w\d{1,15}$/.test(p.id) && !p.official; }
+const NF={
+  roots:['fuck','shit','cunt','nigg','fagg','bitch','whore','slut','porn','retard','kike','hitler','twat','wank','jizz','dildo','penis','vagina','pussy','rapist','motherf','cocksuck','dickhead','asshole','titties','nazi','blowjob','handjob','clit'],
+  stretch:['fuck','shit','cunt','bitch','whore','slut','porn','twat','wank','dildo','penis','vagina','rapist','retard','kike','hitler','clit'],
+  words:['ass','arse','asses','cock','cocks','dick','dicks','tit','tits','boob','boobs','piss','sex','sexy','fag','fags','rape','raped','heil','kkk','spic','chink','dyke','hoe','hoes','coon','gook','wop','tranny','balls','nut','nuts','crap']
+};
+function nameProblem(raw){
+  const p=String(raw||'').replace(/\s+/g,' ').trim();
+  if(p.length<3||p.length>30) return 'Names must be 3–30 characters';
+  if(!/^[A-Za-z0-9 '’&.,!?()#-]+$/.test(p)) return 'Use letters, numbers, spaces and basic punctuation';
+  if(/(https?|www\.|\.(com|net|org|io|gg|edu|ly)\b)/i.test(p)) return 'No links, please';
+  if(/[0-9]{6,}/.test(p)) return 'No phone numbers or long codes';
+  const tr={'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','!':'i','8':'b'};
+  const n=p.toLowerCase().replace(/[0134578!]/g,c=>tr[c]);
+  const sq=n.replace(/[^a-z]/g,''), col=sq.replace(/(.)\1+/g,'$1');
+  if(NF.roots.some(r=>sq.indexOf(r)>=0) || NF.stretch.some(r=>col.indexOf(r)>=0)) return 'Please keep names clean';
+  if(n.replace(/[^a-z]+/g,' ').trim().split(' ').some(t=>NF.words.indexOf(t)>=0||NF.words.indexOf(t.replace(/(.)\1+/g,'$1'))>=0)) return 'Please keep names clean';
+  return null;
+}
+const labelLayer=L.layerGroup();
+function drawNameLabels(){
+  labelLayer.clearLayers();
+  Object.keys(NAMES).forEach(pid=>{
+    const p=PATH_BY_ID[pid]; if(!p||!p.pts||p.pts.length<2) return;
+    let tot=0; const d=[]; for(let i=1;i<p.pts.length;i++){ const x=distM(p.pts[i-1],p.pts[i]); d.push(x); tot+=x; }
+    let acc=0, mid=p.pts[0];
+    for(let i=0;i<d.length;i++){ if(acc+d[i]>=tot/2){ const t=(tot/2-acc)/(d[i]||1); mid=[p.pts[i][0]+(p.pts[i+1][0]-p.pts[i][0])*t, p.pts[i][1]+(p.pts[i+1][1]-p.pts[i][1])*t]; break; } acc+=d[i]; }
+    L.tooltip({permanent:true, direction:'center', className:'pname', interactive:false, opacity:1}).setLatLng(mid).setContent(esc(NAMES[pid].name)).addTo(labelLayer);
+  });
+  toggleLabels();
+}
+function toggleLabels(){ const on=map.getZoom()>=17; if(on&&!map.hasLayer(labelLayer)) labelLayer.addTo(map); if(!on&&map.hasLayer(labelLayer)) map.removeLayer(labelLayer); }
+map.on('zoomend',toggleLabels);
+async function loadNames(){
+  if(!cloud.sb) return;
+  const {data,error}=await cloud.sb.rpc('get_path_names');
+  if(error||!data) return;
+  const m={}; data.forEach(r=>{ m[r.path_id]={name:r.name, by:r.named_by_name, mine:!!r.is_mine}; });
+  NAMES=m; try{ localStorage.setItem('rr-names',JSON.stringify(m)); }catch(e){}
+  drawNameLabels(); render(); if(checkBadges(false)) saveSoon();
+}
+let pathHL=null;
+function pathAt(latlng){
+  const xy=toXY(latlng.lat,latlng.lng);
+  const mpp=156543.03392*Math.cos(latlng.lat*Math.PI/180)/Math.pow(2,map.getZoom());
+  const tol=Math.max(8, 22*mpp); let best=null, bd=tol;
+  for(let i=0;i<SEGS.length;i++){ const s=SEGS[i]; if(Math.abs(xy[0]-s.cx)>s.rr+tol||Math.abs(xy[1]-s.cy)>s.rr+tol) continue; const d=distToSeg(xy,s); if(d<bd){ bd=d; best=s; } }
+  return best;
+}
+function openPath(seg){
+  const p=PATH_BY_ID[seg.pid]; if(!p) return;
+  const segs=SEGS.filter(s=>s.pid===p.id), got=segs.filter(s=>S.claimed[s.id]).length;
+  const len=segs.reduce((a,s)=>a+s.len,0), n=NAMES[p.id];
+  if(pathHL) map.removeLayer(pathHL);
+  pathHL=L.polyline(p.pts,{color:'#3b9dff',weight:8,opacity:.85,interactive:false,renderer:pathRenderer}).addTo(map);
+  const clearHL=()=>{ if(pathHL){ map.removeLayer(pathHL); pathHL=null; } };
+  const title = n ? n.name : (p.official ? p.name : 'Unnamed '+p.name.toLowerCase());
+  const tagTxt = p.tags&&p.tags.length ? ' · '+p.tags.map(t=>t==='stairs'?'🪜 stairs':t==='bridge'?'🌉 bridge':'🐐 goat path').join(', ') : '';
+  let meta = (n ? 'Named by '+esc(n.by)+(n.mine?' (you)':'') : p.official ? 'Official name' : 'No name yet')+
+             ' · '+ft(len)+' ft · '+got+'/'+segs.length+' claimed'+tagTxt;
+  const canName = canBeNamed(p.id);
+  const close=['Close','',()=>{}];
+  if(!canName){
+    return modal(title,'<p class="pmeta">'+meta+'</p><p>This path already has an official name.</p>',[close],clearHL);
+  }
+  if(!cloud.sb) return modal(title,'<p class="pmeta">'+meta+'</p><p>Path naming turns on once cloud sync is set up.</p>',[close],clearHL);
+  if(!cloud.user) return modal(title,'<p class="pmeta">'+meta+'</p><p>Walk a path, then sign in to give it a name everyone will see.</p>',
+    [['Sign in','pri',goSignIn],close],clearHL);
+  if(n && !n.mine) return modal(title,'<p class="pmeta">'+meta+'</p><p>Already named — the first walker to name a path keeps it.</p>',[close],clearHL);
+  if(!got) return modal(title,'<p class="pmeta">'+meta+'</p><p>Walk any part of this path to earn naming rights.</p>',[close],clearHL);
+  modal(n?'Rename this path':'Name this path',
+    '<p class="pmeta">'+meta+'</p>'+
+    '<input class="field" id="pnName" maxlength="30" autocomplete="off" placeholder="e.g. Ralphie\'s Shortcut" value="'+esc(n?n.name:'')+'">'+
+    '<div class="pmsg" id="pnMsg"></div>'+
+    '<p class="note" style="margin-top:6px">Everyone sees this name, signed in or not. Keep it clean — names with profanity are rejected.</p>',
+    [[n?'Save new name':'Name it','pri',()=>saveName(p.id,$('pnName').value),'pnSave']]
+      .concat(n?[['Remove my name','danger',()=>saveName(p.id,'')]]:[]).concat([close]), clearHL);
+  const inp=$('pnName'), msg=$('pnMsg'), btn=$('pnSave');
+  const check=()=>{ const v=inp.value, pr=v.trim()?nameProblem(v):'Type a name';
+    btn.disabled=!!pr || (n && v.trim()===n.name); msg.className='pmsg'+(pr&&v.trim()?' bad':(!pr?' good':''));
+    msg.textContent = v.trim() ? (pr||'Looks good') : ''; };
+  inp.addEventListener('input',check); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!btn.disabled) btn.click(); });
+  check(); setTimeout(()=>inp.focus(),50);
+}
+async function saveName(pid,name){
+  name=String(name||'').replace(/\s+/g,' ').trim();
+  if(name && nameProblem(name)) return toast(nameProblem(name));
+  await flush();   // the server checks you've walked it, so send claims first
+  const {error}=await cloud.sb.rpc('set_path_name',{p_path:pid, p_name:name});
+  if(error) return toast('Couldn\'t save: '+error.message);
+  if(name){ NAMES[pid]={name, by:(cloud.profile&&cloud.profile.display_name)||'you', mine:true}; toast('✏️ Named “'+name+'” — it\'s on everyone\'s map'); buzz([30,30,60]); }
+  else { delete NAMES[pid]; toast('Name removed'); }
+  drawNameLabels(); render(); if(checkBadges(false)) saveSoon();
+  loadNames();
+}
+map.on('click',e=>{ if(sim.on) return; const sg=pathAt(e.latlng); if(sg) openPath(sg); });
+map.on('contextmenu',e=>{ const sg=pathAt(e.latlng); if(sg) openPath(sg); });
 
 /* =====================================================================
    CLOUD — Supabase sign-in, progress sync, leaderboards, hazard reports.
@@ -900,7 +1026,7 @@ try{
     cloud.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey,
       {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit'}});
 }catch(e){ cloud.sb=null; }
-const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 const HZ = {dark:'Dark area', lighting:'Broken light', ice:'Ice or snow', trip:'Trip hazard', other:'Other'};
 
 function setSync(err, ok){
@@ -1172,13 +1298,14 @@ if(cloud.sb){
     const u=session?session.user:null;
     if((u&&u.id)===(cloud.user&&cloud.user.id)) return;
     cloud.user=u; if(!u){ cloud.step='email'; cloud.lastSync=0; cloud.err=''; }
-    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
+    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); loadNames(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
       if($('tab-board').classList.contains('act')) loadBoard(); },0);
   });
   window.addEventListener('online',()=>flush());
 }
 buildCloudBox();
 render();
+drawNameLabels(); loadNames(); setInterval(()=>{ if(document.visibilityState==='visible') loadNames(); }, 5*60*1000);
 
 /* =====================================================================
    BOOT EXTRAS — restore from IndexedDB if localStorage was wiped,
@@ -1195,16 +1322,17 @@ if(location.protocol.indexOf('http')===0){
     if(Array.isArray(g.dorms)){ DORM_LIST=g.dorms.filter(d=>typeof d==='string').slice(0,200); if(cloud.user){ buildCloudBox(); } }
     const custom=g.features.filter(f=>f.geometry&&f.geometry.type==='LineString').map((f,i)=>({
       id:(f.properties&&f.properties.id)||('x'+i), zone:ZONES.some(z=>z.id===(f.properties&&f.properties.zone))?f.properties.zone:'campus',
-      name:(f.properties&&f.properties.name)||'Path '+(i+1), tags:(f.properties&&f.properties.tags)||[],
+      name:(f.properties&&f.properties.name)||'Walkway', tags:(f.properties&&f.properties.tags)||[],
+      official:(f.properties&&f.properties.named===true)||!GENERIC_NAMES.has((f.properties&&f.properties.name)||'Walkway'),
       pts:f.geometry.coordinates.map(c=>[c[1],c[0]])}));
-    if(custom.length){ PATHS=custom; refreshAll(); setStatusIfIdle(); }
+    if(custom.length){ PATHS=custom; refreshAll(); drawNameLabels(); setStatusIfIdle(); }
   }).catch(()=>{});
   if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 
 // small hook for testing from the console
 window.RR={onFix, state:()=>S, progress, segs:()=>SEGS, setSim, cloud:()=>cloud, nudges:()=>NUDGES,
-  setDayOffset:n=>{DAY_OFFSET=n; normalize(); render();}};
+  setDayOffset:n=>{DAY_OFFSET=n; normalize(); render();}, nameProblem, openPath, pathAt, names:()=>NAMES};
 })();
 </script>
 </body>

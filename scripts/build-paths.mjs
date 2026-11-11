@@ -104,7 +104,7 @@ for (const w of paths.elements) {
     const a = w.geometry[i - 1], b = w.geometry[i];
     km += Math.hypot((a.lat - b.lat) * M_LAT, (a.lon - b.lon) * M_LNG) / 1000;
   }
-  features.push({ type: 'Feature', properties: { id: 'w' + w.id, zone, name: label(t), tags },
+  features.push({ type: 'Feature', properties: { id: 'w' + w.id, zone, name: label(t), tags, ...(t.name ? { named: true } : {}) },
                   geometry: { type: 'LineString', coordinates: coords } });
 }
 features.sort((a, b) => a.properties.id.localeCompare(b.properties.id, 'en', { numeric: true }));
