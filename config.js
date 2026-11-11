@@ -3,6 +3,6 @@
    Both are safe to publish: the database's row-level security rules are what
    protect student data. Leave them blank to run the app offline-only. */
 window.RR_CONFIG = {
-  supabaseUrl: '',
-  supabaseKey: ''
+  supabaseUrl: 'https://ykuxgfrmkixownnzutno.supabase.co',
+  supabaseKey: 'sb_publishable_N5vfwZIazOl7VibaYDbFMQ_ZpVjTeW4'
 };
