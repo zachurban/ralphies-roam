@@ -751,15 +751,15 @@ $('tab-zones').addEventListener('click',e=>{
     setTimeout(()=>{ map.invalidateSize(); map.fitBounds(L.latLngBounds(pts).pad(0.25)); },60); }
 });
 $('tab-stats').addEventListener('click',e=>{
-  if(e.target.id==='btnReset') modal('Reset all progress?','<p>This clears claimed paths, miles, XP and badges on this device'+(cloud.user?' and in your account':'')+'.</p>',
+  if(e.target.id==='btnReset') modal('Reset all progress?','<p>This clears claimed paths, miles, XP, badges, your streak and this week\'s dorm points on this device'+(cloud.user?' and in your account':'')+'. Paths you named keep their names.</p>',
     [['Yes, reset','pri',resetAll],['Cancel','',()=>{}]]);
   if(e.target.id==='btnExport') exportData();
 });
 function resetAll(){
   S=Object.assign(DEF(),{layer:S.layer,fogOn:S.fogOn}); normalize();
   if(cloud.user){ const u=cloud.user.id;
-    Promise.all(['claims','user_badges','user_stats'].map(t=>cloud.sb.from(t).delete().eq('user_id',u)))
-      .then(r=>{ const e=r.find(x=>x.error); setSync(e?e.error.message:'', !e); }); }
+    Promise.all(['claims','user_badges','user_stats','weekly_zone_points'].map(t=>cloud.sb.from(t).delete().eq('user_id',u)))
+      .then(r=>{ const e=r.find(x=>x.error); setSync(e?e.error.message:'', !e); loadTerritory(); }); }
   last=null; idb('track','readwrite',st=>st.clear()); saveNow(); drawPaths(); render(); queueFog(); toast('Progress reset');
 }
 function exportData(){
