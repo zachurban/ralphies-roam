@@ -135,7 +135,8 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 #modal .btn.pri{background:var(--gold);color:#14110a;border-color:var(--gold)}
 
 /* ---------- cloud / board / hazards ---------- */
-.card{background:var(--card);border-radius:14px;padding:13px;margin-top:14px}
+.card{background:var(--card);border-radius:14px;padding:13px;margin:0 0 14px}
+#statsBody+#cloudBox .card{margin:14px 0 0}
 .card h3{margin:0 0 6px;font-size:15px}
 .card p{margin:0 0 8px;color:var(--muted);font-size:13px}
 .field{display:block;width:100%;margin:6px 0;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
@@ -785,6 +786,8 @@ async function pull(){
 /* ---- account card (Live Stats tab) ---- */
 function buildCloudBox(){
   const box=$('cloudBox'); if(!box) return;
+  const tab=$('tab-stats');
+  if(cloud.user) tab.appendChild(box); else tab.insertBefore(box, tab.firstChild);
   if(!cloud.sb){
     box.innerHTML='<div class="card"><h3>Account & leaderboards</h3><p>Cloud sync isn\'t set up yet, so progress stays on this device.</p></div>';
     return;
@@ -813,6 +816,10 @@ function buildCloudBox(){
     '<input class="field" id="cEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@colorado.edu" value="'+esc(cloud.email)+'">'+
     '<div class="row"><button class="btn pri" id="cSend">Email me a sign-in code</button></div>'+
     '<div class="sync err" id="cMsg"></div></div>';
+}
+function goSignIn(){
+  document.querySelector('.tabs [data-tab=stats]').click();
+  setTimeout(()=>{ document.querySelector('.tabbody').scrollTop=0; const f=$('cEmail'); if(f) f.focus(); },320);
 }
 function cMsg(t){ const el=$('cMsg'); if(el) el.textContent=t; }
 function friendly(e){
@@ -853,7 +860,7 @@ $('cloudBox').addEventListener('click',async e=>{
 async function loadBoard(){
   const el=$('tab-board');
   if(!cloud.sb){ el.innerHTML='<p class="note">Leaderboards turn on once cloud sync is set up.</p>'; return; }
-  if(!cloud.user){ el.innerHTML='<div class="card"><h3>Leaderboard</h3><p>Sign in on the Live Stats tab to see how you stack up against other Buffs.</p></div>'; return; }
+  if(!cloud.user){ el.innerHTML='<div class="card"><h3>Leaderboard</h3><p>Sign in to see how you stack up against other Buffs.</p><div class="row"><button class="btn pri" id="bSignIn">Sign in</button></div></div>'; return; }
   const seg='<div class="seg"><button data-b="people" class="'+(cloud.board==='people'?'act':'')+'">People</button><button data-b="dorms" class="'+(cloud.board==='dorms'?'act':'')+'">Dorms & teams</button></div>';
   el.innerHTML=seg+'<p class="note">Loading…</p>';
   await flush();
@@ -866,7 +873,7 @@ async function loadBoard(){
       : rows.map(x=>'<div class="lb"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.dorm)+'</b><small>'+x.members+' member'+(x.members==1?'':'s')+'</small></div><div class="v">'+x.segments+' seg<br><small>'+x.miles+' mi</small></div></div>').join('');
   el.innerHTML=seg+list+'<p class="note">Ranked by path segments claimed, then miles walked.</p>';
 }
-$('tab-board').addEventListener('click',e=>{ const b=e.target.closest('[data-b]'); if(b){ cloud.board=b.dataset.b; loadBoard(); } });
+$('tab-board').addEventListener('click',e=>{ if(e.target.id==='bSignIn') return goSignIn(); const b=e.target.closest('[data-b]'); if(b){ cloud.board=b.dataset.b; loadBoard(); } });
 
 /* ---- hazard reports ---- */
 const hazardLayer=L.layerGroup().addTo(map);
@@ -882,7 +889,7 @@ setInterval(loadHazards,5*60*1000);
 $('fabHazard').onclick=()=>{
   if(!cloud.sb) return modal('Hazard reports','<p>Hazard reporting turns on once cloud sync is set up.</p>',[['OK','',()=>{}]]);
   if(!cloud.user) return modal('Sign in to report','<p>Sign in so reports can\'t be spammed. Other students see the hazard pin, but never who reported it.</p>',
-    [['Go to sign in','pri',()=>{ document.querySelector('.tabs [data-tab=stats]').click(); }],['Cancel','',()=>{}]]);
+    [['Go to sign in','pri',goSignIn],['Cancel','',()=>{}]]);
   const fresh = pos && watchId!==null || sim.on;
   const where = fresh ? 'your current location' : 'the center of the map — pan to the spot first';
   modal('Report a hazard','<p>The pin goes at '+where+'. For emergencies call 911.</p>'+
