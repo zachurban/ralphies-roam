@@ -1,0 +1,67 @@
+/* Ralphie's Roam service worker — app shell offline + map tile cache */
+const VERSION = 'rr-v1';
+const SHELL = VERSION + '-shell';
+const TILES = 'rr-tiles';
+const SHELL_FILES = [
+  './', 'index.html', 'manifest.json',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+];
+const TILE_HOSTS = ['tile.openstreetmap.org', 'arcgisonline.com', 'basemaps.cartocdn.com'];
+const MAX_TILES = 800;
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(SHELL)
+      .then(c => Promise.all(SHELL_FILES.map(u => c.add(u).catch(() => null))))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== SHELL && k !== TILES).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+async function trim(cacheName, max) {
+  const c = await caches.open(cacheName);
+  const keys = await c.keys();
+  for (let i = 0; i < keys.length - max; i++) await c.delete(keys[i]);
+}
+
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+
+  // Map tiles: cache-first, so explored areas keep working offline
+  if (TILE_HOSTS.some(h => url.hostname.endsWith(h))) {
+    e.respondWith(
+      caches.open(TILES).then(async c => {
+        const hit = await c.match(req);
+        if (hit) return hit;
+        try {
+          const res = await fetch(req);
+          if (res && (res.ok || res.type === 'opaque')) { c.put(req, res.clone()); trim(TILES, MAX_TILES); }
+          return res;
+        } catch (err) { return new Response('', { status: 504 }); }
+      })
+    );
+    return;
+  }
+
+  // App shell: serve cached copy right away, refresh it in the background
+  if (url.origin === location.origin || url.hostname === 'unpkg.com') {
+    e.respondWith(
+      caches.open(SHELL).then(async c => {
+        const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
+        const net = fetch(req).then(res => { if (res && res.ok) c.put(req, res.clone()); return res; }).catch(() => null);
+        return hit || (await net) || (req.mode === 'navigate' ? c.match('index.html') : new Response('', { status: 504 }));
+      })
+    );
+  }
+});
