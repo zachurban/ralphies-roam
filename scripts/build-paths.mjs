@@ -52,7 +52,7 @@ function pts(el) {
   return [];
 }
 for (const z of ZONES) {
-  const hits = marks.elements.filter(el => el.tags && z.match.test(el.tags.name || ''));
+  const hits = marks.elements.filter(el => el.tags && !el.tags.highway && !/townhouse|apartment|pump station/i.test(el.tags.name || '') && z.match.test(el.tags.name || ''));
   const all = hits.flatMap(pts);
   if (all.length) {
     const dLat = z.pad / M_LAT, dLng = z.pad / M_LNG;
