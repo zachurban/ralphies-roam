@@ -1,9 +1,9 @@
 /* Ralphie's Roam service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v4';
+const VERSION = 'rr-v5';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  './', 'index.html', 'manifest.json', 'config.js',
+  './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',

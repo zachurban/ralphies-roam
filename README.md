@@ -65,3 +65,14 @@ custom SMTP (Authentication → Emails) before inviting more than a handful of t
 
 Segment IDs come from the path definitions; changing a path's coordinates or ID orphans claims on
 that path.
+
+## Walkway data (OpenStreetMap)
+
+`paths.geojson` is generated from OpenStreetMap footways, paths, stairs, bridges and bike paths
+inside the campus box by `scripts/build-paths.mjs`, run by the **Update walkways from
+OpenStreetMap** GitHub Action (Actions tab → Run workflow). Stairs come from `highway=steps`,
+bridges from `bridge=*`, and goat paths from informal or unpaved trails. Zones are boxes drawn
+around named OSM landmarks; everything else falls into **Rest of Campus**.
+
+Re-running it only when needed keeps claims stable: claims are tied to OSM way IDs, and
+OSM edits that split or redraw a way reset progress on that way.

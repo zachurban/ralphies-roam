@@ -252,7 +252,8 @@ const ZONES = [
   {id:'farrand',     name:'Farrand Field',        icon:'🥏', color:'#8fd18a'},
   {id:'engineering', name:'Engineering Center',   icon:'⚙️', color:'#f0a35e'},
   {id:'kittredge',   name:'Kittredge Ponds',      icon:'🐟', color:'#b99cf2'},
-  {id:'creek',       name:'Boulder Creek Path',   icon:'🌊', color:'#5eb1f0'}
+  {id:'creek',       name:'Boulder Creek Path',   icon:'🌊', color:'#5eb1f0'},
+  {id:'campus',      name:'Rest of Campus',       icon:'🦬', color:'#9aa3b5'}
 ];
 let PATHS = [
   // --- Norlin Quad ---
@@ -321,7 +322,8 @@ function buildSegments(){
         const b=[A[0]+(B[0]-A[0])*(j+1)/n, A[1]+(B[1]-A[1])*(j+1)/n];
         const axy=toXY(a[0],a[1]), bxy=toXY(b[0],b[1]);
         const s={id:p.id+'.'+i+'.'+j, zone:p.zone, name:p.name, tags:p.tags||[], a, b,
-                 mid:[(a[0]+b[0])/2,(a[1]+b[1])/2], ax:axy[0], ay:axy[1], bx:bxy[0], by:bxy[1], len:d/n};
+                 mid:[(a[0]+b[0])/2,(a[1]+b[1])/2], ax:axy[0], ay:axy[1], bx:bxy[0], by:bxy[1], len:d/n,
+                 cx:(axy[0]+bxy[0])/2, cy:(axy[1]+bxy[1])/2, rr:d/n/2+CLAIM_M};
         SEGS.push(s); SEG_BY_ID[s.id]=s; TOTAL_LEN+=s.len;
       }
     }
@@ -434,8 +436,9 @@ map.createPane('fog').style.zIndex=450;   map.getPane('fog').style.pointerEvents
 map.createPane('paths').style.zIndex=460; map.getPane('paths').style.pointerEvents='none';
 
 /* ---- path rendering ---- */
-const ST_OPEN = {color:'#ffffff', weight:2, opacity:.38, dashArray:'3 7', interactive:false, pane:'paths'};
-const ST_DONE = {color:'#CFB87C', weight:5, opacity:.95, dashArray:null, interactive:false, pane:'paths', lineCap:'round'};
+const pathRenderer = L.canvas({pane:'paths', padding:0.3});
+const ST_OPEN = {color:'#ffffff', weight:2, opacity:.45, dashArray:'3 6', interactive:false, renderer:pathRenderer};
+const ST_DONE = {color:'#CFB87C', weight:5, opacity:.95, dashArray:null, interactive:false, renderer:pathRenderer, lineCap:'round'};
 let pathLayer = L.layerGroup().addTo(map), segLines={};
 function drawPaths(){
   pathLayer.clearLayers(); segLines={};
@@ -503,6 +506,7 @@ function claimAlong(points){
     const xy=toXY(pt[0],pt[1]);
     for(let i=0;i<SEGS.length;i++){
       const s=SEGS[i];
+      if(Math.abs(xy[0]-s.cx)>s.rr||Math.abs(xy[1]-s.cy)>s.rr) continue;
       if(!S.claimed[s.id] && distToSeg(xy,s)<=CLAIM_M){ S.claimed[s.id]=Date.now(); S.pending.claims[s.id]=S.claimed[s.id]; fresh.push(s); }
     }
   }
@@ -642,13 +646,13 @@ function render(){
   $('mPct').textContent=p.pct.toFixed(p.pct>0&&p.pct<10?1:0)+'%';
   $('mXp').textContent=p.xp.toLocaleString();
 
-  $('tab-zones').innerHTML=ZONES.map(z=>{
+  $('tab-zones').innerHTML=ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n).map(z=>{
     const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
     return '<button class="zone'+(zz.n&&zz.gotN===zz.n?' done':'')+'" data-zone="'+z.id+'">'+ring(pct,z.color)+
       '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p></div></button>';
   }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog.</p>';
 
-  $('tab-badges').innerHTML='<div class="badges">'+BADGES.map(b=>
+  $('tab-badges').innerHTML='<div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
     '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="ic">'+b.ic+'</div><b>'+b.name+'</b><small>'+b.how+'</small></div>').join('')+'</div>';
 
   $('statsBody').innerHTML=
@@ -922,6 +926,7 @@ render();
    optional paths.geojson override, service worker
    ===================================================================== */
 function refreshAll(){ buildSegments(); drawPaths(); render(); queueFog(); }
+function setStatusIfIdle(){ if(watchId===null&&!sim.on) setStatus('', 'GPS off · '+SEGS.length.toLocaleString()+' path segments loaded'); }
 if(!localStorage.getItem(LS_KEY)){
   idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign({},DEFAULTS,v); normalize(); refreshAll(); } });
 }
@@ -929,10 +934,10 @@ if(location.protocol.indexOf('http')===0){
   fetch('paths.geojson',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(g=>{
     if(!g||!g.features) return;
     const custom=g.features.filter(f=>f.geometry&&f.geometry.type==='LineString').map((f,i)=>({
-      id:(f.properties&&f.properties.id)||('x'+i), zone:(f.properties&&f.properties.zone)||ZONES[0].id,
+      id:(f.properties&&f.properties.id)||('x'+i), zone:ZONES.some(z=>z.id===(f.properties&&f.properties.zone))?f.properties.zone:'campus',
       name:(f.properties&&f.properties.name)||'Path '+(i+1), tags:(f.properties&&f.properties.tags)||[],
       pts:f.geometry.coordinates.map(c=>[c[1],c[0]])}));
-    if(custom.length){ PATHS=custom; refreshAll(); }
+    if(custom.length){ PATHS=custom; refreshAll(); setStatusIfIdle(); }
   }).catch(()=>{});
   if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
