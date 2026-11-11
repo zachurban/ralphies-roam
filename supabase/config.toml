@@ -1,0 +1,4 @@
+# Supabase CLI / GitHub integration config for Ralphie's Roam.
+# Database changes live in supabase/migrations and are applied on push to main
+# when "Deploy to production" is enabled in the Supabase GitHub integration.
+project_id = "ralphies-roam"

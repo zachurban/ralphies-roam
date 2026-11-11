@@ -134,6 +134,29 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 #modal .btn{display:block;width:100%;margin-top:8px;padding:13px;font-size:15px}
 #modal .btn.pri{background:var(--gold);color:#14110a;border-color:var(--gold)}
 
+/* ---------- cloud / board / hazards ---------- */
+.card{background:var(--card);border-radius:14px;padding:13px;margin-top:14px}
+.card h3{margin:0 0 6px;font-size:15px}
+.card p{margin:0 0 8px;color:var(--muted);font-size:13px}
+.field{display:block;width:100%;margin:6px 0;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+  background:#10131a;color:var(--text);font:inherit;font-size:16px}
+textarea.field{min-height:70px;resize:vertical}
+.btn.pri{background:var(--gold);color:#14110a;border-color:var(--gold)}
+.sync{font-size:12.5px;color:var(--muted);margin:2px 0 8px}
+.sync.err{color:var(--red)}
+.seg{display:flex;background:var(--card);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;padding:8px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.seg button.act{background:var(--line);color:var(--text)}
+.lb{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:9px 12px;margin-bottom:6px}
+.lb .r{width:26px;font-weight:800;color:var(--gold);text-align:center}
+.lb .n{flex:1;min-width:0}
+.lb .n b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb .n small{color:var(--muted);font-size:12px}
+.lb .v{text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.lb.you{border:1px solid var(--gold)}
+.hz{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+.leaflet-popup-content{font-size:13.5px}
+
 /* ---------- mobile: bottom sheet ---------- */
 @media (max-width:820px){
   #app{display:block}
@@ -149,6 +172,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
   .peek{padding:2px 12px 8px}
   .mini div{padding:5px 8px}
   .badges{grid-template-columns:1fr 1fr 1fr}
+  .tabs button{font-size:13px}
 }
 </style>
 </head>
@@ -172,11 +196,13 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
       <button data-tab="zones" class="act">Zones</button>
       <button data-tab="badges">Badges</button>
       <button data-tab="stats">Live Stats</button>
+      <button data-tab="board">Board</button>
     </nav>
     <div class="tabbody">
       <section id="tab-zones" class="act"></section>
       <section id="tab-badges"></section>
-      <section id="tab-stats"></section>
+      <section id="tab-stats"><div id="statsBody"></div><div id="cloudBox"></div></section>
+      <section id="tab-board"></section>
     </div>
   </aside>
   <main id="mapwrap">
@@ -184,6 +210,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
     <div id="status"><i></i><span id="statusTxt">GPS off</span></div>
     <div id="toasts"></div>
     <div id="fabs">
+      <button class="fab" id="fabHazard" title="Report a safety hazard">⚠️</button>
       <button class="fab" id="fabSim" title="Simulated walking (tap map to walk)">🕹️</button>
       <button class="fab on" id="fabFog" title="Toggle fog of war">🌫️</button>
       <button class="fab on" id="fabFollow" title="Follow my location">🎯</button>
@@ -193,6 +220,8 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 <div id="modal"><div class="box"><h2 id="mTitle"></h2><div id="mBody"></div><div id="mBtns"></div></div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
 'use strict';
@@ -301,7 +330,8 @@ function buildSegments(){
 /* =====================================================================
    STATE + PERSISTENCE (localStorage = fast snapshot, IndexedDB = mirror + GPS track log)
    ===================================================================== */
-const DEFAULTS = {claimed:{}, meters:0, badges:{}, layer:'Street', fogOn:true, started:Date.now()};
+const DEFAULTS = {claimed:{}, meters:0, badges:{}, layer:'Street', fogOn:true, started:Date.now(), pending:{claims:{},badges:{}}};
+function normalize(){ if(!S.pending||!S.pending.claims) S.pending={claims:{},badges:{}}; if(!S.pending.badges) S.pending.badges={}; }
 let S = Object.assign({}, DEFAULTS);
 function loadLS(){
   try{ const raw=localStorage.getItem(LS_KEY); if(raw){ S=Object.assign({},DEFAULTS,JSON.parse(raw)); return true; } }catch(e){}
@@ -377,7 +407,7 @@ const BADGES = [
   test:p=>p.z[z.id]&&p.z[z.id].n>0&&p.z[z.id].gotN===p.z[z.id].n})));
 function checkBadges(claimedNow){
   const p=progress(), ctx={claimedNow, hr:new Date().getHours()}; let any=false;
-  BADGES.forEach(b=>{ if(!S.badges[b.id] && b.test(p,ctx)){ S.badges[b.id]=Date.now(); any=true;
+  BADGES.forEach(b=>{ if(!S.badges[b.id] && b.test(p,ctx)){ S.badges[b.id]=Date.now(); S.pending.badges[b.id]=S.badges[b.id]; any=true;
     toast(b.ic+' Badge unlocked: '+b.name); buzz([60,40,120]); } });
   return any;
 }
@@ -385,7 +415,7 @@ function checkBadges(claimedNow){
 /* =====================================================================
    MAP
    ===================================================================== */
-loadLS();
+loadLS(); normalize();
 buildSegments();
 const map = L.map('map',{zoomControl:false, attributionControl:true, zoomSnap:0.5}).setView(CAMPUS, ZOOM);
 L.control.zoom({position:'bottomleft'}).addTo(map);
@@ -472,7 +502,7 @@ function claimAlong(points){
     const xy=toXY(pt[0],pt[1]);
     for(let i=0;i<SEGS.length;i++){
       const s=SEGS[i];
-      if(!S.claimed[s.id] && distToSeg(xy,s)<=CLAIM_M){ S.claimed[s.id]=Date.now(); fresh.push(s); }
+      if(!S.claimed[s.id] && distToSeg(xy,s)<=CLAIM_M){ S.claimed[s.id]=Date.now(); S.pending.claims[s.id]=S.claimed[s.id]; fresh.push(s); }
     }
   }
   return fresh;
@@ -504,7 +534,7 @@ function onFix(lat,lng,acc,src){
       toast('+'+fresh.length+' segment'+(fresh.length>1?'s':'')+' · '+(special||fresh[0]).name);
       buzz(30);
     }
-    if(fresh.length||moved){ checkBadges(fresh.length>0); saveSoon(); render(); }
+    if(fresh.length||moved){ checkBadges(fresh.length>0); saveSoon(); render(); syncSoon(); }
   }
   queueFog();
 }
@@ -538,7 +568,7 @@ function lockScreen(){ // keep the screen awake so the browser keeps delivering 
   if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden') saveNow();
+  if(document.visibilityState==='hidden'){ saveNow(); flush(); }
   else if(watchId!==null){ last=null; lockScreen(); }
 });
 window.addEventListener('pagehide',saveNow);
@@ -620,7 +650,7 @@ function render(){
   $('tab-badges').innerHTML='<div class="badges">'+BADGES.map(b=>
     '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="ic">'+b.ic+'</div><b>'+b.name+'</b><small>'+b.how+'</small></div>').join('')+'</div>';
 
-  $('tab-stats').innerHTML=
+  $('statsBody').innerHTML=
     '<div class="lvl"><span>Level <b>'+p.level+'</b></span><span>'+p.toNext.toLocaleString()+' XP to next</span></div>'+
     '<div class="bar"><i style="width:'+p.lvlPct.toFixed(1)+'%"></i></div>'+
     '<div class="stat"><span>Total distance</span><b>'+p.miles.toFixed(2)+' mi</b></div>'+
@@ -633,7 +663,7 @@ function render(){
     '<div class="stat"><span>Badges</span><b>'+p.nb+' / '+BADGES.length+'</b></div>'+
     '<div class="stat"><span>Last GPS accuracy</span><b>'+(pos?'±'+Math.round(pos.acc)+' m':'—')+'</b></div>'+
     '<div class="row"><button class="btn" id="btnExport">Export my data</button><button class="btn danger" id="btnReset">Reset progress</button></div>'+
-    '<p class="note">Progress is saved on this device. Keep the app open and on screen while you walk — browsers pause GPS when the phone is locked.</p>';
+    '<p class="note">Progress is saved on this device'+(cloud.user?' and synced to your account':'')+'. Keep the app open and on screen while you walk — browsers pause GPS when the phone is locked.</p>';
 }
 $('tab-zones').addEventListener('click',e=>{
   const b=e.target.closest('.zone'); if(!b) return;
@@ -642,12 +672,15 @@ $('tab-zones').addEventListener('click',e=>{
     setTimeout(()=>{ map.invalidateSize(); map.fitBounds(L.latLngBounds(pts).pad(0.25)); },60); }
 });
 $('tab-stats').addEventListener('click',e=>{
-  if(e.target.id==='btnReset') modal('Reset all progress?','<p>This clears claimed paths, miles, XP and badges on this device.</p>',
+  if(e.target.id==='btnReset') modal('Reset all progress?','<p>This clears claimed paths, miles, XP and badges on this device'+(cloud.user?' and in your account':'')+'.</p>',
     [['Yes, reset','pri',resetAll],['Cancel','',()=>{}]]);
   if(e.target.id==='btnExport') exportData();
 });
 function resetAll(){
-  S=Object.assign({},DEFAULTS,{claimed:{},badges:{},layer:S.layer,fogOn:S.fogOn,started:Date.now()});
+  S=Object.assign({},DEFAULTS,{claimed:{},badges:{},pending:{claims:{},badges:{}},layer:S.layer,fogOn:S.fogOn,started:Date.now()});
+  if(cloud.user){ const u=cloud.user.id;
+    Promise.all(['claims','user_badges','user_stats'].map(t=>cloud.sb.from(t).delete().eq('user_id',u)))
+      .then(r=>{ const e=r.find(x=>x.error); setSync(e?e.error.message:'', !e); }); }
   last=null; idb('track','readwrite',st=>st.clear()); saveNow(); drawPaths(); render(); queueFog(); toast('Progress reset');
 }
 function exportData(){
@@ -666,6 +699,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act',x===b));
   document.querySelectorAll('.tabbody>section').forEach(s=>s.classList.toggle('act',s.id==='tab-'+b.dataset.tab));
   $('panel').classList.add('open');
+  if(b.dataset.tab==='board') loadBoard();
 });
 $('handle').onclick=()=>$('panel').classList.toggle('open');
 map.on('click',()=>$('panel').classList.remove('open'));
@@ -675,6 +709,205 @@ $('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; $('fabFog').classList.toggle('on',S.
 $('fabFollow').onclick=()=>{ follow=true; $('fabFollow').classList.add('on'); map.setView(pos?[pos.lat,pos.lng]:CAMPUS, Math.max(map.getZoom(),ZOOM)); };
 $('fabFog').classList.toggle('on',S.fogOn);
 window.addEventListener('resize',()=>{ map.invalidateSize(); queueFog(); });
+
+
+/* =====================================================================
+   CLOUD — Supabase sign-in, progress sync, leaderboards, hazard reports.
+   Turned on by config.js. Raw GPS never leaves the phone: only segment IDs,
+   distance total, badges, and hazard pins the student chooses to file.
+   ===================================================================== */
+const CFG = window.RR_CONFIG || {};
+const cloud = {sb:null, user:null, syncing:false, lastSync:0, err:'', step:'email', email:'', board:'people', hazards:[]};
+try{
+  if(CFG.supabaseUrl && CFG.supabaseKey && window.supabase)
+    cloud.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey,
+      {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit'}});
+}catch(e){ cloud.sb=null; }
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const HZ = {dark:'Dark area', lighting:'Broken light', ice:'Ice or snow', trip:'Trip hazard', other:'Other'};
+
+function setSync(err, ok){
+  cloud.err=err||''; if(ok) cloud.lastSync=Date.now();
+  const el=$('syncLine'); if(!el) return;
+  el.className='sync'+(cloud.err?' err':'');
+  const pend=Object.keys(S.pending.claims).length+Object.keys(S.pending.badges).length;
+  el.textContent = cloud.err ? ('Sync problem: '+cloud.err)
+    : cloud.syncing ? 'Syncing…'
+    : pend ? (pend+' change'+(pend>1?'s':'')+' waiting to sync')
+    : cloud.lastSync ? ('Synced '+new Date(cloud.lastSync).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}))
+    : 'Ready';
+}
+let syncT=0;
+function syncSoon(){ if(!cloud.user) return; clearTimeout(syncT); syncT=setTimeout(flush,4000); setSync(cloud.err); }
+async function flush(){
+  if(!cloud.sb||!cloud.user||cloud.syncing||!navigator.onLine) return;
+  cloud.syncing=true; setSync('');
+  try{
+    const cids=Object.keys(S.pending.claims);
+    if(cids.length){
+      const {error}=await cloud.sb.from('claims').upsert(
+        cids.map(id=>({segment_id:id, claimed_at:new Date(S.pending.claims[id]).toISOString()})),
+        {onConflict:'user_id,segment_id', ignoreDuplicates:true});
+      if(error) throw error;
+      cids.forEach(id=>delete S.pending.claims[id]);
+    }
+    const bids=Object.keys(S.pending.badges);
+    if(bids.length){
+      const {error}=await cloud.sb.from('user_badges').upsert(
+        bids.map(id=>({badge_id:id, unlocked_at:new Date(S.pending.badges[id]).toISOString()})),
+        {onConflict:'user_id,badge_id', ignoreDuplicates:true});
+      if(error) throw error;
+      bids.forEach(id=>delete S.pending.badges[id]);
+    }
+    const {error}=await cloud.sb.rpc('set_meters',{p_meters:S.meters});
+    if(error) throw error;
+    cloud.syncing=false; saveSoon(); setSync('',true);
+  }catch(e){ cloud.syncing=false; setSync(e.message||String(e)); }
+}
+async function pull(){
+  try{
+    const [c,b,st]=await Promise.all([
+      cloud.sb.from('claims').select('segment_id,claimed_at').limit(5000),
+      cloud.sb.from('user_badges').select('badge_id,unlocked_at'),
+      cloud.sb.from('user_stats').select('meters').maybeSingle()]);
+    const err=c.error||b.error||st.error; if(err) throw err;
+    const srvC={}, srvB={};
+    c.data.forEach(r=>{ srvC[r.segment_id]=1; if(!S.claimed[r.segment_id]) S.claimed[r.segment_id]=Date.parse(r.claimed_at)||Date.now(); });
+    b.data.forEach(r=>{ srvB[r.badge_id]=1; if(!S.badges[r.badge_id]) S.badges[r.badge_id]=Date.parse(r.unlocked_at)||Date.now(); });
+    Object.keys(S.claimed).forEach(id=>{ if(!srvC[id]) S.pending.claims[id]=S.claimed[id]; });
+    Object.keys(S.badges).forEach(id=>{ if(!srvB[id]) S.pending.badges[id]=S.badges[id]; });
+    if(st.data && st.data.meters>S.meters) S.meters=st.data.meters;
+    saveNow(); drawPaths(); render(); queueFog();
+    await flush();
+  }catch(e){ setSync(e.message||String(e)); }
+}
+
+/* ---- account card (Live Stats tab) ---- */
+function buildCloudBox(){
+  const box=$('cloudBox'); if(!box) return;
+  if(!cloud.sb){
+    box.innerHTML='<div class="card"><h3>Account & leaderboards</h3><p>Cloud sync isn\'t set up yet, so progress stays on this device.</p></div>';
+    return;
+  }
+  if(cloud.user){
+    box.innerHTML='<div class="card"><h3>Your account</h3><p>Signed in as '+esc(cloud.user.email)+'</p>'+
+      '<div class="sync" id="syncLine"></div>'+
+      '<input class="field" id="pfName" maxlength="30" placeholder="Leaderboard name (optional)" autocomplete="nickname">'+
+      '<input class="field" id="pfDorm" maxlength="40" placeholder="Dorm or team (optional)">'+
+      '<div class="row"><button class="btn pri" id="pfSave">Save profile</button><button class="btn" id="cSync">Sync now</button><button class="btn" id="cOut">Sign out</button></div>'+
+      '<p class="note">The leaderboard shows only your name, dorm and totals — never your email or where you walk.</p></div>';
+    setSync(cloud.err);
+    cloud.sb.from('profiles').select('display_name,dorm').eq('id',cloud.user.id).maybeSingle().then(({data})=>{
+      if(data){ if($('pfName')) $('pfName').value=data.display_name||''; if($('pfDorm')) $('pfDorm').value=data.dorm||''; }
+    });
+    return;
+  }
+  if(cloud.step==='code'){
+    box.innerHTML='<div class="card"><h3>Check your email</h3><p>We sent a sign-in email to '+esc(cloud.email)+'. Tap its link, or type the 6-digit code here — use the code if you installed the app to your home screen.</p>'+
+      '<input class="field" id="cCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456">'+
+      '<div class="row"><button class="btn pri" id="cVerify">Sign in</button><button class="btn" id="cBack">Use a different email</button></div>'+
+      '<div class="sync err" id="cMsg"></div></div>';
+    return;
+  }
+  box.innerHTML='<div class="card"><h3>Sign in to sync & compete</h3><p>Back up your progress, join the leaderboard, and report campus safety hazards.</p>'+
+    '<input class="field" id="cEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@colorado.edu" value="'+esc(cloud.email)+'">'+
+    '<div class="row"><button class="btn pri" id="cSend">Email me a sign-in code</button></div>'+
+    '<div class="sync err" id="cMsg"></div></div>';
+}
+function cMsg(t){ const el=$('cMsg'); if(el) el.textContent=t; }
+function friendly(e){
+  const m=(e&&e.message)||String(e);
+  if(/limited to|Database error saving new user/i.test(m)) return 'Sign-up is limited to CU Boulder email addresses.';
+  if(/rate limit|security purposes/i.test(m)) return 'Too many tries — wait a minute, then try again.';
+  if(/expired|invalid/i.test(m)) return 'That code didn\'t work or has expired. Request a new one.';
+  return m;
+}
+$('cloudBox').addEventListener('click',async e=>{
+  const id=e.target.id; if(!cloud.sb) return;
+  if(id==='cSend'){
+    const email=($('cEmail').value||'').trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return cMsg('Enter a valid email address.');
+    e.target.disabled=true; e.target.textContent='Sending…';
+    const {error}=await cloud.sb.auth.signInWithOtp({email, options:{emailRedirectTo:location.origin+location.pathname, shouldCreateUser:true}});
+    if(error){ e.target.disabled=false; e.target.textContent='Email me a sign-in code'; return cMsg(friendly(error)); }
+    cloud.email=email; cloud.step='code'; buildCloudBox();
+  }
+  if(id==='cVerify'){
+    const token=($('cCode').value||'').replace(/\D/g,'');
+    if(token.length<6) return cMsg('Enter the code from the email.');
+    e.target.disabled=true;
+    const {error}=await cloud.sb.auth.verifyOtp({email:cloud.email, token, type:'email'});
+    if(error){ e.target.disabled=false; return cMsg(friendly(error)); }
+  }
+  if(id==='cBack'){ cloud.step='email'; buildCloudBox(); }
+  if(id==='cOut'){ await flush(); await cloud.sb.auth.signOut(); }
+  if(id==='cSync'){ cloud.err=''; pull(); }
+  if(id==='pfSave'){
+    const name=($('pfName').value||'').trim().slice(0,30)||null, dorm=($('pfDorm').value||'').trim().slice(0,40)||null;
+    const {error}=await cloud.sb.from('profiles').upsert({id:cloud.user.id, display_name:name, dorm});
+    toast(error?('Couldn\'t save: '+error.message):'Profile saved');
+  }
+});
+
+/* ---- Board tab ---- */
+async function loadBoard(){
+  const el=$('tab-board');
+  if(!cloud.sb){ el.innerHTML='<p class="note">Leaderboards turn on once cloud sync is set up.</p>'; return; }
+  if(!cloud.user){ el.innerHTML='<div class="card"><h3>Leaderboard</h3><p>Sign in on the Live Stats tab to see how you stack up against other Buffs.</p></div>'; return; }
+  const seg='<div class="seg"><button data-b="people" class="'+(cloud.board==='people'?'act':'')+'">People</button><button data-b="dorms" class="'+(cloud.board==='dorms'?'act':'')+'">Dorms & teams</button></div>';
+  el.innerHTML=seg+'<p class="note">Loading…</p>';
+  await flush();
+  const r = cloud.board==='people' ? await cloud.sb.rpc('get_leaderboard',{lim:50}) : await cloud.sb.rpc('get_dorm_leaderboard');
+  if(r.error){ el.innerHTML=seg+'<p class="note">Couldn\'t load the leaderboard: '+esc(r.error.message)+'</p>'; return; }
+  const rows=r.data||[];
+  const list = !rows.length ? '<p class="note">'+(cloud.board==='people'?'No one has claimed a path yet. Go be first!':'No dorms or teams yet — add yours on the Live Stats tab.')+'</p>'
+    : cloud.board==='people'
+      ? rows.map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+'</b><small>'+esc(x.dorm||'')+'</small></div><div class="v">'+x.segments+' seg<br><small>'+x.miles+' mi</small></div></div>').join('')
+      : rows.map(x=>'<div class="lb"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.dorm)+'</b><small>'+x.members+' member'+(x.members==1?'':'s')+'</small></div><div class="v">'+x.segments+' seg<br><small>'+x.miles+' mi</small></div></div>').join('');
+  el.innerHTML=seg+list+'<p class="note">Ranked by path segments claimed, then miles walked.</p>';
+}
+$('tab-board').addEventListener('click',e=>{ const b=e.target.closest('[data-b]'); if(b){ cloud.board=b.dataset.b; loadBoard(); } });
+
+/* ---- hazard reports ---- */
+const hazardLayer=L.layerGroup().addTo(map);
+async function loadHazards(){
+  if(!cloud.user) { hazardLayer.clearLayers(); return; }
+  const {data,error}=await cloud.sb.rpc('get_open_hazards'); if(error||!data) return;
+  hazardLayer.clearLayers();
+  data.forEach(h=>L.marker([h.lat,h.lng],{icon:L.divIcon({className:'',html:'<div class="hz">⚠️</div>',iconSize:[24,24],iconAnchor:[12,12]})})
+    .bindPopup('<b>'+esc(HZ[h.category]||h.category)+'</b>'+(h.note?'<br>'+esc(h.note):'')+'<br><small>Reported '+new Date(h.created_at).toLocaleDateString()+'</small>')
+    .addTo(hazardLayer));
+}
+setInterval(loadHazards,5*60*1000);
+$('fabHazard').onclick=()=>{
+  if(!cloud.sb) return modal('Hazard reports','<p>Hazard reporting turns on once cloud sync is set up.</p>',[['OK','',()=>{}]]);
+  if(!cloud.user) return modal('Sign in to report','<p>Sign in so reports can\'t be spammed. Other students see the hazard pin, but never who reported it.</p>',
+    [['Go to sign in','pri',()=>{ document.querySelector('.tabs [data-tab=stats]').click(); }],['Cancel','',()=>{}]]);
+  const fresh = pos && watchId!==null || sim.on;
+  const where = fresh ? 'your current location' : 'the center of the map — pan to the spot first';
+  modal('Report a hazard','<p>The pin goes at '+where+'. For emergencies call 911.</p>'+
+    '<select class="field" id="hzCat">'+Object.keys(HZ).map(k=>'<option value="'+k+'">'+HZ[k]+'</option>').join('')+'</select>'+
+    '<textarea class="field" id="hzNote" maxlength="280" placeholder="What\'s wrong? (optional)"></textarea>',
+    [['Submit report','pri',async()=>{
+        const c=fresh?[pos.lat,pos.lng]:[map.getCenter().lat,map.getCenter().lng];
+        const {error}=await cloud.sb.from('hazard_reports').insert({lat:c[0], lng:c[1], category:$('hzCat').value, note:($('hzNote').value||'').trim().slice(0,280)||null});
+        if(error) toast(/check constraint/i.test(error.message)?'Reports must be on campus':'Couldn\'t send: '+error.message);
+        else { toast('⚠️ Hazard reported — thank you'); loadHazards(); buzz(40); }
+      }],['Cancel','',()=>{}]]);
+};
+
+/* ---- auth state ---- */
+if(cloud.sb){
+  cloud.sb.auth.onAuthStateChange((event,session)=>{
+    const u=session?session.user:null;
+    if((u&&u.id)===(cloud.user&&cloud.user.id)) return;
+    cloud.user=u; if(!u){ cloud.step='email'; cloud.lastSync=0; cloud.err=''; }
+    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull(); loadHazards(); toast('Signed in — syncing'); } else hazardLayer.clearLayers();
+      if($('tab-board').classList.contains('act')) loadBoard(); },0);
+  });
+  window.addEventListener('online',()=>flush());
+}
+buildCloudBox();
 render();
 
 /* =====================================================================
@@ -683,7 +916,7 @@ render();
    ===================================================================== */
 function refreshAll(){ buildSegments(); drawPaths(); render(); queueFog(); }
 if(!localStorage.getItem(LS_KEY)){
-  idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign({},DEFAULTS,v); refreshAll(); } });
+  idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign({},DEFAULTS,v); normalize(); refreshAll(); } });
 }
 if(location.protocol.indexOf('http')===0){
   fetch('paths.geojson',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(g=>{
@@ -698,7 +931,7 @@ if(location.protocol.indexOf('http')===0){
 }
 
 // small hook for testing from the console
-window.RR={onFix, state:()=>S, progress, segs:()=>SEGS, setSim};
+window.RR={onFix, state:()=>S, progress, segs:()=>SEGS, setSim, cloud:()=>cloud};
 })();
 </script>
 </body>

@@ -1,12 +1,13 @@
 /* Ralphie's Roam service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v2';
+const VERSION = 'rr-v3';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  './', 'index.html', 'manifest.json',
+  './', 'index.html', 'manifest.json', 'config.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 const TILE_HOSTS = ['tile.openstreetmap.org', 'arcgisonline.com', 'basemaps.cartocdn.com'];
 const MAX_TILES = 800;
@@ -55,15 +56,18 @@ self.addEventListener('fetch', e => {
   }
 
   // App shell: serve cached copy right away, refresh it in the background
-  if (req.mode === 'navigate') {
+  // The page and config.js: network first, so updates show on the next load
+  const isConfig = url.origin === location.origin && url.pathname.endsWith('/config.js');
+  if (req.mode === 'navigate' || isConfig) {
+    const key = isConfig ? 'config.js' : 'index.html';
     e.respondWith(
-      fetch(req).then(res => { const copy = res.clone(); if (res.ok) caches.open(SHELL).then(c => c.put('index.html', copy)); return res; })
-        .catch(() => caches.open(SHELL).then(c => c.match('index.html')))
+      fetch(req).then(res => { const copy = res.clone(); if (res.ok) caches.open(SHELL).then(c => c.put(key, copy)); return res; })
+        .catch(() => caches.open(SHELL).then(c => c.match(key)))
     );
     return;
   }
 
-  if (url.origin === location.origin || url.hostname === 'unpkg.com') {
+  if (url.origin === location.origin || url.hostname === 'unpkg.com' || url.hostname === 'cdn.jsdelivr.net') {
     e.respondWith(
       caches.open(SHELL).then(async c => {
         const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
