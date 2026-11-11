@@ -6,6 +6,7 @@ import fs from 'fs';
 const BBOX = [39.9985, -105.2785, 40.0142, -105.2565]; // south, west, north, east — CU Boulder main campus
 const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
@@ -13,16 +14,20 @@ const bb = BBOX.join(',');
 
 async function overpass(q) {
   if (process.env.OSM_FIXTURE) return JSON.parse(fs.readFileSync(process.env.OSM_FIXTURE, 'utf8'))[q.includes('highway') ? 'paths' : 'marks'];
-  for (const url of ENDPOINTS) {
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'ralphies-roam/1.0 (github.com/zachurban/ralphies-roam)' },
-        body: 'data=' + encodeURIComponent(q)
-      });
-      if (r.ok) return await r.json();
-      console.error(url, 'HTTP', r.status);
-    } catch (e) { console.error(url, e.message); }
+  for (let round = 1; round <= 4; round++) {          // public servers are often busy: retry with backoff
+    for (const url of ENDPOINTS) {
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'ralphies-roam/1.0 (github.com/zachurban/ralphies-roam)' },
+          body: 'data=' + encodeURIComponent(q),
+          signal: AbortSignal.timeout(150000)
+        });
+        if (r.ok) { console.log('Overpass OK via', url); return await r.json(); }
+        console.error('round', round, url, 'HTTP', r.status);
+      } catch (e) { console.error('round', round, url, e.message); }
+    }
+    await new Promise(res => setTimeout(res, 30000 * round));
   }
   throw new Error('All Overpass endpoints failed');
 }
