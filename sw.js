@@ -1,5 +1,5 @@
 /* Ralphie's Roam service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v1';
+const VERSION = 'rr-v2';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
@@ -55,6 +55,14 @@ self.addEventListener('fetch', e => {
   }
 
   // App shell: serve cached copy right away, refresh it in the background
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req).then(res => { const copy = res.clone(); if (res.ok) caches.open(SHELL).then(c => c.put('index.html', copy)); return res; })
+        .catch(() => caches.open(SHELL).then(c => c.match('index.html')))
+    );
+    return;
+  }
+
   if (url.origin === location.origin || url.hostname === 'unpkg.com') {
     e.respondWith(
       caches.open(SHELL).then(async c => {

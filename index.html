@@ -204,6 +204,7 @@ const CAMPUS = [40.0073, -105.2660], ZOOM = 16;
 const CLAIM_M   = 15;   // snap-to-path threshold (meters)
 const SEG_MAX_M = 20;   // paths are diced into claimable pieces this long
 const REVEAL_M  = 34;   // fog hole radius per claimed piece (meters)
+const FOG_ALPHA = 0.55; // fog darkness, 0 (none) to 1 (solid)
 const ACC_MAX_M = 35;   // ignore GPS fixes with worse accuracy than this
 const MAX_SPEED = 8;    // m/s — anything faster is a GPS jump (or a bus)
 const LS_KEY = 'ralphies-roam-v1';
@@ -428,7 +429,7 @@ function drawFog(){
   ctx.globalCompositeOperation='source-over';
   ctx.clearRect(0,0,size.x,size.y);
   if(!S.fogOn) return;
-  ctx.fillStyle='rgba(10,12,18,0.86)';
+  ctx.fillStyle='rgba(18,22,34,'+FOG_ALPHA+')';
   ctx.fillRect(0,0,size.x,size.y);
   ctx.globalCompositeOperation='destination-out';
   const mpp=156543.03392*Math.cos(map.getCenter().lat*Math.PI/180)/Math.pow(2,map.getZoom());
@@ -441,7 +442,7 @@ function drawFog(){
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,Math.PI*2); ctx.fill();
   };
   for(let i=0;i<SEGS.length;i++){ const s=SEGS[i]; if(S.claimed[s.id]){ hole(s.a,r); hole(s.mid,r); } }
-  if(pos) hole([pos.lat,pos.lng], r*0.75);
+  if(pos) hole([pos.lat,pos.lng], r*1.6);
 }
 function queueFog(){ if(!fogQueued){ fogQueued=true; requestAnimationFrame(drawFog); } }
 map.on('move zoom zoomend moveend resize viewreset', queueFog);
