@@ -99,7 +99,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
   display:flex;align-items:center;gap:7px;max-width:72%;overflow:hidden;text-overflow:ellipsis}
 #status i{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
 #status.ok i{background:var(--green)} #status.warn i{background:#ffb84d}
-#status.bad i{background:var(--red)} #status.sim i{background:#c08bff}
+#status.bad i{background:var(--red)}
 #fabs{position:absolute;right:10px;bottom:calc(26px + env(safe-area-inset-bottom));z-index:1000;
   display:flex;flex-direction:column;gap:9px}
 .fab{width:46px;height:46px;border-radius:50%;background:rgba(21,24,33,.94);border:1px solid var(--line);
@@ -114,8 +114,6 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
   box-shadow:0 0 8px rgba(59,157,255,.9)}
 .me .pulse{position:absolute;inset:0;border-radius:50%;background:rgba(59,157,255,.55);
   animation:pulse 1.8s ease-out infinite}
-.me.sim .core{background:#c08bff;box-shadow:0 0 8px rgba(192,139,255,.9)}
-.me.sim .pulse{background:rgba(192,139,255,.55)}
 @keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(3.2);opacity:0}}
 
 #toasts{position:absolute;left:50%;top:calc(50px + env(safe-area-inset-top));transform:translateX(-50%);
@@ -238,7 +236,6 @@ textarea.field{min-height:70px;resize:vertical}
     <div id="toasts"></div>
     <div id="fabs">
       <button class="fab" id="fabHazard" title="Report a safety hazard">⚠️</button>
-      <button class="fab" id="fabSim" title="Simulated walking (tap map to walk)">🕹️</button>
       <button class="fab on" id="fabFog" title="Toggle fog of war">🌫️</button>
       <button class="fab on" id="fabFollow" title="Follow my location">🎯</button>
     </div>
@@ -266,9 +263,8 @@ const MAX_SPEED = 8;    // m/s — anything faster is a GPS jump (or a bus)
 const LS_KEY = 'ralphies-roam-v1';
 const STREAK_SEGS = 10;  // a day counts toward a streak with 1 new claim OR this many distinct segments walked
 const TZ = 'America/Denver';
-let DAY_OFFSET = 0;      // test hook
 function dkey(){
-  const d=new Date(Date.now()+DAY_OFFSET*86400000);
+  const d=new Date();
   try{ return d.toLocaleDateString('en-CA',{timeZone:TZ}); }
   catch(e){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 }
@@ -543,20 +539,19 @@ drawFog();
 
 /* ---- user marker ---- */
 let meMarker=null, accCircle=null, follow=true;
-function showMe(lat,lng,acc,simMode){
+function showMe(lat,lng,acc){
   const ll=[lat,lng];
   if(!meMarker){
     meMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me"><div class="pulse"></div><div class="core"></div></div>',iconSize:[22,22],iconAnchor:[11,11]}),interactive:false,zIndexOffset:1000}).addTo(map);
     accCircle=L.circle(ll,{radius:acc,color:'#3b9dff',weight:1,opacity:.5,fillOpacity:.08,interactive:false}).addTo(map);
   }
   meMarker.setLatLng(ll); accCircle.setLatLng(ll).setRadius(Math.min(acc,300));
-  const el=meMarker.getElement(); if(el) el.firstChild.classList.toggle('sim',!!simMode);
   if(follow) map.panTo(ll,{animate:true,duration:.5});
 }
 map.on('dragstart',()=>{ follow=false; $('fabFollow').classList.remove('on'); });
 
 /* =====================================================================
-   POSITION PIPELINE — every fix (real GPS or simulated) flows through onFix
+   POSITION PIPELINE — every GPS fix flows through onFix
    ===================================================================== */
 let last=null; // last accepted fix {ll,t}
 function claimAlong(points){
@@ -604,8 +599,8 @@ function nearMissToasts(fresh){
 }
 function onFix(lat,lng,acc,src){
   pos={lat,lng,acc};
-  showMe(lat,lng,acc,src==='sim');
-  const good = src==='sim' || acc<=ACC_MAX_M;
+  showMe(lat,lng,acc);
+  const good = acc<=ACC_MAX_M;
   if(src==='gps') setStatus(good?'ok':'warn', good?('Tracking · ±'+Math.round(acc)+' m'):('Weak GPS · ±'+Math.round(acc)+' m — waiting'));
   if(good){
     rollDates();
@@ -614,7 +609,7 @@ function onFix(lat,lng,acc,src){
     else{
       const d=distM(last.ll,here), dt=(now-last.t)/1000;
       if(d>=Math.max(4,acc*0.5)){
-        const plausible = src==='sim' || (dt<=90 && d/Math.max(dt,0.5)<=MAX_SPEED);
+        const plausible = dt<=90 && d/Math.max(dt,0.5)<=MAX_SPEED;
         if(plausible){
           S.meters+=d; moved=true;
           const n=Math.min(40,Math.floor(d/6)); // fill the gap between fixes so nothing is skipped
@@ -643,14 +638,13 @@ function onFix(lat,lng,acc,src){
 let watchId=null, wakeLock=null;
 const GEO_OPTS={enableHighAccuracy:true, maximumAge:1000, timeout:10000};
 function startGPS(){
-  if(sim.on) setSim(false);
-  if(!('geolocation' in navigator)) return gpsProblem('This browser has no location support.','You can still explore with simulated walking.');
-  if(!window.isSecureContext) return gpsProblem('GPS needs a secure (https) page.','Open this app from its https:// address, or use simulated walking for now.');
+  if(!('geolocation' in navigator)) return gpsProblem('This browser has no location support.','Try Safari on iPhone or Chrome on Android.');
+  if(!window.isSecureContext) return gpsProblem('GPS needs a secure (https) page.','Open this app from its https:// address.');
   setStatus('warn','Finding GPS…');
   watchId=navigator.geolocation.watchPosition(
     p=>onFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy||999,'gps'),
     err=>{
-      if(err.code===1){ stopGPS(); gpsProblem('Location permission was denied.','To use real GPS, allow location for this site (iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using; then reload). Or keep going in simulated mode.'); }
+      if(err.code===1){ stopGPS(); gpsProblem('Location permission was denied.','To use real GPS, allow location for this site (iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using; then reload). On Android: tap the lock icon by the address → Permissions → Location → Allow.'); }
       else if(err.code===2) setStatus('bad','GPS unavailable — still trying');
       else setStatus('warn','GPS timeout — still trying');
     }, GEO_OPTS);
@@ -660,7 +654,7 @@ function startGPS(){
 function stopGPS(){
   if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
   if(wakeLock){ try{wakeLock.release();}catch(e){} wakeLock=null; }
-  last=null; setTrackUI(false); if(!sim.on) setStatus('', 'GPS off'); saveNow();
+  last=null; setTrackUI(false); setStatus('', 'GPS off'); saveNow();
 }
 function lockScreen(){ // keep the screen awake so the browser keeps delivering GPS fixes
   if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});
@@ -673,8 +667,7 @@ window.addEventListener('pagehide',saveNow);
 function gpsProblem(title,body){
   setStatus('bad','GPS off');
   modal(title,'<p>'+body+'</p>',[
-    ['Use simulated walking','pri',()=>setSim(true)],
-    ['Try GPS again','',()=>startGPS()],
+    ['Try GPS again','pri',()=>startGPS()],
     ['Close','',()=>{}]]);
 }
 function setTrackUI(on){
@@ -682,33 +675,6 @@ function setTrackUI(on){
   $('trackLbl').textContent=on?'Tracking — tap to stop':'Start Passive Tracking';
 }
 
-/* =====================================================================
-   SIMULATED MODE — tap the map and the marker walks there
-   ===================================================================== */
-const sim={on:false,pos:null,target:null,timer:0};
-function setSim(on){
-  sim.on=on; $('fabSim').classList.toggle('on',on);
-  clearInterval(sim.timer); sim.timer=0; sim.target=null;
-  if(on){
-    if(watchId!==null) stopGPS();
-    last=null;
-    const c=pos?[pos.lat,pos.lng]:[map.getCenter().lat,map.getCenter().lng];
-    sim.pos=c; setStatus('sim','Simulated · tap the map to walk');
-    onFix(c[0],c[1],5,'sim');
-  }else{ last=null; if(watchId===null) setStatus('','GPS off'); }
-}
-map.on('click',e=>{
-  if(!sim.on) return;
-  sim.target=[e.latlng.lat,e.latlng.lng];
-  if(!sim.timer) sim.timer=setInterval(simStep,110);
-});
-function simStep(){
-  if(!sim.target){ clearInterval(sim.timer); sim.timer=0; return; }
-  const d=distM(sim.pos,sim.target), step=7;
-  if(d<=step){ sim.pos=sim.target; sim.target=null; }
-  else sim.pos=[sim.pos[0]+(sim.target[0]-sim.pos[0])*step/d, sim.pos[1]+(sim.target[1]-sim.pos[1])*step/d];
-  onFix(sim.pos[0],sim.pos[1],5,'sim');
-}
 
 /* =====================================================================
    UI
@@ -753,7 +719,7 @@ function render(){
     const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
     return '<button class="zone'+(zz.n&&zz.gotN===zz.n?' done':'')+'" data-zone="'+z.id+'">'+ring(pct,z.color)+
       '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p>'+territoryLine(z.id)+'</div></button>';
-  }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog. Tap any path (or long-press in simulated mode) to see or name it.</p>';
+  }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog. Tap any path to see or name it.</p>';
 
   $('tab-badges').innerHTML='<div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
     '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="ic">'+b.ic+'</div><b>'+b.name+'</b><small>'+b.how+'</small></div>').join('')+'</div>';
@@ -817,7 +783,6 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
 $('handle').onclick=()=>$('panel').classList.toggle('open');
 map.on('click',()=>$('panel').classList.remove('open'));
 $('trackBtn').onclick=()=>{ watchId===null ? startGPS() : stopGPS(); };
-$('fabSim').onclick=()=>setSim(!sim.on);
 $('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; $('fabFog').classList.toggle('on',S.fogOn); saveSoon(); queueFog(); };
 $('fabFollow').onclick=()=>{ follow=true; $('fabFollow').classList.add('on'); map.setView(pos?[pos.lat,pos.lng]:CAMPUS, Math.max(map.getZoom(),ZOOM)); };
 $('fabFog').classList.toggle('on',S.fogOn);
@@ -1009,7 +974,7 @@ async function saveName(pid,name){
   drawNameLabels(); render(); if(checkBadges(false)) saveSoon();
   loadNames();
 }
-map.on('click',e=>{ if(sim.on) return; const sg=pathAt(e.latlng); if(sg) openPath(sg); });
+map.on('click',e=>{ const sg=pathAt(e.latlng); if(sg) openPath(sg); });
 map.on('contextmenu',e=>{ const sg=pathAt(e.latlng); if(sg) openPath(sg); });
 
 /* =====================================================================
@@ -1279,7 +1244,7 @@ $('fabHazard').onclick=()=>{
   if(!cloud.sb) return modal('Hazard reports','<p>Hazard reporting turns on once cloud sync is set up.</p>',[['OK','',()=>{}]]);
   if(!cloud.user) return modal('Sign in to report','<p>Sign in so reports can\'t be spammed. Other students see the hazard pin, but never who reported it.</p>',
     [['Go to sign in','pri',goSignIn],['Cancel','',()=>{}]]);
-  const fresh = pos && watchId!==null || sim.on;
+  const fresh = pos && watchId!==null;
   const where = fresh ? 'your current location' : 'the center of the map — pan to the spot first';
   modal('Report a hazard','<p>The pin goes at '+where+'. For emergencies call 911.</p>'+
     '<select class="field" id="hzCat">'+Object.keys(HZ).map(k=>'<option value="'+k+'">'+HZ[k]+'</option>').join('')+'</select>'+
@@ -1312,7 +1277,7 @@ drawNameLabels(); loadNames(); setInterval(()=>{ if(document.visibilityState==='
    optional paths.geojson override, service worker
    ===================================================================== */
 function refreshAll(){ buildSegments(); drawPaths(); render(); queueFog(); }
-function setStatusIfIdle(){ if(watchId===null&&!sim.on) setStatus('', 'GPS off · '+SEGS.length.toLocaleString()+' path segments loaded'); }
+function setStatusIfIdle(){ if(watchId===null) setStatus('', 'GPS off · '+SEGS.length.toLocaleString()+' path segments loaded'); }
 if(!localStorage.getItem(LS_KEY)){
   idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign(DEF(),v); normalize(); refreshAll(); } });
 }
@@ -1330,9 +1295,8 @@ if(location.protocol.indexOf('http')===0){
   if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 
-// small hook for testing from the console
-window.RR={onFix, state:()=>S, progress, segs:()=>SEGS, setSim, cloud:()=>cloud, nudges:()=>NUDGES,
-  setDayOffset:n=>{DAY_OFFSET=n; normalize(); render();}, nameProblem, openPath, pathAt, names:()=>NAMES};
+// read-only hooks for debugging from the console (no way to fake movement)
+window.RR={state:()=>JSON.parse(JSON.stringify(S)), progress, segCount:()=>SEGS.length, nudges:()=>NUDGES.map(n=>n.text), names:()=>JSON.parse(JSON.stringify(NAMES))};
 })();
 </script>
 </body>

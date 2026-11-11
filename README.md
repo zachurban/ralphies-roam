@@ -90,7 +90,7 @@ OSM edits that split or redraw a way reset progress on that way.
 
 ## Student-named paths
 
-Tap any path (long-press in simulated mode) to see it. A signed-in student who has walked any part
+Tap any path to see it. A signed-in student who has walked any part
 of a path with no official OpenStreetMap name can name it. The first name sticks; only its author
 can rename or remove it. Names appear on everyone's map at zoom 17+, signed in or not, and in
 toasts and nudges. Limit: 10 new names per student per day.
