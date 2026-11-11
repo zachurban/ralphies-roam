@@ -13,7 +13,10 @@ const ENDPOINTS = [
 const bb = BBOX.join(',');
 
 async function overpass(q) {
-  if (process.env.OSM_FIXTURE) return JSON.parse(fs.readFileSync(process.env.OSM_FIXTURE, 'utf8'))[q.includes('highway') ? 'paths' : 'marks'];
+  if (process.env.OSM_FIXTURE) {
+    const fx = JSON.parse(fs.readFileSync(process.env.OSM_FIXTURE, 'utf8'));
+    return fx[q.includes('highway') ? 'paths' : q.includes('dormitory') ? 'dorms' : 'marks'] || { elements: [] };
+  }
   for (let round = 1; round <= 4; round++) {          // public servers are often busy: retry with backoff
     for (const url of ENDPOINTS) {
       try {
@@ -34,6 +37,12 @@ async function overpass(q) {
 
 const paths = await overpass(`[out:json][timeout:120];way["highway"~"^(footway|path|pedestrian|steps|cycleway|track|bridleway|living_street)$"](${bb});out geom;`);
 const marks = await overpass(`[out:json][timeout:60];nwr["name"~"Norlin|Farrand Field|Engineering Center|Kittredge|Varsity|Old Main|Macky",i](${bb});out geom;`);
+
+// Residence halls for the dorm pick list (wider box to include Williams Village)
+const dormEls = await overpass(`[out:json][timeout:60];nwr["building"="dormitory"]["name"](39.985,-105.285,40.020,-105.235);out tags;`);
+const dorms = [...new Set(dormEls.elements.map(e => (e.tags && e.tags.name || '').trim())
+  .filter(n => n && n.length <= 40 && !/parking|garage|dining|center$/i.test(n)))].sort((a, b) => a.localeCompare(b));
+console.log('dorms', dorms.length, dorms.join(' | '));
 
 // ---- zones: boxes around named OSM landmarks (fallbacks if a name isn't found) ----
 const M_LAT = 111320, M_LNG = 111320 * Math.cos(40.007 * Math.PI / 180);
@@ -103,6 +112,7 @@ const out = {
   type: 'FeatureCollection',
   attribution: '© OpenStreetMap contributors, ODbL',
   bbox: [BBOX[1], BBOX[0], BBOX[3], BBOX[2]],
+  dorms,
   features
 };
 fs.writeFileSync(process.env.OUT || 'paths.geojson', JSON.stringify(out));

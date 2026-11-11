@@ -76,3 +76,14 @@ around named OSM landmarks; everything else falls into **Rest of Campus**.
 
 Re-running it only when needed keeps claims stable: claims are tied to OSM way IDs, and
 OSM edits that split or redraw a way reset progress on that way.
+
+## Streaks, territory and nudges
+
+- **Streak:** a day counts with 1 newly claimed segment *or* 10 distinct segments walked (Boulder
+  time). Every 7-day streak earns a freeze (max 2) that covers one missed day.
+- **Territory:** each distinct segment a student walks in a zone this week earns their dorm 1 point;
+  the top dorm owns the zone. Weeks start Monday. The server stores per-zone weekly counts only.
+- **Nudges:** the gold bar under the stats shows the single best next move (finish a zone, retake
+  a zone, keep a streak, pass the person above you, nearby stairs or bridges). Tap it to fly there.
+- **Dorm list** comes from OpenStreetMap residence halls (`dorms` in `paths.geojson`), plus
+  Off-campus, Faculty & staff, and Other.

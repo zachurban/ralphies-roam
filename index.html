@@ -18,7 +18,7 @@
 :root{
   --bg:#0d0f14; --panel:#151821; --card:#1d212c; --line:#2a2f3d;
   --text:#eef0f4; --muted:#98a0b3; --gold:#CFB87C; --gold2:#e9d9a8;
-  --blue:#3b9dff; --green:#4cd38a; --red:#ff6b6b; --peek:190px;
+  --blue:#3b9dff; --green:#4cd38a; --red:#ff6b6b; --peek:226px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
@@ -155,6 +155,21 @@ textarea.field{min-height:70px;resize:vertical}
 .lb .n small{color:var(--muted);font-size:12px}
 .lb .v{text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
 .lb.you{border:1px solid var(--gold)}
+.nudge{display:block;width:100%;margin-top:8px;padding:8px 11px;border-radius:10px;background:rgba(207,184,124,.12);
+  border:1px solid rgba(207,184,124,.4);color:var(--gold2);font-size:13px;font-weight:600;text-align:left;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.nudge[hidden]{display:none}
+.zone .terr{display:block;margin-top:3px;font-size:12px;color:var(--gold2)}
+.nextup{background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:10px;border:1px solid rgba(207,184,124,.35)}
+.nextup h4{margin:0 0 4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.nextup button{display:block;width:100%;text-align:left;padding:7px 0;font-size:13.5px;border-top:1px solid var(--line)}
+.nextup button:first-of-type{border-top:0}
+.tz{background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:9px}
+.tz h3{margin:0 0 6px;font-size:14.5px}
+.tz .d{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--muted)}
+.tz .d.lead{color:var(--text);font-weight:700}
+.tz .d.mine{color:var(--gold)}
+.ping{width:26px;height:26px;border-radius:50%;border:3px solid var(--gold);animation:pulse 1.2s ease-out infinite}
 .hz{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 .leaflet-popup-content{font-size:13.5px}
 
@@ -171,7 +186,9 @@ textarea.field{min-height:70px;resize:vertical}
   #handle::before{content:"";display:block;width:42px;height:5px;border-radius:5px;background:var(--line);margin:0 auto}
   .brand{display:none}
   .peek{padding:2px 12px 8px}
-  .mini div{padding:5px 8px}
+  .mini div{padding:5px 4px}
+  .mini b{font-size:15px}
+  .mini span{font-size:9.5px;letter-spacing:.3px}
   .badges{grid-template-columns:1fr 1fr 1fr}
   .tabs button{font-size:13px}
 }
@@ -190,8 +207,10 @@ textarea.field{min-height:70px;resize:vertical}
       <div class="mini">
         <div><b id="mMiles">0.00</b><span>miles</span></div>
         <div><b id="mPct">0%</b><span>uncovered</span></div>
+        <div><b id="mStreak">0</b><span>🔥 streak</span></div>
         <div><b id="mXp">0</b><span>XP</span></div>
       </div>
+      <button id="nudge" class="nudge" hidden></button>
     </div>
     <nav class="tabs">
       <button data-tab="zones" class="act">Zones</button>
@@ -238,6 +257,16 @@ const FOG_ALPHA = 0.55; // fog darkness, 0 (none) to 1 (solid)
 const ACC_MAX_M = 35;   // ignore GPS fixes with worse accuracy than this
 const MAX_SPEED = 8;    // m/s — anything faster is a GPS jump (or a bus)
 const LS_KEY = 'ralphies-roam-v1';
+const STREAK_SEGS = 10;  // a day counts toward a streak with 1 new claim OR this many distinct segments walked
+const TZ = 'America/Denver';
+let DAY_OFFSET = 0;      // test hook
+function dkey(){
+  const d=new Date(Date.now()+DAY_OFFSET*86400000);
+  try{ return d.toLocaleDateString('en-CA',{timeZone:TZ}); }
+  catch(e){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+}
+function addDays(k,n){ const a=k.split('-').map(Number); return new Date(Date.UTC(a[0],a[1]-1,a[2]+n)).toISOString().slice(0,10); }
+function weekKey(k){ k=k||dkey(); const a=k.split('-').map(Number); return addDays(k,-((new Date(Date.UTC(a[0],a[1]-1,a[2])).getUTCDay()+6)%7)); }
 
 /* =====================================================================
    CAMPUS DATA — zones + walkways.
@@ -333,11 +362,27 @@ function buildSegments(){
 /* =====================================================================
    STATE + PERSISTENCE (localStorage = fast snapshot, IndexedDB = mirror + GPS track log)
    ===================================================================== */
-const DEFAULTS = {claimed:{}, meters:0, badges:{}, layer:'Street', fogOn:true, started:Date.now(), pending:{claims:{},badges:{}}};
-function normalize(){ if(!S.pending||!S.pending.claims) S.pending={claims:{},badges:{}}; if(!S.pending.badges) S.pending.badges={}; }
-let S = Object.assign({}, DEFAULTS);
+function DEF(){ return {claimed:{}, meters:0, badges:{}, layer:'Street', fogOn:true, started:Date.now(),
+  pending:{claims:{},badges:{},week:false,streak:false},
+  streak:{count:0,best:0,last:null,freezes:0}, week:{id:null,visits:{}}, day:{id:null,seen:{},newSegs:0}}; }
+function normalize(){
+  const d=DEF();
+  ['claimed','badges'].forEach(k=>{ if(!S[k]) S[k]={}; });
+  if(!S.pending||!S.pending.claims) S.pending=d.pending;
+  if(!S.pending.badges) S.pending.badges={};
+  if(!S.streak) S.streak=d.streak;
+  if(!S.week||!S.week.visits) S.week=d.week;
+  if(!S.day||!S.day.seen) S.day=d.day;
+  rollDates();
+}
+function rollDates(){
+  const t=dkey(), w=weekKey(t);
+  if(S.week.id!==w){ S.week={id:w,visits:{}}; S.pending.week=false; }
+  if(S.day.id!==t) S.day={id:t,seen:{},newSegs:0};
+}
+let S = DEF();
 function loadLS(){
-  try{ const raw=localStorage.getItem(LS_KEY); if(raw){ S=Object.assign({},DEFAULTS,JSON.parse(raw)); return true; } }catch(e){}
+  try{ const raw=localStorage.getItem(LS_KEY); if(raw){ S=Object.assign(DEF(),JSON.parse(raw)); return true; } }catch(e){}
   return false;
 }
 let db=null;
@@ -384,7 +429,8 @@ function progress(){
   const level = Math.floor(Math.sqrt(xp/150))+1;
   const cur=150*(level-1)*(level-1), next=150*level*level;
   return {z, tag, got, gotN, pct: TOTAL_LEN? got/TOTAL_LEN*100 : 0, miles, xp, level,
-          lvlPct:(xp-cur)/(next-cur)*100, toNext:next-xp, nb};
+          lvlPct:(xp-cur)/(next-cur)*100, toNext:next-xp, nb, streak:streakNow(), best:S.streak.best,
+          weekSegs:Object.keys(S.week.visits).length};
 }
 
 /* =====================================================================
@@ -404,7 +450,10 @@ const BADGES = [
   {id:'pct25',   ic:'🌤️', name:'Fog Lifter',        how:'Uncover 25% of campus', test:p=>p.pct>=25},
   {id:'pct50',   ic:'☀️', name:'Halfway Herd',      how:'Uncover 50% of campus', test:p=>p.pct>=50},
   {id:'pct100',  ic:'👑', name:'Forever Buff',      how:'Uncover 100% of campus', test:p=>p.pct>=99.9},
-  {id:'night',   ic:'🦉', name:'Night Owl',         how:'Claim a segment after 9 pm', test:(p,c)=>c.claimedNow&&(c.hr>=21||c.hr<4)},
+  {id:'streak3', ic:'🔥', name:'On Fire',           how:'3-day walking streak', test:p=>p.best>=3},
+  {id:'streak7', ic:'📅', name:'Week Warrior',      how:'7-day walking streak', test:p=>p.best>=7},
+  {id:'streak30',ic:'⚡', name:'Unstoppable',       how:'30-day walking streak', test:p=>p.best>=30},
+  {id:'flag',    ic:'🚩', name:'Flag Planter',      how:'Help your dorm own a zone for the week', test:()=>helpedOwnZone()},
   {id:'dawn',    ic:'🌅', name:'Dawn Patrol',       how:'Claim a segment before 7 am', test:(p,c)=>c.claimedNow&&c.hr>=4&&c.hr<7}
 ].concat(ZONES.map(z=>({id:'zone-'+z.id, ic:z.icon, name:z.name+' Complete', how:'Claim every path in '+z.name,
   test:p=>p.z[z.id]&&p.z[z.id].n>0&&p.z[z.id].gotN===p.z[z.id].n})));
@@ -501,16 +550,47 @@ map.on('dragstart',()=>{ follow=false; $('fabFollow').classList.remove('on'); })
    ===================================================================== */
 let last=null; // last accepted fix {ll,t}
 function claimAlong(points){
-  const fresh=[];
+  const fresh=[]; let visited=0;
   for(const pt of points){
     const xy=toXY(pt[0],pt[1]);
     for(let i=0;i<SEGS.length;i++){
       const s=SEGS[i];
       if(Math.abs(xy[0]-s.cx)>s.rr||Math.abs(xy[1]-s.cy)>s.rr) continue;
-      if(!S.claimed[s.id] && distToSeg(xy,s)<=CLAIM_M){ S.claimed[s.id]=Date.now(); S.pending.claims[s.id]=S.claimed[s.id]; fresh.push(s); }
+      if(distToSeg(xy,s)>CLAIM_M) continue;
+      if(!S.week.visits[s.id]){ S.week.visits[s.id]=1; S.pending.week=true; visited++; }
+      if(!S.day.seen[s.id]){ S.day.seen[s.id]=1; visited++; }
+      if(!S.claimed[s.id]){ S.claimed[s.id]=Date.now(); S.pending.claims[s.id]=S.claimed[s.id]; S.day.newSegs++; fresh.push(s); }
     }
   }
-  return fresh;
+  return {fresh, visited};
+}
+function dayQualifies(){ return S.day.newSegs>0 || Object.keys(S.day.seen).length>=STREAK_SEGS; }
+function streakNow(){
+  const st=S.streak, t=dkey(); if(!st.last) return 0;
+  if(st.last===t||st.last===addDays(t,-1)) return st.count;
+  if(st.last===addDays(t,-2)&&st.freezes>0) return st.count;
+  return 0;
+}
+function updateStreak(){
+  const t=S.day.id, st=S.streak;
+  if(st.last===t || !dayQualifies()) return false;
+  if(st.last===addDays(t,-1)) st.count++;
+  else if(st.last===addDays(t,-2) && st.freezes>0){ st.freezes--; st.count++; toast('🧊 Streak freeze used — your streak survives'); }
+  else st.count=1;
+  st.last=t; if(st.count>st.best) st.best=st.count;
+  toast('🔥 '+(st.count===1?'Streak started — come back tomorrow for day 2':st.count+'-day streak!')); buzz([40,30,40]);
+  if(st.count%7===0 && st.freezes<2){ st.freezes++; setTimeout(()=>toast('🧊 Earned a streak freeze (covers one missed day)'),900); }
+  S.pending.streak=true;
+  return true;
+}
+const zoneRemToast={};
+function nearMissToasts(fresh){
+  const zs={}; fresh.forEach(s=>zs[s.zone]=1);
+  const p=progress();
+  Object.keys(zs).forEach(z=>{
+    const zz=p.z[z]; if(!zz) return; const rem=zz.n-zz.gotN, zn=(ZONES.find(x=>x.id===z)||{}).name||z;
+    if(rem>0 && rem<=3 && zoneRemToast[z]!==rem){ zoneRemToast[z]=rem; setTimeout(()=>toast('🏁 '+rem+' segment'+(rem>1?'s':'')+' left to complete '+zn+'!'),700); buzz([20,40,20]); }
+  });
 }
 function onFix(lat,lng,acc,src){
   pos={lat,lng,acc};
@@ -518,6 +598,7 @@ function onFix(lat,lng,acc,src){
   const good = src==='sim' || acc<=ACC_MAX_M;
   if(src==='gps') setStatus(good?'ok':'warn', good?('Tracking · ±'+Math.round(acc)+' m'):('Weak GPS · ±'+Math.round(acc)+' m — waiting'));
   if(good){
+    rollDates();
     const now=Date.now(), here=[lat,lng]; let pts=[here], moved=false;
     if(!last){ last={ll:here,t:now}; logTrack(lat,lng,acc,src); }
     else{
@@ -532,14 +613,16 @@ function onFix(lat,lng,acc,src){
         last={ll:here,t:now}; logTrack(lat,lng,acc,src);
       }
     }
-    const fresh=claimAlong(pts);
+    const r=claimAlong(pts), fresh=r.fresh;
+    const streakUp=updateStreak();
     if(fresh.length){
       fresh.forEach(s=>segLines[s.id]&&segLines[s.id].setStyle(ST_DONE));
       const special=fresh.find(s=>s.tags.length);
       toast('+'+fresh.length+' segment'+(fresh.length>1?'s':'')+' · '+(special||fresh[0]).name);
       buzz(30);
     }
-    if(fresh.length||moved){ checkBadges(fresh.length>0); saveSoon(); render(); syncSoon(); }
+    if(fresh.length) nearMissToasts(fresh);
+    if(fresh.length||moved||r.visited||streakUp){ checkBadges(fresh.length>0); saveSoon(); render(); syncSoon(); }
   }
   queueFog();
 }
@@ -645,11 +728,17 @@ function render(){
   $('mMiles').textContent=p.miles.toFixed(2);
   $('mPct').textContent=p.pct.toFixed(p.pct>0&&p.pct<10?1:0)+'%';
   $('mXp').textContent=p.xp.toLocaleString();
+  $('mStreak').textContent=p.streak;
 
-  $('tab-zones').innerHTML=ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n).map(z=>{
+  NUDGES=buildNudges(p);
+  const top=NUDGES[0];
+  $('nudge').hidden=!top; if(top){ $('nudge').textContent=top.text; $('nudge').dataset.i=0; }
+  const next = NUDGES.length ? '<div class="nextup"><h4>Next up</h4>'+NUDGES.slice(0,3).map((n,i)=>'<button data-n="'+i+'">'+esc(n.text)+'</button>').join('')+'</div>' : '';
+
+  $('tab-zones').innerHTML=next+ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n).map(z=>{
     const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
     return '<button class="zone'+(zz.n&&zz.gotN===zz.n?' done':'')+'" data-zone="'+z.id+'">'+ring(pct,z.color)+
-      '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p></div></button>';
+      '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p>'+territoryLine(z.id)+'</div></button>';
   }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog.</p>';
 
   $('tab-badges').innerHTML='<div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
@@ -658,6 +747,10 @@ function render(){
   $('statsBody').innerHTML=
     '<div class="lvl"><span>Level <b>'+p.level+'</b></span><span>'+p.toNext.toLocaleString()+' XP to next</span></div>'+
     '<div class="bar"><i style="width:'+p.lvlPct.toFixed(1)+'%"></i></div>'+
+    '<div class="stat"><span>🔥 Streak</span><b>'+p.streak+' day'+(p.streak===1?'':'s')+'</b></div>'+
+    '<div class="stat"><span>Best streak · Freezes</span><b>'+p.best+' · '+'🧊'.repeat(S.streak.freezes||0)+(S.streak.freezes?'':'0')+'</b></div>'+
+    '<div class="stat"><span>Today</span><b>'+(dayQualifies()?'✅ Streak day counted':(Math.min(Object.keys(S.day.seen).length,STREAK_SEGS)+' / '+STREAK_SEGS+' segments'))+'</b></div>'+
+    '<div class="stat"><span>Segments walked this week</span><b>'+p.weekSegs+'</b></div>'+
     '<div class="stat"><span>Total distance</span><b>'+p.miles.toFixed(2)+' mi</b></div>'+
     '<div class="stat"><span>XP</span><b>'+p.xp.toLocaleString()+'</b></div>'+
     '<div class="stat"><span>Campus uncovered</span><b>'+p.pct.toFixed(1)+'%</b></div>'+
@@ -671,6 +764,7 @@ function render(){
     '<p class="note">Progress is saved on this device'+(cloud.user?' and synced to your account':'')+'. Keep the app open and on screen while you walk — browsers pause GPS when the phone is locked.</p>';
 }
 $('tab-zones').addEventListener('click',e=>{
+  const nb=e.target.closest('[data-n]'); if(nb) return goNudge(NUDGES[+nb.dataset.n]);
   const b=e.target.closest('.zone'); if(!b) return;
   const pts=[]; SEGS.forEach(s=>{ if(s.zone===b.dataset.zone){ pts.push(s.a,s.b); } });
   if(pts.length){ follow=false; $('fabFollow').classList.remove('on'); $('panel').classList.remove('open');
@@ -682,7 +776,7 @@ $('tab-stats').addEventListener('click',e=>{
   if(e.target.id==='btnExport') exportData();
 });
 function resetAll(){
-  S=Object.assign({},DEFAULTS,{claimed:{},badges:{},pending:{claims:{},badges:{}},layer:S.layer,fogOn:S.fogOn,started:Date.now()});
+  S=Object.assign(DEF(),{layer:S.layer,fogOn:S.fogOn}); normalize();
   if(cloud.user){ const u=cloud.user.id;
     Promise.all(['claims','user_badges','user_stats'].map(t=>cloud.sb.from(t).delete().eq('user_id',u)))
       .then(r=>{ const e=r.find(x=>x.error); setSync(e?e.error.message:'', !e); }); }
@@ -717,12 +811,90 @@ window.addEventListener('resize',()=>{ map.invalidateSize(); queueFog(); });
 
 
 /* =====================================================================
+   NEAR-MISS NUDGES — the single most useful next thing to do
+   ===================================================================== */
+let NUDGES=[], pingMarker=null;
+const COMPASS=['N','NE','E','SE','S','SW','W','NW'];
+function bearing(a,b){ const p=toXY(a[0],a[1]), q=toXY(b[0],b[1]); return COMPASS[Math.round(((Math.atan2(q[0]-p[0],q[1]-p[1])*180/Math.PI)+360)%360/45)%8]; }
+function fmtD(m){ return m<160 ? Math.max(10,Math.round(m*3.28084/10)*10)+' ft' : (m/1609.344).toFixed(m<1600?2:1)+' mi'; }
+function nearest(filter){
+  const from = pos ? [pos.lat,pos.lng] : [map.getCenter().lat,map.getCenter().lng];
+  const xy=toXY(from[0],from[1]); let best=null, bd=Infinity;
+  for(let i=0;i<SEGS.length;i++){ const s=SEGS[i]; if(!filter(s)) continue; const d=distToSeg(xy,s); if(d<bd){bd=d;best=s;} }
+  return best ? {s:best, d:bd, dir:bearing(from,best.mid), here:!!pos} : null;
+}
+function where(n){ return n ? (n.here ? ' · '+fmtD(n.d)+' '+n.dir : '') : ''; }
+function zoneName(id){ return (ZONES.find(z=>z.id===id)||{name:id}).name; }
+function buildNudges(p){
+  const out=[], t=dkey();
+  const add=(score,text,n,tab)=>out.push({score,text,target:n&&n.s?n.s.mid:null,tab});
+  // streak
+  const sNow=p.streak, todayDone=S.streak.last===t;
+  if(!todayDone){
+    const need=STREAK_SEGS-Math.min(Object.keys(S.day.seen).length,STREAK_SEGS);
+    const late=new Date().getHours()>=15;
+    if(sNow>0) add(late?120:100,'🔥 Keep your '+sNow+'-day streak: claim 1 new segment or walk '+need+' more today',nearest(s=>!S.claimed[s.id]));
+    else add(35,'🔥 Start a streak: claim 1 new segment or walk '+STREAK_SEGS+' today',nearest(s=>!S.claimed[s.id]));
+  }
+  // zones close to complete
+  ZONES.forEach(z=>{ const zz=p.z[z.id]; if(!zz||!zz.n) return; const rem=zz.n-zz.gotN;
+    if(rem>0 && rem<=Math.max(3,Math.ceil(zz.n*0.08))) add(90-rem,'🏁 '+rem+' segment'+(rem>1?'s':'')+' from completing '+z.name,nearest(s=>s.zone===z.id&&!S.claimed[s.id]));
+  });
+  // territory
+  if(typeof cloud!=='undefined' && cloud.territory && cloud.profile && cloud.profile.dorm){
+    const my=cloud.profile.dorm;
+    ZONES.forEach(z=>{
+      const rows=cloud.territory.filter(r=>r.zone===z.id); if(!rows.length) return;
+      const lead=rows[0], mine=rows.find(r=>r.is_my_dorm);
+      const tgt=nearest(s=>s.zone===z.id&&!S.week.visits[s.id]);
+      if(mine && mine.rank>1){ const gap=lead.points-mine.points+1; if(gap<=20) add(88-gap,'⚔️ '+gap+' pts to take '+z.name+' from '+lead.dorm+where(tgt),tgt); }
+      else if(mine && mine.rank===1 && rows[1]){ const gap=mine.points-rows[1].points; if(gap<=5) add(80-gap,'🛡️ Defend '+z.name+': '+rows[1].dorm+' is '+gap+' behind'+where(tgt),tgt); }
+      else if(!mine && rows.length && lead.points<=10) add(55,'🚩 '+z.name+' is up for grabs — '+lead.dorm+' has only '+lead.points+where(tgt),tgt);
+    });
+  }
+  // weekly leaderboard
+  if(typeof cloud!=='undefined' && cloud.weekBoard){
+    const me=cloud.weekBoard.find(r=>r.is_me);
+    if(me && me.rank>1){ const above=cloud.weekBoard.filter(r=>r.rank<me.rank).pop();
+      if(above){ const gap=Number(above.segments)-Number(me.segments)+1; if(gap<=25) add(76-gap,'📈 '+gap+' segment'+(gap>1?'s':'')+' to pass '+above.name+' for #'+above.rank+' this week',nearest(s=>!S.week.visits[s.id])); } }
+  }
+  // badge sets
+  [['stairs','🪜','staircase','stairsA','Stair Master'],['bridge','🌉','bridge','bridgeA','Troll Toll'],['goat','🐐','goat path','goatA','Off-Trail Legend']].forEach(b=>{
+    const tg=p.tag[b[0]], rem=tg[1]-tg[0];
+    if(!S.badges[b[3]] && rem>0 && rem<=3){ const n=nearest(s=>!S.claimed[s.id]&&s.tags.indexOf(b[0])>=0); add(62-rem,b[1]+' '+rem+' '+b[2]+(rem>1?'s':'')+' left for '+b[4]+where(n),n); }
+  });
+  // something special nearby
+  if(pos){
+    const st=nearest(s=>!S.claimed[s.id]&&s.tags.length>0);
+    if(st && st.d<220) add(70-st.d/10,(st.s.tags[0]==='stairs'?'🪜 Unclaimed stairs':st.s.tags[0]==='bridge'?'🌉 Unclaimed bridge':'🐐 Unclaimed goat path')+where(st),st);
+  }
+  // miles
+  [[1,'First Mile'],[5,'Five-Miler'],[13.1,'Half Marathon']].forEach(m=>{ const r=m[0]-p.miles; if(r>0&&r<=0.25) add(50,'🥾 '+r.toFixed(2)+' mi to '+m[1]); });
+  // fallback
+  const n=nearest(s=>!S.claimed[s.id]);
+  if(n) add(10,'🧭 Nearest new path: '+n.s.name+where(n),n);
+  return out.sort((a,b)=>b.score-a.score);
+}
+function goNudge(n){
+  if(!n) return;
+  if(!n.target){ if(n.tab) document.querySelector('.tabs [data-tab='+n.tab+']').click(); return; }
+  follow=false; $('fabFollow').classList.remove('on'); $('panel').classList.remove('open');
+  setTimeout(()=>{ map.invalidateSize(); map.flyTo(n.target, Math.max(map.getZoom(),18), {duration:.8});
+    if(pingMarker) map.removeLayer(pingMarker);
+    pingMarker=L.marker(n.target,{icon:L.divIcon({className:'',html:'<div class="ping"></div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(map);
+    setTimeout(()=>{ if(pingMarker){ map.removeLayer(pingMarker); pingMarker=null; } },6000); },60);
+}
+$('nudge').onclick=()=>goNudge(NUDGES[0]);
+
+/* =====================================================================
    CLOUD — Supabase sign-in, progress sync, leaderboards, hazard reports.
    Turned on by config.js. Raw GPS never leaves the phone: only segment IDs,
    distance total, badges, and hazard pins the student chooses to file.
    ===================================================================== */
 const CFG = window.RR_CONFIG || {};
-const cloud = {sb:null, user:null, syncing:false, lastSync:0, err:'', step:'email', email:'', board:'people', hazards:[]};
+const cloud = {sb:null, user:null, syncing:false, lastSync:0, err:'', step:'email', email:'', board:'week', hazards:[],
+               profile:null, territory:null, weekBoard:null, terrAt:0};
+let DORM_LIST=[];
 try{
   if(CFG.supabaseUrl && CFG.supabaseKey && window.supabase)
     cloud.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey,
@@ -766,7 +938,19 @@ async function flush(){
     }
     const {error}=await cloud.sb.rpc('set_meters',{p_meters:S.meters});
     if(error) throw error;
+    let weekChanged=false;
+    if(S.pending.week){
+      const r=await cloud.sb.rpc('set_week_points',{p_week:S.week.id, p_points:weekPoints()});
+      if(r.error && !/this week or last week/i.test(r.error.message)) throw r.error;
+      S.pending.week=false; weekChanged=true;
+    }
+    if(S.pending.streak && S.streak.last){
+      const r=await cloud.sb.rpc('set_streak',{p_streak:S.streak.count, p_best:S.streak.best, p_last:S.streak.last});
+      if(r.error && !/invalid streak date/i.test(r.error.message)) throw r.error;
+      S.pending.streak=false;
+    }
     cloud.syncing=false; saveSoon(); setSync('',true);
+    if(weekChanged && Date.now()-cloud.terrAt>30000) loadTerritory();
   }catch(e){ cloud.syncing=false; setSync(e.message||String(e)); }
 }
 async function pull(){
@@ -774,7 +958,7 @@ async function pull(){
     const [c,b,st]=await Promise.all([
       cloud.sb.from('claims').select('segment_id,claimed_at').limit(5000),
       cloud.sb.from('user_badges').select('badge_id,unlocked_at'),
-      cloud.sb.from('user_stats').select('meters').maybeSingle()]);
+      cloud.sb.from('user_stats').select('meters,streak,best_streak,streak_last').maybeSingle()]);
     const err=c.error||b.error||st.error; if(err) throw err;
     const srvC={}, srvB={};
     c.data.forEach(r=>{ srvC[r.segment_id]=1; if(!S.claimed[r.segment_id]) S.claimed[r.segment_id]=Date.parse(r.claimed_at)||Date.now(); });
@@ -782,6 +966,11 @@ async function pull(){
     Object.keys(S.claimed).forEach(id=>{ if(!srvC[id]) S.pending.claims[id]=S.claimed[id]; });
     Object.keys(S.badges).forEach(id=>{ if(!srvB[id]) S.pending.badges[id]=S.badges[id]; });
     if(st.data && st.data.meters>S.meters) S.meters=st.data.meters;
+    if(st.data && st.data.streak_last && (!S.streak.last || st.data.streak_last>S.streak.last)){
+      S.streak.count=st.data.streak; S.streak.last=st.data.streak_last; }
+    if(st.data && st.data.best_streak>S.streak.best) S.streak.best=st.data.best_streak;
+    if(S.streak.last && (!st.data || !st.data.streak_last || S.streak.last>st.data.streak_last)) S.pending.streak=true;
+    if(Object.keys(S.week.visits).length) S.pending.week=true;
     saveNow(); drawPaths(); render(); queueFog();
     await flush();
   }catch(e){ setSync(e.message||String(e)); }
@@ -800,13 +989,12 @@ function buildCloudBox(){
     box.innerHTML='<div class="card"><h3>Your account</h3><p>Signed in as '+esc(cloud.user.email)+'</p>'+
       '<div class="sync" id="syncLine"></div>'+
       '<input class="field" id="pfName" maxlength="30" placeholder="Leaderboard name (optional)" autocomplete="nickname">'+
-      '<input class="field" id="pfDorm" maxlength="40" placeholder="Dorm or team (optional)">'+
+      '<select class="field" id="pfDorm">'+dormOptions()+'</select>'+
+      '<input class="field" id="pfDormOther" maxlength="40" placeholder="Type your dorm or team" hidden>'+
       '<div class="row"><button class="btn pri" id="pfSave">Save profile</button><button class="btn" id="cSync">Sync now</button><button class="btn" id="cOut">Sign out</button></div>'+
       '<p class="note">The leaderboard shows only your name, dorm and totals — never your email or where you walk.</p></div>';
     setSync(cloud.err);
-    cloud.sb.from('profiles').select('display_name,dorm').eq('id',cloud.user.id).maybeSingle().then(({data})=>{
-      if(data){ if($('pfName')) $('pfName').value=data.display_name||''; if($('pfDorm')) $('pfDorm').value=data.dorm||''; }
-    });
+    fillProfile();
     return;
   }
   if(cloud.step==='code'){
@@ -825,6 +1013,59 @@ function goSignIn(){
   document.querySelector('.tabs [data-tab=stats]').click();
   setTimeout(()=>{ document.querySelector('.tabbody').scrollTop=0; const f=$('cEmail'); if(f) f.focus(); },320);
 }
+function dormOptions(){
+  const list=[...new Set(DORM_LIST.concat(['Off-campus','Faculty & staff']))];
+  return '<option value="">Dorm or team (optional)</option>'+list.map(d=>'<option>'+esc(d)+'</option>').join('')+'<option value="__other">Other…</option>';
+}
+function fillProfile(){
+  const pr=cloud.profile; if(!pr||!$('pfName')) return;
+  $('pfName').value=pr.display_name||'';
+  const sel=$('pfDorm'), d=pr.dorm||'';
+  if(!d) sel.value='';
+  else if([...sel.options].some(o=>o.value===d)) sel.value=d;
+  else { sel.value='__other'; $('pfDormOther').hidden=false; $('pfDormOther').value=d; }
+}
+async function loadProfile(){
+  const {data}=await cloud.sb.from('profiles').select('display_name,dorm').eq('id',cloud.user.id).maybeSingle();
+  cloud.profile=data||{display_name:null,dorm:null}; fillProfile(); render();
+}
+function weekPoints(){
+  const pts={}; Object.keys(S.week.visits).forEach(id=>{ const sg=SEG_BY_ID[id]; if(sg) pts[sg.zone]=(pts[sg.zone]||0)+1; }); return pts;
+}
+function helpedOwnZone(){
+  if(typeof cloud==='undefined'||!cloud.territory) return false;
+  const wp=weekPoints();
+  return cloud.territory.some(r=>r.is_my_dorm && Number(r.rank)===1 && wp[r.zone]>0);
+}
+function territoryLine(zid){
+  if(typeof cloud==='undefined'||!cloud.user||!cloud.territory) return '';
+  const rows=cloud.territory.filter(r=>r.zone===zid);
+  if(!rows.length) return '<span class="terr">🚩 Unowned this week — first dorm to walk here takes it</span>';
+  const lead=rows[0], mine=rows.find(r=>r.is_my_dorm);
+  let t='👑 '+esc(lead.dorm)+' · '+lead.points+' pts';
+  if(mine && Number(mine.rank)===1) t+=' — your dorm leads'+(rows[1]?' by '+(lead.points-rows[1].points):'');
+  else if(mine) t+=' — yours #'+mine.rank+', '+(lead.points-mine.points)+' behind';
+  return '<span class="terr">'+t+'</span>';
+}
+function territoryToasts(prev){
+  if(!prev||!cloud.profile||!cloud.profile.dorm) return;
+  const own=rows=>{ const o={}; rows.forEach(r=>{ if(Number(r.rank)===1) o[r.zone]=r.dorm; }); return o; };
+  const a=own(prev), b=own(cloud.territory), my=cloud.profile.dorm;
+  Object.keys(b).forEach(z=>{
+    if(b[z]===my && a[z]!==my){ toast('🚩 '+my+' took '+zoneName(z)+'!'); buzz([60,40,60]); }
+    else if(a[z]===my && b[z]!==my){ toast('⚠️ '+b[z]+' took '+zoneName(z)+' from '+my); buzz([200]); }
+  });
+}
+async function loadTerritory(){
+  if(!cloud.user) return;
+  cloud.terrAt=Date.now();
+  const [t,w]=await Promise.all([cloud.sb.rpc('get_territory'), cloud.sb.rpc('get_weekly_leaderboard',{lim:50})]);
+  if(!t.error){ const prev=cloud.territory; cloud.territory=t.data||[]; territoryToasts(prev); }
+  if(!w.error) cloud.weekBoard=w.data||[];
+  if(checkBadges(false)) saveSoon();
+  render();
+}
+setInterval(()=>{ if(cloud.user && document.visibilityState==='visible') loadTerritory(); }, 120000);
 function cMsg(t){ const el=$('cMsg'); if(el) el.textContent=t; }
 function friendly(e){
   const m=(e&&e.message)||String(e);
@@ -833,6 +1074,7 @@ function friendly(e){
   if(/expired|invalid/i.test(m)) return 'That code didn\'t work or has expired. Request a new one.';
   return m;
 }
+$('cloudBox').addEventListener('change',e=>{ if(e.target.id==='pfDorm') $('pfDormOther').hidden=e.target.value!=='__other'; });
 $('cloudBox').addEventListener('click',async e=>{
   const id=e.target.id; if(!cloud.sb) return;
   if(id==='cSend'){
@@ -854,9 +1096,12 @@ $('cloudBox').addEventListener('click',async e=>{
   if(id==='cOut'){ await flush(); await cloud.sb.auth.signOut(); }
   if(id==='cSync'){ cloud.err=''; pull(); }
   if(id==='pfSave'){
-    const name=($('pfName').value||'').trim().slice(0,30)||null, dorm=($('pfDorm').value||'').trim().slice(0,40)||null;
+    const sel=$('pfDorm').value;
+    const name=($('pfName').value||'').trim().slice(0,30)||null;
+    const dorm=(sel==='__other' ? ($('pfDormOther').value||'') : sel).trim().slice(0,40)||null;
     const {error}=await cloud.sb.from('profiles').upsert({id:cloud.user.id, display_name:name, dorm});
-    toast(error?('Couldn\'t save: '+error.message):'Profile saved');
+    if(error) return toast('Couldn\'t save: '+error.message);
+    cloud.profile={display_name:name, dorm}; toast('Profile saved'); loadTerritory();
   }
 });
 
@@ -865,17 +1110,31 @@ async function loadBoard(){
   const el=$('tab-board');
   if(!cloud.sb){ el.innerHTML='<p class="note">Leaderboards turn on once cloud sync is set up.</p>'; return; }
   if(!cloud.user){ el.innerHTML='<div class="card"><h3>Leaderboard</h3><p>Sign in to see how you stack up against other Buffs.</p><div class="row"><button class="btn pri" id="bSignIn">Sign in</button></div></div>'; return; }
-  const seg='<div class="seg"><button data-b="people" class="'+(cloud.board==='people'?'act':'')+'">People</button><button data-b="dorms" class="'+(cloud.board==='dorms'?'act':'')+'">Dorms & teams</button></div>';
+  const B=cloud.board;
+  const seg='<div class="seg">'+[['week','This week'],['all','All time'],['terr','Territory']].map(x=>'<button data-b="'+x[0]+'" class="'+(B===x[0]?'act':'')+'">'+x[1]+'</button>').join('')+'</div>';
   el.innerHTML=seg+'<p class="note">Loading…</p>';
   await flush();
-  const r = cloud.board==='people' ? await cloud.sb.rpc('get_leaderboard',{lim:50}) : await cloud.sb.rpc('get_dorm_leaderboard');
+  if(B==='terr'){
+    await loadTerritory();
+    const my=cloud.profile&&cloud.profile.dorm;
+    const cards=ZONES.map(z=>{
+      const rows=(cloud.territory||[]).filter(r=>r.zone===z.id);
+      const body=rows.length ? rows.slice(0,4).map(r=>'<div class="d'+(Number(r.rank)===1?' lead':'')+(r.is_my_dorm?' mine':'')+'"><span>'+(Number(r.rank)===1?'👑 ':r.rank+'. ')+esc(r.dorm)+'</span><span>'+r.points+' pts</span></div>').join('')
+        : '<div class="d"><span>Unowned — go claim it</span></div>';
+      return '<div class="tz"><h3>'+z.icon+' '+z.name+'</h3>'+body+'</div>';
+    }).join('');
+    el.innerHTML=seg+(my?'':'<div class="card"><p>Pick your dorm on the Live Stats tab so your walking counts for it.</p></div>')+cards+
+      '<p class="note">Each distinct path segment a member walks in a zone this week earns their dorm 1 point. The dorm with the most points owns the zone. Resets every Monday.</p>';
+    return;
+  }
+  const r = B==='week' ? await cloud.sb.rpc('get_weekly_leaderboard',{lim:50}) : await cloud.sb.rpc('get_leaderboard',{lim:50});
   if(r.error){ el.innerHTML=seg+'<p class="note">Couldn\'t load the leaderboard: '+esc(r.error.message)+'</p>'; return; }
-  const rows=r.data||[];
-  const list = !rows.length ? '<p class="note">'+(cloud.board==='people'?'No one has claimed a path yet. Go be first!':'No dorms or teams yet — add yours on the Live Stats tab.')+'</p>'
-    : cloud.board==='people'
-      ? rows.map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+'</b><small>'+esc(x.dorm||'')+'</small></div><div class="v">'+x.segments+' seg<br><small>'+x.miles+' mi</small></div></div>').join('')
-      : rows.map(x=>'<div class="lb"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.dorm)+'</b><small>'+x.members+' member'+(x.members==1?'':'s')+'</small></div><div class="v">'+x.segments+' seg<br><small>'+x.miles+' mi</small></div></div>').join('');
-  el.innerHTML=seg+list+'<p class="note">Ranked by path segments claimed, then miles walked.</p>';
+  const rows=r.data||[]; if(B==='week') cloud.weekBoard=rows;
+  const fire=x=>x.streak>0?' 🔥'+x.streak:'';
+  const list = !rows.length ? '<p class="note">'+(B==='week'?'No one has walked a path this week yet. Go be first!':'No one has claimed a path yet. Go be first!')+'</p>'
+    : rows.map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+fire(x)+'</b><small>'+esc(x.dorm||'')+'</small></div><div class="v">'+x.segments+' seg'+(B==='all'?'<br><small>'+x.miles+' mi</small>':'')+'</div></div>').join('');
+  el.innerHTML=seg+list+'<p class="note">'+(B==='week'?'Distinct path segments walked this week. Resets Monday.':'Ranked by path segments claimed, then miles walked.')+'</p>';
+  render();
 }
 $('tab-board').addEventListener('click',e=>{ if(e.target.id==='bSignIn') return goSignIn(); const b=e.target.closest('[data-b]'); if(b){ cloud.board=b.dataset.b; loadBoard(); } });
 
@@ -913,7 +1172,7 @@ if(cloud.sb){
     const u=session?session.user:null;
     if((u&&u.id)===(cloud.user&&cloud.user.id)) return;
     cloud.user=u; if(!u){ cloud.step='email'; cloud.lastSync=0; cloud.err=''; }
-    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull(); loadHazards(); toast('Signed in — syncing'); } else hazardLayer.clearLayers();
+    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
       if($('tab-board').classList.contains('act')) loadBoard(); },0);
   });
   window.addEventListener('online',()=>flush());
@@ -928,11 +1187,12 @@ render();
 function refreshAll(){ buildSegments(); drawPaths(); render(); queueFog(); }
 function setStatusIfIdle(){ if(watchId===null&&!sim.on) setStatus('', 'GPS off · '+SEGS.length.toLocaleString()+' path segments loaded'); }
 if(!localStorage.getItem(LS_KEY)){
-  idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign({},DEFAULTS,v); normalize(); refreshAll(); } });
+  idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign(DEF(),v); normalize(); refreshAll(); } });
 }
 if(location.protocol.indexOf('http')===0){
   fetch('paths.geojson',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(g=>{
     if(!g||!g.features) return;
+    if(Array.isArray(g.dorms)){ DORM_LIST=g.dorms.filter(d=>typeof d==='string').slice(0,200); if(cloud.user){ buildCloudBox(); } }
     const custom=g.features.filter(f=>f.geometry&&f.geometry.type==='LineString').map((f,i)=>({
       id:(f.properties&&f.properties.id)||('x'+i), zone:ZONES.some(z=>z.id===(f.properties&&f.properties.zone))?f.properties.zone:'campus',
       name:(f.properties&&f.properties.name)||'Path '+(i+1), tags:(f.properties&&f.properties.tags)||[],
@@ -943,7 +1203,8 @@ if(location.protocol.indexOf('http')===0){
 }
 
 // small hook for testing from the console
-window.RR={onFix, state:()=>S, progress, segs:()=>SEGS, setSim, cloud:()=>cloud};
+window.RR={onFix, state:()=>S, progress, segs:()=>SEGS, setSim, cloud:()=>cloud, nudges:()=>NUDGES,
+  setDayOffset:n=>{DAY_OFFSET=n; normalize(); render();}};
 })();
 </script>
 </body>
