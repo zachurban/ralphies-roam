@@ -828,6 +828,8 @@ try{ const m=sessionStorage.getItem('rr-erased'); if(m){ sessionStorage.removeIt
    distance total, badges, and hazard pins the student chooses to file.
    ===================================================================== */
 const CFG = window.RR_CONFIG || {};
+// Find the Herd links on Home and Community. Off until the demo route is walked; herd.html still opens by direct link.
+const HERD_PUBLIC = CFG.findTheHerdLinks === true;
 const cloud = {sb:null, user:null, syncing:false, lastSync:0, err:'', step:'email', email:'', board:'week', hazards:[],
                profile:null, territory:null, weekBoard:null, terrAt:0};
 let DORM_LIST=[];
@@ -1501,7 +1503,7 @@ function renderHome(){
   const t=teamSummary(), ses=S.sessions||[];
   let b='';
   if(t) b+='<div class="label">'+esc(t.name)+' this week <button class="more" data-go="community">Community</button></div>'+teamLineHTML(t);
-  b+='<div class="label">Find the Herd <span class="pill gold">New</span></div><a class="block" href="herd.html" style="display:block;text-decoration:none;color:inherit"><b>A campus scavenger hunt for you and your friends</b><p class="small muted" style="margin:4px 0 0">Five outdoor checkpoints, five puzzles, about 20–40 minutes. Go solo or bring your herd. Your location never leaves your phone.</p></a>';
+  if(HERD_PUBLIC) b+='<div class="label">Find the Herd <span class="pill gold">New</span></div><a class="block" href="herd.html" style="display:block;text-decoration:none;color:inherit"><b>A campus scavenger hunt for you and your friends</b><p class="small muted" style="margin:4px 0 0">Five outdoor checkpoints, five puzzles, about 20–40 minutes. Go solo or bring your herd. Your location never leaves your phone.</p></a>';
   b+='<div class="label">Recent walks'+(ses.length>2?' <button class="more" data-go="progress">All walks</button>':'')+'</div>'+
      (ses.length?ses.slice(0,2).map(walkRowHTML).join(''):'<p class="empty">Your walks will show up here after you finish one.</p>');
   $('homeBottom').innerHTML=b;
@@ -1606,7 +1608,7 @@ function editGoals(){
 /* ---------- Community: your team first ---------- */
 let commToken=0;
 async function renderCommunity(){
-  const el=$('v-community'), tk=++commToken, head='<h1 class="title">Community</h1><div class="list" style="margin:-4px 0 14px"><a class="row" href="herd.html" style="text-decoration:none;color:inherit"><span class="grow"><b>Find the Herd</b><small>Scavenger hunt · weekly herd and dorm standings</small></span><span class="chev" aria-hidden="true">›</span></a></div>';
+  const el=$('v-community'), tk=++commToken, head='<h1 class="title">Community</h1>'+(HERD_PUBLIC?'<div class="list" style="margin:-4px 0 14px"><a class="row" href="herd.html" style="text-decoration:none;color:inherit"><span class="grow"><b>Find the Herd</b><small>Scavenger hunt · weekly herd and dorm standings</small></span><span class="chev" aria-hidden="true">›</span></a></div>':'');
   if(!cloud.sb){ el.innerHTML=head+'<p class="empty">Team features need the online service, which isn’t set up in this copy of BuffPrints.</p>'; return; }
   if(!cloud.user){ el.innerHTML=head+'<div class="block"><b>Walk with your dorm or team</b><p class="small muted" style="margin:4px 0 0">Each path section you walk this week adds a point for your team. The team with the most points in a zone leads it until Monday.</p><div class="btns"><button class="btn pri" data-act="signin">Sign in to join</button></div></div>'; return; }
   if(!navigator.onLine){ el.innerHTML=head+'<p class="empty">You’re offline. Team standings will load when you reconnect. Your walks still count.</p>'; return; }

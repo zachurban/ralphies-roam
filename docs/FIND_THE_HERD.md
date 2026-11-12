@@ -85,7 +85,8 @@ Every table has RLS on with no policies and no grants; the API can't read or wri
 2. **Realtime:** in Supabase → Realtime → Settings, **Allow public access** must be on (the default). The relay uses public channels named `herd-<32 hex>`; the payloads are ciphertext.
 3. **Admins:** in the SQL editor, `insert into public.admin_allowlist (email) values ('you@colorado.edu');` (lowercase). There is no sign-up path. The account's address must be confirmed and match the allowlist.
 4. **Sign-in:** the same 6-digit email code as the main app (README → "Home-screen sign-in").
-5. After changing app files, bump `VERSION` in `sw.js` and the `?v=` numbers.
+5. **Soft launch:** the Home card and Community link are hidden until you set `findTheHerdLinks: true` in `config.js`. Until then the hunt opens only from a direct link to `herd.html` (invite links work as normal). Walk the route, fix pins and answers in the admin view, then flip the switch.
+6. After changing app files, bump `VERSION` in `sw.js` and the `?v=` numbers.
 
 ## Admin view (`herd-admin.html`)
 
