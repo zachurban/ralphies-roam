@@ -105,7 +105,6 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .fab{width:46px;height:46px;border-radius:50%;background:rgba(21,24,33,.94);border:1px solid var(--line);
   font-size:20px;display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.4)}
 .fab.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(207,184,124,.35)}
-.leaflet-top.leaflet-right{top:env(safe-area-inset-top)}
 .leaflet-control-layers{border-radius:10px!important}
 .leaflet-container{font:inherit}
 
@@ -378,7 +377,7 @@ function buildSegments(){
 /* =====================================================================
    STATE + PERSISTENCE (localStorage = fast snapshot, IndexedDB = mirror + GPS track log)
    ===================================================================== */
-function DEF(){ return {claimed:{}, meters:0, badges:{}, layer:'Light', fogOn:false, started:Date.now(),
+function DEF(){ return {claimed:{}, meters:0, badges:{}, fogOn:false, started:Date.now(),
   pending:{claims:{},badges:{},week:false,streak:false},
   streak:{count:0,best:0,last:null,freezes:0}, week:{id:null,visits:{}}, day:{id:null,seen:{},newSegs:0}}; }
 function normalize(){
@@ -488,15 +487,10 @@ loadLS(); normalize();
 buildSegments();
 const map = L.map('map',{zoomControl:false, attributionControl:true, zoomSnap:0.5}).setView(CAMPUS, ZOOM);
 L.control.zoom({position:'bottomleft'}).addTo(map);
-const LAYERS = {
-  'Light': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:20, subdomains:'abcd', attribution:'&copy; OpenStreetMap, &copy; CARTO'}),
-  'Street': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'&copy; OpenStreetMap contributors'}),
-  'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Imagery &copy; Esri'}),
-  'Dark Mode': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20, subdomains:'abcd', attribution:'&copy; OpenStreetMap, &copy; CARTO'})
-};
-(LAYERS[S.layer]||LAYERS.Street).addTo(map);
-L.control.layers(LAYERS,null,{position:'topright', collapsed:true}).addTo(map);
-map.on('baselayerchange',e=>{ S.layer=e.name; saveSoon(); });
+// Satellite imagery only. Walkway data comes from OpenStreetMap, so it keeps its credit.
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:19, maxNativeZoom:19, attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics'}).addTo(map);
+map.attributionControl.addAttribution('Walkways &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
 
 // pane order: tiles(200) < fog(450) < paths(460) < markers(600)
 map.createPane('fog').style.zIndex=450;   map.getPane('fog').style.pointerEvents='none';
@@ -770,7 +764,7 @@ $('tab-stats').addEventListener('click',e=>{
   if(e.target.id==='btnExport') exportData();
 });
 function resetAll(){
-  S=Object.assign(DEF(),{layer:S.layer,fogOn:S.fogOn}); normalize();
+  S=Object.assign(DEF(),{fogOn:S.fogOn}); normalize();
   if(cloud.user){ const u=cloud.user.id;
     Promise.all(['claims','user_badges','user_stats','weekly_zone_points'].map(t=>cloud.sb.from(t).delete().eq('user_id',u)))
       .then(r=>{ const e=r.find(x=>x.error); setSync(e?e.error.message:'', !e); loadTerritory(); }); }

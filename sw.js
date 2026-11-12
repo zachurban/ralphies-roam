@@ -1,5 +1,5 @@
 /* Ralphie's Roam service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v12-student';
+const VERSION = 'rr-v13';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
@@ -9,7 +9,7 @@ const SHELL_FILES = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
-const TILE_HOSTS = ['tile.openstreetmap.org', 'arcgisonline.com', 'basemaps.cartocdn.com'];
+const TILE_HOSTS = ['arcgisonline.com'];
 const MAX_TILES = 800;
 
 self.addEventListener('install', e => {
