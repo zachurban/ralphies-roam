@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ralphie's Roam</title>
 <meta name="description" content="Explore the CU Boulder campus on foot and clear the fog of war.">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -288,14 +288,14 @@ function weekKey(k){ k=k||dkey(); const a=k.split('-').map(Number); return addDa
    tags: "stairs" | "bridge" | "goat"
    ===================================================================== */
 const ZONES = [
-  {id:'norlin',      name:'Norlin Quad',          icon:'🏛️', color:'#CFB87C'},
-  {id:'varsity',     name:'Varsity Lake & Old Main', icon:'🦆', color:'#7cc4cf'},
-  {id:'farrand',     name:'Farrand Field',        icon:'🥏', color:'#8fd18a'},
-  {id:'engineering', name:'Engineering Center',   icon:'⚙️', color:'#f0a35e'},
-  {id:'kittredge',   name:'Kittredge Ponds',      icon:'🐟', color:'#b99cf2'},
-  {id:'creek',       name:'Boulder Creek Path',   icon:'🌊', color:'#5eb1f0'},
-  {id:'williams',    name:'Williams Village',     icon:'🏘️', color:'#e88fb4'},
-  {id:'campus',      name:'Rest of Campus',       icon:'🦬', color:'#9aa3b5'}
+  {id:'norlin',      name:'Norlin Quad',          icon:'🏛️', color:'#8D7334'},
+  {id:'varsity',     name:'Varsity Lake & Old Main', icon:'🦆', color:'#0A3758'},
+  {id:'farrand',     name:'Farrand Field',        icon:'🥏', color:'#565A5C'},
+  {id:'engineering', name:'Engineering Center',   icon:'⚙️', color:'#000000'},
+  {id:'kittredge',   name:'Kittredge Ponds',      icon:'🐟', color:'#8D7334'},
+  {id:'creek',       name:'Boulder Creek Path',   icon:'🌊', color:'#096FAE'},
+  {id:'williams',    name:'Williams Village',     icon:'🏘️', color:'#0A3758'},
+  {id:'campus',      name:'Rest of Campus',       icon:'🦬', color:'#565A5C'}
 ];
 let PATHS = [
   // --- Norlin Quad ---
@@ -489,8 +489,9 @@ const map = L.map('map',{zoomControl:false, attributionControl:true, zoomSnap:0.
 L.control.zoom({position:'bottomleft'}).addTo(map);
 // Satellite imagery only. Walkway data comes from OpenStreetMap, so it keeps its credit.
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:19, maxNativeZoom:19, attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics'}).addTo(map);
-map.attributionControl.addAttribution('Walkways &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
+  {maxZoom:19, maxNativeZoom:19, attribution:'Imagery &copy; Esri, Maxar'}).addTo(map);
+map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+map.attributionControl.addAttribution('Paths &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>');
 
 // pane order: tiles(200) < fog(450) < paths(460) < markers(600)
 map.createPane('fog').style.zIndex=450;   map.getPane('fog').style.pointerEvents='none';
@@ -498,7 +499,7 @@ map.createPane('paths').style.zIndex=460; map.getPane('paths').style.pointerEven
 
 /* ---- path rendering ---- */
 const pathRenderer = L.canvas({pane:'paths', padding:0.3});
-const ST_OPEN = {color:'#83907c', weight:2, opacity:.5, dashArray:'3 6', interactive:false, renderer:pathRenderer};
+const ST_OPEN = {color:'#F3F0E9', weight:2, opacity:.75, dashArray:'3 6', interactive:false, renderer:pathRenderer};
 const ST_DONE = {color:'#CFB87C', weight:5, opacity:.95, dashArray:null, interactive:false, renderer:pathRenderer, lineCap:'round'};
 let pathLayer = L.layerGroup().addTo(map), segLines={};
 function drawPaths(){
@@ -524,7 +525,7 @@ function drawFog(){
   ctx.globalCompositeOperation='source-over';
   ctx.clearRect(0,0,size.x,size.y);
   if(!S.fogOn) return;
-  ctx.fillStyle='rgba(18,22,34,'+FOG_ALPHA+')';
+  ctx.fillStyle='rgba(0,0,0,'+FOG_ALPHA+')';
   ctx.fillRect(0,0,size.x,size.y);
   ctx.globalCompositeOperation='destination-out';
   const mpp=156543.03392*Math.cos(map.getCenter().lat*Math.PI/180)/Math.pow(2,map.getZoom());
@@ -549,7 +550,7 @@ function showMe(lat,lng,acc){
   const ll=[lat,lng];
   if(!meMarker){
     meMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me"><div class="pulse"></div><div class="core"></div></div>',iconSize:[22,22],iconAnchor:[11,11]}),interactive:false,zIndexOffset:1000}).addTo(map);
-    accCircle=L.circle(ll,{radius:acc,color:'#3b9dff',weight:1,opacity:.5,fillOpacity:.08,interactive:false}).addTo(map);
+    accCircle=L.circle(ll,{radius:acc,color:'#096FAE',weight:1,opacity:.5,fillOpacity:.08,interactive:false}).addTo(map);
   }
   meMarker.setLatLng(ll); accCircle.setLatLng(ll).setRadius(Math.min(acc,300));
   if(follow) map.panTo(ll,{animate:true,duration:.5});
@@ -937,7 +938,7 @@ function openPath(seg){
   const segs=SEGS.filter(s=>s.pid===p.id), got=segs.filter(s=>S.claimed[s.id]).length;
   const len=segs.reduce((a,s)=>a+s.len,0), n=NAMES[p.id];
   if(pathHL) map.removeLayer(pathHL);
-  pathHL=L.polyline(p.pts,{color:'#3b9dff',weight:8,opacity:.85,interactive:false,renderer:pathRenderer}).addTo(map);
+  pathHL=L.polyline(p.pts,{color:'#096FAE',weight:8,opacity:.85,interactive:false,renderer:pathRenderer}).addTo(map);
   const clearHL=()=>{ if(pathHL){ map.removeLayer(pathHL); pathHL=null; } };
   const title = n ? n.name : (p.official ? p.name : 'Unnamed '+p.name.toLowerCase());
   const tagTxt = p.tags&&p.tags.length ? ' · '+p.tags.map(t=>t==='stairs'?'🪜 stairs':t==='bridge'?'🌉 bridge':'🐐 goat path').join(', ') : '';
