@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Find the Herd · BuffPrints</title>
+<meta name="description" content="Find the Herd — a campus scavenger hunt for you and your friends, inside BuffPrints.">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="app.css?v=24">
+<link rel="stylesheet" href="herd.css?v=24">
+</head>
+<body>
+<header class="htop">
+  <div class="wordmark"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#CFB87C" d="M10.6 4.2C9.2 2.6 6.4 3 5.2 5.4 3.8 8.2 3.6 12.4 4.6 15.8c.8 2.7 2.6 4.6 4.6 4.5 1.7-.1 2.4-1.7 2.3-3.6l-.4-6.8c-.1-2.3.6-4.2-.5-5.7Z"/><path fill="#CFB87C" d="M13.4 4.2c1.4-1.6 4.2-1.2 5.4 1.2 1.4 2.8 1.6 7 .6 10.4-.8 2.7-2.6 4.6-4.6 4.5-1.7-.1-2.4-1.7-2.3-3.6l.4-6.8c.1-2.3-.6-4.2.5-5.7Z"/></svg></span><span>Find the Herd</span></div>
+  <a class="back" href="./">BuffPrints</a>
+</header>
+<main id="hv" aria-live="off"><p class="empty">Loading…</p></main>
+<div id="toasts" role="status" aria-live="polite"></div>
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="box" tabindex="-1"><h2 id="mTitle"></h2><div id="mBody"></div><div id="mBtns"></div></div></div>
+<noscript><p style="padding:16px">Find the Herd needs JavaScript.</p></noscript>
+
+<script src="config.js"></script>
+<script src="herd-core.js?v=24"></script>
+<script src="herd-editions.js?v=24"></script>
+<script src="vendor/qrcode.min.js?v=24"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="herd-app.js?v=24"></script>
+</body>
+</html>

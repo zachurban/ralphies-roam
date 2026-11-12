@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=23">
+<link rel="stylesheet" href="app.css?v=24">
 </head>
 <body data-view="home">
 <div id="app">
@@ -58,9 +58,9 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="student-core.js?v=23"></script>
-<script src="username-core.js?v=23"></script>
-<script src="schedule-core.js?v=23"></script>
+<script src="student-core.js?v=24"></script>
+<script src="username-core.js?v=24"></script>
+<script src="schedule-core.js?v=24"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -745,7 +745,14 @@ function privacyHTML(){
   '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).</li>'+
   '<li>Improvement requests you save on the Safety page, and the follow-up notes you add.</li>'+
   '<li>An unfinished walk, so you can resume or finish it after the app closes.</li>'+
-  '<li><b>Your class schedule</b>, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.</li></ul>'+
+  '<li><b>Your class schedule</b>, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.</li>'+
+  '<li><b>Find the Herd:</b> your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can’t be read without the herd’s invite key. When you tap Check in, your phone compares its own GPS with the checkpoint and keeps only “inside: yes” — the coordinates are not saved, even here.</li></ul>'+
+  '<h4>Find the Herd</h4><ul>'+
+  '<li><b>Your location never leaves your phone.</b> The check-in is worked out on the phone. The most that is ever sent is “I’m inside this checkpoint: yes” — never coordinates, accuracy or a route.</li>'+
+  '<li><b>Your herd syncs phone to phone.</b> Nicknames, avatars, progress, clue pieces, hints and answers are encrypted on your phone with a key that exists only in your invite link (the part after #, which browsers never send to servers). Our relay passes along scrambled messages it can’t read and doesn’t keep them.</li>'+
+  '<li><b>Friends Mode and Demo Practice</b> save nothing about you or your herd on our servers. No sign-in. (For routes that aren’t stored in the app, an answer you type is sent to be checked and is not kept.)</li>'+
+  '<li><b>Competition Mode</b> (signed in) saves to your account: which checkpoints you completed and when, each marked “inside: yes”, and whether your email was a verified colorado.edu address (yes or no). For your team: its name and avatar, the route, hints used, puzzles solved and score. Finishing all five earns a demo reward token. “Demo reward — not redeemable. No purchase benefit is available.”</li>'+
+  '<li><b>Totals, not people.</b> We count how many times a route is viewed, started, each checkpoint completed, hints used and finishes. These are plain counters with no account, device, or time attached. There is no per-person activity log.</li></ul>'+
   '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
   '<li>Your email address, used only to sign you in.</li>'+
   '<li>Your public nickname, your dorm or team, and when you last changed your nickname. A nickname is generated from campus words or typed by you — never from your email, name or schedule.</li>'+
@@ -755,18 +762,21 @@ function privacyHTML(){
   '<li>Anything you choose to post: hazard pins (location, category, note), your “Still there” / “Fixed” votes, and names you give paths.</li></ul>'+
   '<h4>Who can see what</h4><ul>'+
   '<li><b>Anyone, even signed out:</b> path names and the nickname of the student who named them.</li>'+
+  '<li><b>Anyone, even signed out:</b> Find the Herd weekly standings, which show team names, team avatars, dorm or team names and scores only — never who is on a team, and never times or places.</li>'+
+  '<li><b>Your herd:</b> the nickname, avatar and checkpoint progress you share in Find the Herd, for as long as you are in that herd.</li>'+
   '<li><b>Signed-in students:</b> leaderboards (nickname, dorm or team, totals, streak) and hazard pins. Pins never show who reported or voted. Your nickname is public, but it isn’t a promise of complete anonymity: your team, the paths you name and when you’re active can hint at who you are.</li>'+
   '<li><b>BuffPrints moderators</b> see nickname reports, review requests, and a private log of nickname changes, so they can handle abuse. Reporters are never shown to the person reported, and rejected names and nickname histories are never shown to other students.</li>'+
   '<li><b>No one else</b> sees your email, the paths you have claimed, or your location.</li>'+
   '<li>We do not sell or share your data, show ads, or use analytics or tracking tools.</li></ul>'+
   '<h4>Services that help run BuffPrints</h4>'+
-  '<p>Supabase stores account data. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.</p>'+
+  '<p>Supabase stores account data and relays Find the Herd’s encrypted messages between teammates’ phones. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.</p>'+
   '<h4>How long it is kept</h4>'+
   '<p>Until you delete it. Hazard pins stop showing after 60 days unless someone confirms they are still there.</p>'+
   '<h4>Your choices</h4><ul>'+
   '<li><b>Export</b> everything stored on this device, including your route log (Progress → Export my data).</li>'+
   '<li><b>Reset progress</b> clears your progress here and in your account but keeps your account.</li>'+
-  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes and path names — and erases this device. This cannot be undone.</li>'+
+  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes, path names, and every Find the Herd check-in, team membership and reward token — and erases this device. This cannot be undone.</li>'+
+  '<li><b>Leave a herd</b> (Find the Herd → Leave herd) to remove it from this phone.</li>'+
   '<li><b>Location:</b> stop recording at any time, or turn off location for this site in your phone’s settings.</li></ul>'+
   (contact?'<p>Questions or requests: <a href="mailto:'+esc(contact)+'">'+esc(contact)+'</a></p>':'')+
   '</div>';
@@ -784,7 +794,7 @@ function confirmEraseDevice(){
 }
 function confirmDeleteAccount(){
   modal('Delete everything?',
-    '<p>This permanently deletes your BuffPrints account and all of its data: your profile, progress, streaks, badges, dorm points, hazard pins, votes and the names you gave paths. It also erases this device. This cannot be undone.</p>'+
+    '<p>This permanently deletes your BuffPrints account and all of its data: your profile, progress, streaks, badges, dorm points, hazard pins, votes, the names you gave paths, and your Find the Herd check-ins, team memberships and reward tokens. It also erases this device. This cannot be undone.</p>'+
     '<p>Type <b>DELETE</b> to confirm.</p><label class="f" for="delConfirm">Type DELETE</label><input class="field" id="delConfirm" autocomplete="off" autocapitalize="characters" placeholder="DELETE">',
     [['Delete my account','danger',deleteAccount,'delGo'],['Cancel','',()=>{}]]);
   const inp=$('delConfirm'), go=$('delGo'); go.disabled=true;
@@ -800,7 +810,8 @@ async function deleteAccount(){
 async function eraseDevice(msg){
   try{ if(watchId!==null) stopGPS(); }catch(e){}
   try{ if(cloud.sb) await cloud.sb.auth.signOut(); }catch(e){}
-  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k==='rr-names'||k.indexOf('sb-')===0) localStorage.removeItem(k); }); }catch(e){}
+  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0) localStorage.removeItem(k); }); }catch(e){}
+  await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('bp-herd'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });   // Find the Herd keys
   try{ sessionStorage.clear(); }catch(e){}
   try{ if(db) db.close(); }catch(e){}
   await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('ralphies-roam'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });
@@ -1490,6 +1501,7 @@ function renderHome(){
   const t=teamSummary(), ses=S.sessions||[];
   let b='';
   if(t) b+='<div class="label">'+esc(t.name)+' this week <button class="more" data-go="community">Community</button></div>'+teamLineHTML(t);
+  b+='<div class="label">Find the Herd <span class="pill gold">New</span></div><a class="block" href="herd.html" style="display:block;text-decoration:none;color:inherit"><b>A campus scavenger hunt for you and your friends</b><p class="small muted" style="margin:4px 0 0">Five outdoor checkpoints, five puzzles, about 20–40 minutes. Go solo or bring your herd. Your location never leaves your phone.</p></a>';
   b+='<div class="label">Recent walks'+(ses.length>2?' <button class="more" data-go="progress">All walks</button>':'')+'</div>'+
      (ses.length?ses.slice(0,2).map(walkRowHTML).join(''):'<p class="empty">Your walks will show up here after you finish one.</p>');
   $('homeBottom').innerHTML=b;
@@ -1594,7 +1606,7 @@ function editGoals(){
 /* ---------- Community: your team first ---------- */
 let commToken=0;
 async function renderCommunity(){
-  const el=$('v-community'), tk=++commToken, head='<h1 class="title">Community</h1>';
+  const el=$('v-community'), tk=++commToken, head='<h1 class="title">Community</h1><div class="list" style="margin:-4px 0 14px"><a class="row" href="herd.html" style="text-decoration:none;color:inherit"><span class="grow"><b>Find the Herd</b><small>Scavenger hunt · weekly herd and dorm standings</small></span><span class="chev" aria-hidden="true">›</span></a></div>';
   if(!cloud.sb){ el.innerHTML=head+'<p class="empty">Team features need the online service, which isn’t set up in this copy of BuffPrints.</p>'; return; }
   if(!cloud.user){ el.innerHTML=head+'<div class="block"><b>Walk with your dorm or team</b><p class="small muted" style="margin:4px 0 0">Each path section you walk this week adds a point for your team. The team with the most points in a zone leads it until Monday.</p><div class="btns"><button class="btn pri" data-act="signin">Sign in to join</button></div></div>'; return; }
   if(!navigator.onLine){ el.innerHTML=head+'<p class="empty">You’re offline. Team standings will load when you reconnect. Your walks still count.</p>'; return; }

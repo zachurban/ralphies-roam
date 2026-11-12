@@ -1,9 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v23';
+const VERSION = 'rr-v24';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=23', 'student-core.js?v=23', 'username-core.js?v=23', 'schedule-core.js?v=23', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=24', 'student-core.js?v=24', 'username-core.js?v=24', 'schedule-core.js?v=24', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
+  // Find the Herd
+  'herd.html', 'herd.css?v=24', 'herd-core.js?v=24', 'herd-editions.js?v=24', 'herd-app.js?v=24', 'vendor/qrcode.min.js?v=24', 'vendor/jsqr.min.js?v=24',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -68,10 +70,13 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // The moderation page is never cached (and must not replace the cached app page)
-  if (url.origin === location.origin && url.pathname.endsWith('/admin.html')) return;
+  // The admin pages are never cached (and must not replace the cached app page)
+  if (url.origin === location.origin && (url.pathname.endsWith('/admin.html') || url.pathname.endsWith('/herd-admin.html'))) return;
   if (req.mode === 'navigate' || isConfig) {
-    const key = isConfig ? 'config.js' : 'index.html';
+    // Find the Herd is its own page. It is stored under a fixed name, so an invite link's
+    // #key (which never leaves the phone anyway) can't end up in the cache either.
+    const isHerd = url.origin === location.origin && url.pathname.endsWith('/herd.html');
+    const key = isConfig ? 'config.js' : isHerd ? 'herd.html' : 'index.html';
     e.respondWith(
       fetch(req).then(res => { const copy = res.clone(); if (res.ok) caches.open(SHELL).then(c => c.put(key, copy)); return res; })
         .catch(() => caches.open(SHELL).then(c => c.match(key)))
