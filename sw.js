@@ -1,5 +1,5 @@
-/* Ralphie's Roam service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v14';
+/* BuffTracks service worker — app shell offline + map tile cache */
+const VERSION = 'rr-v15';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [

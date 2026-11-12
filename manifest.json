@@ -1,6 +1,6 @@
 {
-  "name": "Ralphie's Roam",
-  "short_name": "Ralphie's Roam",
+  "name": "BuffTracks",
+  "short_name": "BuffTracks",
   "description": "Explore the CU Boulder campus on foot and clear the fog of war.",
   "start_url": "./",
   "scope": "./",

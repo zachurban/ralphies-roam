@@ -7,7 +7,7 @@ const api={
   },
   goal(value){return [25,50,100,200].includes(Number(value))?Number(value):50;},
   draft({category,location,observation,request,date}){
-    return 'Campus maintenance / accessibility concern\n\nLocation: '+location.trim()+'\nCategory: '+category+'\nObserved: '+date+'\n\nWhat I observed:\n'+observation.trim()+'\n\nRequested action:\n'+request.trim()+'\n\nPlease confirm the responsible office, provide a reference number, and advise on next steps.\n\nPrepared by a student using Ralphie\'s Roam. This draft has not been submitted. No official verification is implied.';
+    return 'Campus maintenance / accessibility concern\n\nLocation: '+location.trim()+'\nCategory: '+category+'\nObserved: '+date+'\n\nWhat I observed:\n'+observation.trim()+'\n\nRequested action:\n'+request.trim()+'\n\nPlease confirm the responsible office, provide a reference number, and advise on next steps.\n\nPrepared by a student using BuffTracks. This draft has not been submitted. No official verification is implied.';
   }
 };
 if(typeof module!=='undefined'&&module.exports) module.exports=api;

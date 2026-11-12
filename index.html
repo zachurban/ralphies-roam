@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ralphie's Roam</title>
+<title>BuffTracks</title>
 <meta name="description" content="Explore the CU Boulder campus on foot and clear the fog of war.">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ralphie's Roam">
+<meta name="apple-mobile-web-app-title" content="BuffTracks">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -211,11 +211,11 @@ textarea.field{min-height:70px;resize:vertical}
   <aside id="panel">
     <button id="handle" aria-label="Expand panel"></button>
     <div class="brand">
-      <div class="logo">R</div>
-      <h1>Ralphie's Roam<small>CU Boulder · campus explorer</small></h1><button class="profile-shortcut" data-open="stats" aria-label="Profile and progress">You</button>
+      <div class="logo">B</div>
+      <h1>BuffTracks<small>CU Boulder · campus explorer</small></h1><button class="profile-shortcut" data-open="stats" aria-label="Profile and progress">You</button>
     </div>
     <div class="peek">
-      <button id="trackBtn"><span class="dot"></span><span id="trackLbl">Record walk</span></button><p class="tracking-note">Keep Roam open while walking. GPS stays on this device.</p>
+      <button id="trackBtn"><span class="dot"></span><span id="trackLbl">Record walk</span></button><p class="tracking-note">Keep BuffTracks open while walking. GPS stays on this device.</p>
       <div class="mini">
         <div><b id="mMiles">0.00</b><span>miles</span></div>
         <div><b id="mPct">0%</b><span>uncovered</span></div>
@@ -231,7 +231,7 @@ textarea.field{min-height:70px;resize:vertical}
       <section id="tab-stats"><div id="statsBody"></div><div id="cloudBox"></div></section>
       <section id="tab-board"></section>
 <section id="tab-safety"><p class="eyebrow">Look out for your campus</p><h2>Safer steps.<br>Stronger voices.</h2><p class="intro">Flag a problem. Find support. Ask for change.</p>
-<div class="card safety-callout"><h3>Need help right now?</h3><p>In an emergency, call <a href="tel:911">911</a>. Roam is not monitored by CU or emergency responders.</p><a class="resource" href="https://www.colorado.edu/publicsafety/resources" target="_blank" rel="noopener"><span>CU Boulder Safe<small>Official walk monitoring, alerts & support</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/umc/cunightride" target="_blank" rel="noopener"><span>CU NightRide<small>Evening rides · check current availability</small></span><span>↗</span></a></div>
+<div class="card safety-callout"><h3>Need help right now?</h3><p>In an emergency, call <a href="tel:911">911</a>. BuffTracks is not monitored by CU or emergency responders.</p><a class="resource" href="https://www.colorado.edu/publicsafety/resources" target="_blank" rel="noopener"><span>CU Boulder Safe<small>Official walk monitoring, alerts & support</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/umc/cunightride" target="_blank" rel="noopener"><span>CU NightRide<small>Evening rides · check current availability</small></span><span>↗</span></a></div>
 <div class="card"><h3>Make a useful report</h3><p>A dark walkway, icy steps, or an access barrier? Help others understand the condition.</p><button class="btn pri" id="reportHazardBtn">Add a community pin</button><p class="note">Community pins are not official reports and are not automatically sent to CU.</p><a class="resource" href="https://www.colorado.edu/fm/" target="_blank" rel="noopener"><span>Report maintenance to CU<small>Lighting, sidewalks & campus facilities</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/police/services/report-incident" target="_blank" rel="noopener"><span>Official incident reporting<small>Including pedestrian / crossing concerns</small></span><span>↗</span></a></div>
 <div class="card"><p class="eyebrow">Student advocacy</p><h3>Ask for a fix, not just a pin.</h3><p>Prepare a clear request with a location, observation, and proposed improvement.</p><button class="btn" id="advocateBtn">Create an advocacy draft</button></div>
 <div class="goal-head"><h3 class="section-label">Community reports</h3><button class="text-btn" id="refreshHazards">Refresh</button></div><div id="hazardFeed" class="hazard-list"></div>
@@ -269,7 +269,7 @@ const REVEAL_M  = 34;   // fog hole radius per claimed piece (meters)
 const FOG_ALPHA = 0.22; // fog darkness, 0 (none) to 1 (solid)
 const ACC_MAX_M = 35;   // ignore GPS fixes with worse accuracy than this
 const MAX_SPEED = 8;    // m/s — anything faster is a GPS jump (or a bus)
-const LS_KEY = 'ralphies-roam-v1';
+const LS_KEY = 'ralphies-roam-v1';   // storage keys keep the original name so nobody loses progress
 const STREAK_SEGS = 10;  // a day counts toward a streak with 1 new claim OR this many distinct segments walked
 const TZ = 'America/Denver';
 function dkey(){
@@ -774,12 +774,12 @@ function resetAll(){
 function exportData(){
   idb('track','readonly',st=>st.getAll()).then(track=>{
     track=track||[];
-    const out={app:"Ralphie's Roam", exported:new Date().toISOString(), state:S,
+    const out={app:"BuffTracks", exported:new Date().toISOString(), state:S,
       track:{type:'Feature',properties:{points:track.length},geometry:{type:'LineString',coordinates:track.map(t=>[t.lng,t.lat])}},
       trackPoints:track};
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,1)],{type:'application/json'}));
-    a.download='ralphies-roam-'+new Date().toISOString().slice(0,10)+'.json';
+    a.download='bufftracks-'+new Date().toISOString().slice(0,10)+'.json';
     document.body.appendChild(a); a.click(); a.remove(); toast('Exported '+track.length+' GPS points');
   });
 }
@@ -1328,7 +1328,7 @@ function renderToday(p){
     '<div class="card"><div class="goal-head"><h3>Your weekly goal</h3><button class="text-btn" id="editGoal">Edit goal</button></div><div class="goal-number">'+visits+' <small>/ '+goal+' segments</small></div><progress value="'+Math.min(visits,goal)+'" max="'+goal+'" aria-label="Weekly segment goal"></progress><div class="goal-foot"><span>'+(visits>=goal?'Goal reached. Enjoy your next walk.':(goal-visits)+' to go · repeat paths count once')+'</span></div><p class="note">Monday–Sunday, Boulder time. Take rest days when you need them.</p></div>'+
     '<div class="card safety-callout"><p class="eyebrow">Make campus better</p><h3>A broken light shouldn’t go unnoticed.</h3><p>Document a concern, find the right office, and help other Buffs follow up.</p><button class="text-btn" data-open="safety">Open campus safety →</button></div>'+
     '<h3 class="section-label">Your recent walks <span class="pill">On this device</span></h3>'+
-    (sessions.length?sessions.slice(0,5).map(s=>'<article class="session"><small>'+esc(new Date(s.at).toLocaleDateString([], {month:'short',day:'numeric'}))+'</small><h3>Campus walk</h3><div class="session-numbers"><div><b>'+(s.meters/1609.344).toFixed(2)+'</b><span>Miles</span></div><div><b>'+Math.round(s.seconds/60)+'</b><span>Minutes elapsed</span></div><div><b>'+s.newSegments+'</b><span>New segments</span></div></div></article>').join(''):'<div class="empty">Your first walk starts here. Tap <b>Record walk</b>, keep Roam open, and your summary will appear when you finish.</div>');
+    (sessions.length?sessions.slice(0,5).map(s=>'<article class="session"><small>'+esc(new Date(s.at).toLocaleDateString([], {month:'short',day:'numeric'}))+'</small><h3>Campus walk</h3><div class="session-numbers"><div><b>'+(s.meters/1609.344).toFixed(2)+'</b><span>Miles</span></div><div><b>'+Math.round(s.seconds/60)+'</b><span>Minutes elapsed</span></div><div><b>'+s.newSegments+'</b><span>New segments</span></div></div></article>').join(''):'<div class="empty">Your first walk starts here. Tap <b>Record walk</b>, keep BuffTracks open, and your summary will appear when you finish.</div>');
 }
 function finishRecording(){
   if(!recording)return;
