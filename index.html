@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=22">
+<link rel="stylesheet" href="app.css?v=23">
 </head>
 <body data-view="home">
 <div id="app">
@@ -58,8 +58,9 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="student-core.js?v=22"></script>
-<script src="schedule-core.js?v=22"></script>
+<script src="student-core.js?v=23"></script>
+<script src="username-core.js?v=23"></script>
+<script src="schedule-core.js?v=23"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -667,7 +668,7 @@ async function loadNames(){
   if(!cloud.sb) return;
   const {data,error}=await cloud.sb.rpc('get_path_names');
   if(error||!data) return;
-  const m={}; data.forEach(r=>{ m[r.path_id]={name:r.name, by:r.named_by_name, mine:!!r.is_mine}; });
+  const m={}; data.forEach(r=>{ m[r.path_id]={name:r.name, by:r.named_by_name, mine:!!r.is_mine, ref:r.named_by_ref||null}; });
   NAMES=m; try{ localStorage.setItem('rr-names',JSON.stringify(m)); }catch(e){}
   drawNameLabels(); render(); if(checkBadges(false)) saveSoon();
 }
@@ -698,7 +699,8 @@ function openPath(seg){
   if(!cloud.sb) return modal(title,'<p class="pmeta">'+meta+'</p><p>Path naming turns on once cloud sync is set up.</p>',[close],clearHL);
   if(!cloud.user) return modal(title,'<p class="pmeta">'+meta+'</p><p>Walk a path, then sign in to give it a name everyone will see.</p>',
     [['Sign in','pri',goSignIn],close],clearHL);
-  if(n && !n.mine) return modal(title,'<p class="pmeta">'+meta+'</p><p>Already named — the first walker to name a path keeps it.</p>',[close],clearHL);
+  if(n && !n.mine) return modal(title,'<p class="pmeta">'+meta+'</p><p>Already named — the first walker to name a path keeps it.</p>'+
+    (n.ref?'<p><button class="link" data-act="reportName" data-ref="'+esc(n.ref)+'" data-name="'+esc(n.by)+'">Report this nickname</button></p>':''),[close],clearHL);
   if(!got) return modal(title,'<p class="pmeta">'+meta+'</p><p>Walk any part of this path to earn naming rights.</p>',[close],clearHL);
   modal(n?'Rename this path':'Name this path',
     '<p class="pmeta">'+meta+'</p>'+
@@ -720,7 +722,7 @@ async function saveName(pid,name){
   await flush();   // the server checks you've walked it, so send claims first
   const {error}=await cloud.sb.rpc('set_path_name',{p_path:pid, p_name:name});
   if(error) return toast('Couldn\'t save: '+error.message);
-  if(name){ NAMES[pid]={name, by:(cloud.profile&&cloud.profile.display_name)||'you', mine:true}; toast('✏️ Named “'+name+'” — it\'s on everyone\'s map'); buzz([30,30,60]); }
+  if(name){ NAMES[pid]={name, by:myPublicName()||'you', mine:true}; toast('✏️ Named “'+name+'” — it\'s on everyone\'s map'); buzz([30,30,60]); }
   else { delete NAMES[pid]; toast('Name removed'); }
   drawNameLabels(); render(); if(checkBadges(false)) saveSoon();
   loadNames();
@@ -746,13 +748,15 @@ function privacyHTML(){
   '<li><b>Your class schedule</b>, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.</li></ul>'+
   '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
   '<li>Your email address, used only to sign you in.</li>'+
-  '<li>Your optional display name and dorm or team.</li>'+
+  '<li>Your public nickname, your dorm or team, and when you last changed your nickname. A nickname is generated from campus words or typed by you — never from your email, name or schedule.</li>'+
+  '<li>If you use them: nickname reports you send (the reason and any note) and review requests for a nickname that was turned down.</li>'+
   '<li>Which path segments you have claimed and when, your total distance, badges and streak.</li>'+
   '<li>For each week, how many path segments you walked in each campus zone (not your route or times).</li>'+
   '<li>Anything you choose to post: hazard pins (location, category, note), your “Still there” / “Fixed” votes, and names you give paths.</li></ul>'+
   '<h4>Who can see what</h4><ul>'+
-  '<li><b>Anyone, even signed out:</b> path names and the display name of the student who named them.</li>'+
-  '<li><b>Signed-in students:</b> leaderboards (display name, dorm, totals, streak) and hazard pins. Pins never show who reported or voted.</li>'+
+  '<li><b>Anyone, even signed out:</b> path names and the nickname of the student who named them.</li>'+
+  '<li><b>Signed-in students:</b> leaderboards (nickname, dorm or team, totals, streak) and hazard pins. Pins never show who reported or voted. Your nickname is public, but it isn’t a promise of complete anonymity: your team, the paths you name and when you’re active can hint at who you are.</li>'+
+  '<li><b>BuffPrints moderators</b> see nickname reports, review requests, and a private log of nickname changes, so they can handle abuse. Reporters are never shown to the person reported, and rejected names and nickname histories are never shown to other students.</li>'+
   '<li><b>No one else</b> sees your email, the paths you have claimed, or your location.</li>'+
   '<li>We do not sell or share your data, show ads, or use analytics or tracking tools.</li></ul>'+
   '<h4>Services that help run BuffPrints</h4>'+
@@ -762,7 +766,7 @@ function privacyHTML(){
   '<h4>Your choices</h4><ul>'+
   '<li><b>Export</b> everything stored on this device, including your route log (Progress → Export my data).</li>'+
   '<li><b>Reset progress</b> clears your progress here and in your account but keeps your account.</li>'+
-  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, progress, hazard pins, votes and path names — and erases this device. This cannot be undone.</li>'+
+  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes and path names — and erases this device. This cannot be undone.</li>'+
   '<li><b>Location:</b> stop recording at any time, or turn off location for this site in your phone’s settings.</li></ul>'+
   (contact?'<p>Questions or requests: <a href="mailto:'+esc(contact)+'">'+esc(contact)+'</a></p>':'')+
   '</div>';
@@ -907,11 +911,12 @@ function buildCloudBox(){
   if(cloud.user){
     box.innerHTML='<div class="card"><h3>Your account</h3><p>Signed in as '+esc(cloud.user.email)+' · <button class="text-btn" id="cPrivacy2">Privacy & delete</button></p>'+
       '<div class="sync" id="syncLine"></div>'+
-      '<label class="f" for="pfName">Leaderboard name</label><input class="field" id="pfName" maxlength="30" placeholder="Leaderboard name (optional)" autocomplete="nickname">'+
+      '<div id="nickBox" class="nickbox"></div>'+
       '<label class="f" for="pfDorm">Dorm or team</label><select class="field" id="pfDorm">'+dormOptions()+'</select>'+
       '<input class="field" id="pfDormOther" maxlength="40" placeholder="Type your dorm or team" aria-label="Dorm or team name" hidden>'+
-      '<div class="btns"><button class="btn pri" id="pfSave">Save profile</button><button class="btn" id="cSync">Sync now</button><button class="btn" id="cOut">Sign out</button></div>'+
-      '<p class="note">The leaderboard shows only your name, dorm and totals — never your email or where you walk.</p></div>';
+      '<div class="btns"><button class="btn pri" id="pfSave">Save team</button><button class="btn" id="cSync">Sync now</button><button class="btn" id="cOut">Sign out</button></div>'+
+      '<p class="note">Other students see only your nickname, dorm or team and totals — never your email or where you walk.</p>'+
+      '<p class="note" id="adminLink" hidden><a class="link" href="admin.html">Open the moderation queue</a></p></div>';
     setSync(cloud.err);
     fillProfile();
     return;
@@ -934,16 +939,187 @@ function dormOptions(){
   return '<option value="">Dorm or team (optional)</option>'+list.map(d=>'<option>'+esc(d)+'</option>').join('')+'<option value="__other">Other…</option>';
 }
 function fillProfile(){
-  const pr=cloud.profile; if(!pr||!$('pfName')) return;
-  $('pfName').value=pr.display_name||'';
+  const pr=cloud.profile; if(!pr||!$('pfDorm')) return;
+  renderNickBox();
   const sel=$('pfDorm'), d=pr.dorm||'';
   if(!d) sel.value='';
   else if([...sel.options].some(o=>o.value===d)) sel.value=d;
   else { sel.value='__other'; $('pfDormOther').hidden=false; $('pfDormOther').value=d; }
 }
+// Students change only their dorm/team directly; nicknames go through set_username.
+async function saveDorm(dorm){
+  const r=await cloud.sb.from('profiles').update({dorm}).eq('id',cloud.user.id).select('id');
+  if(r.error) return r.error;
+  if(r.data&&r.data.length) return null;
+  const ins=await cloud.sb.from('profiles').insert({id:cloud.user.id, dorm});
+  return ins.error||null;
+}
 async function loadProfile(){
-  const {data}=await cloud.sb.from('profiles').select('display_name,dorm').eq('id',cloud.user.id).maybeSingle();
-  cloud.profile=data||{display_name:null,dorm:null}; fillProfile(); render();
+  const {data,error}=await cloud.sb.from('profiles').select('username,display_name,dorm,name_state,username_changed_at').eq('id',cloud.user.id).maybeSingle();
+  if(error) return;
+  cloud.profile=data||{username:null,display_name:null,dorm:null,name_state:'ok'};
+  const rq=await cloud.sb.from('username_review_requests').select('requested_name,status,reviewed_at').order('created_at',{ascending:false}).limit(1);
+  cloud.review=(!rq.error&&rq.data&&rq.data[0])||null;
+  fillProfile(); render(); maybeAskNickname();
+  cloud.sb.rpc('am_i_admin').then(r=>{ cloud.admin=!r.error&&r.data===true; const a=$('adminLink'); if(a) a.hidden=!cloud.admin; },()=>{});
+}
+/* ---- Nickname: onboarding picker, settings, reports ----
+   Every check that matters (format, moderation, availability, change limit)
+   runs on the server. This only gives quick feedback and shows the results. */
+const NM=window.RoamNames;
+const NICK={mode:'suggest', ctx:'onboarding', name:'', typed:'', msg:'', msgKind:'', busy:false, checkT:0, checkSeq:0, rejected:'', asked:false};
+function myPublicName(){ const p=cloud.profile; if(!p) return null; if(p.name_state==='hidden') return null; return p.username||p.display_name||null; }
+function renderNickBox(){
+  const el=$('nickBox'), p=cloud.profile; if(!el||!p) return;
+  let h='<label class="f">Public nickname</label>';
+  if(p.username&&p.name_state==='ok'){
+    h+='<div class="nickrow"><b class="nick">'+esc(p.username)+'</b><button class="btn" data-act="nick" data-ctx="change">Change</button></div>'+
+       '<p class="note">Shown on leaderboards, your team and paths you name. You can change it once every '+NM.CHANGE_DAYS+' days.</p>';
+  }else if(p.name_state==='hidden'||p.name_state==='change_required'){
+    h+='<div class="nickrow warnrow"><span>'+(p.name_state==='hidden'?'Your nickname is hidden from other students until you choose a new one.':'A moderator asked you to choose a new nickname.')+'</span></div>'+
+       '<button class="btn pri block-btn" data-act="nick" data-ctx="required">Choose a new nickname</button>'+
+       '<p class="note">Your progress, team and named paths stay exactly as they are.</p>';
+  }else{
+    h+=(p.display_name?'<p class="small" style="margin:2px 0 6px">Showing as <b>'+esc(p.display_name)+'</b> for now.</p>':'')+
+       '<button class="btn pri block-btn" data-act="nick" data-ctx="onboarding">Choose your nickname</button>';
+  }
+  const r=cloud.review;
+  if(r) h+='<p class="note" role="status">Review request for <b>'+esc(r.requested_name)+'</b>: '+
+    (r.status==='open'?'waiting for a moderator.':r.status==='approved'?'approved.':'not approved. Choose another name or use a suggested one.')+'</p>';
+  el.innerHTML=h;
+}
+function maybeAskNickname(){
+  if(NICK.asked||!cloud.user||!NM.needsPicker(cloud.profile)) return;
+  if($('modal').classList.contains('show')||(S.rec&&S.rec.at)) { setTimeout(maybeAskNickname,20000); return; }
+  NICK.asked=true;
+  openNickname(cloud.profile.name_state!=='ok'?'required':'onboarding');
+}
+function openNickname(ctx){
+  if(!cloud.user) return goSignIn();
+  Object.assign(NICK,{mode:'suggest', ctx, name:'', typed:'', msg:'', msgKind:'', busy:false, rejected:''});
+  const p=cloud.profile||{};
+  const title=ctx==='change'?'Change your nickname':ctx==='required'?'Choose a new nickname':'What should the herd call you?';
+  modal(title,'<div id="nickUI"></div>',[[ctx==='change'?'Cancel':'Not now','',()=>{}]],()=>{ clearTimeout(NICK.checkT); NICK.checkSeq++; });
+  renderNick(); shuffleNick();
+}
+function nickIntro(){
+  const p=cloud.profile||{};
+  if(NICK.ctx==='required') return '<p>'+(p.name_state==='hidden'?'Your current nickname is hidden from other students.':'A moderator asked you to pick a different nickname.')+' Choose a campus-inspired one or create your own. Your progress, team and named paths stay the same.</p>';
+  if(NICK.ctx==='change') return '<p>Pick a new campus-inspired nickname or create your own. You can change it once every '+NM.CHANGE_DAYS+' days.</p>';
+  return '<p>Choose a campus-inspired nickname or create your own. No real name needed.</p>'+
+    (p.display_name&&!p.username?'<p class="small muted">Leaderboards show you as “'+esc(p.display_name)+'” until you choose.</p>':'');
+}
+const NICK_NOTE='<p class="note nick-note">This is your public nickname: other students see it on leaderboards, your team and paths you name. It isn’t a guarantee of complete anonymity — your team, the paths you name and when you walk can still hint at who you are.</p>';
+function nickMsg(){ return '<p class="pmsg'+(NICK.msgKind?' '+NICK.msgKind:'')+'" id="nickMsg" role="status" aria-live="polite">'+esc(NICK.msg)+'</p>'; }
+function renderNick(){
+  const el=$('nickUI'); if(!el) return;
+  const dis=NICK.busy?' disabled':'';
+  let h=nickIntro();
+  if(NICK.mode==='suggest'){
+    h+='<div class="nick-card"><p class="nick-big" id="nickSug" aria-live="polite">'+(NICK.name?esc(NICK.name):'<span class="muted">Finding a name…</span>')+'</p>'+
+       '<div class="btns"><button class="btn pri" data-nk="use"'+(NICK.name&&!NICK.busy?'':' disabled')+'>Use this name</button><button class="btn" data-nk="shuffle"'+dis+'>Shuffle</button></div>'+
+       '<button class="btn block-btn nick-own" data-nk="own"'+dis+'>Create my own</button></div>'+nickMsg();
+  }else if(NICK.mode==='custom'){
+    h+='<label class="f" for="nickIn">Your nickname</label>'+
+       '<input class="field" id="nickIn" maxlength="40" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" aria-describedby="nickRule nickMsg" value="'+esc(NICK.typed)+'"'+(NICK.msgKind==='bad'?' aria-invalid="true"':'')+'>'+
+       '<p class="note" id="nickRule" style="margin-top:-4px">3–24 letters, numbers, or underscores, with at least one letter.</p>'+nickMsg()+
+       '<div class="btns"><button class="btn pri" data-nk="save"'+dis+'>Save nickname</button><button class="btn" data-nk="back"'+dis+'>Back</button></div>'+
+       (NICK.rejected?'<div class="btns"><button class="btn" data-nk="suggest"'+dis+'>Suggest a name</button><button class="btn" data-nk="review"'+dis+'>Request review</button></div>':'');
+  }else if(NICK.mode==='review'){
+    h='<p>A moderator will look at <b>'+esc(NICK.rejected)+'</b>. If it’s approved and still free, it becomes your nickname.</p>'+
+      '<label class="f" for="nickNote">Why this name is OK (optional)</label><textarea class="field" id="nickNote" maxlength="280" aria-describedby="nickMsg"></textarea>'+nickMsg()+
+      '<div class="btns"><button class="btn pri" data-nk="sendReview"'+dis+'>Send request</button><button class="btn" data-nk="own"'+dis+'>Back</button></div>';
+  }
+  el.innerHTML=h+NICK_NOTE;
+  const inp=$('nickIn');
+  if(inp){ inp.addEventListener('input',nickTyped); inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveNick(inp.value); } }); }
+}
+function setNickMsg(text,kind){ NICK.msg=text||''; NICK.msgKind=kind||''; const m=$('nickMsg'); if(m){ m.className='pmsg'+(kind?' '+kind:''); m.textContent=NICK.msg; }
+  const rule=$('nickRule'); if(rule) rule.hidden=NICK.msg===NM.MESSAGES.format;   // don't say the same thing twice
+  const inp=$('nickIn'); if(inp){ if(kind==='bad') inp.setAttribute('aria-invalid','true'); else inp.removeAttribute('aria-invalid'); } }
+function nickBusy(b){ NICK.busy=b; $('nickUI')&&$('nickUI').querySelectorAll('button').forEach(x=>{ x.disabled=b||(x.dataset.nk==='use'&&!NICK.name); }); }
+async function nickRpc(fn,args){
+  if(!navigator.onLine) return {status:'offline'};
+  try{ const {data,error}=await cloud.sb.rpc(fn,args||{}); if(error) return {status:'error'}; return data||{status:'error'}; }
+  catch(e){ return {status:'error'}; }
+}
+async function shuffleNick(){
+  nickBusy(true); setNickMsg('');
+  const r=await nickRpc('suggest_username');
+  if(!$('nickUI')) return;
+  if(r.status==='ok'){ NICK.name=r.name; const el=$('nickSug'); if(el) el.textContent=r.name; }
+  else setNickMsg(NM.message(r),'bad');
+  nickBusy(false);
+}
+function nickTyped(e){
+  const v=e.target.value; NICK.typed=v; NICK.rejected='';
+  clearTimeout(NICK.checkT); const seq=++NICK.checkSeq;
+  if(!v){ setNickMsg(''); return; }
+  const hint=NM.typingHint(v);
+  if(hint){ setNickMsg(hint,'bad'); return; }
+  setNickMsg('Checking…');
+  NICK.checkT=setTimeout(async()=>{
+    const r=await nickRpc('check_username',{p_name:v});
+    if(seq!==NICK.checkSeq) return;
+    if(r.status==='guidelines'){ NICK.rejected=v; renderNick(); const i=$('nickIn'); if(i){ i.focus(); i.setSelectionRange(v.length,v.length); } }
+    setNickMsg(NM.message(r), r.status==='ok'||r.status==='current'?'good':'bad');
+  },550);
+}
+async function saveNick(v){
+  if(NICK.busy) return;
+  clearTimeout(NICK.checkT); NICK.checkSeq++;
+  if(!NM.formatOk(v)) return setNickMsg(NM.MESSAGES.format,'bad');
+  nickBusy(true); setNickMsg('Saving…');
+  const r=await nickRpc('set_username',{p_name:v});
+  nickBusy(false);
+  if(r.status==='ok'){
+    cloud.profile=Object.assign({},cloud.profile,{username:r.name, name_state:'ok', username_changed_at:r.unchanged?cloud.profile.username_changed_at:new Date().toISOString()});
+    $('modal').classList.remove('show'); if(modalClose){ const f=modalClose; modalClose=null; f(); }
+    toast('You’re '+r.name+' on BuffPrints'); buzz([30,30,60]);
+    fillProfile(); loadNames(); if(VIEW==='community') renderCommunity(); loadTerritory();
+    return;
+  }
+  if(NICK.mode==='suggest'){
+    setNickMsg(NM.message(r),'bad');
+    if(r.status==='taken'||r.status==='guidelines') shuffleNick();
+    return;
+  }
+  if(r.status==='guidelines'){ NICK.rejected=v; NICK.typed=v; renderNick(); }
+  setNickMsg(NM.message(r),'bad');
+}
+async function sendNickReview(){
+  const note=($('nickNote')&&$('nickNote').value)||'';
+  nickBusy(true);
+  const r=await nickRpc('request_username_review',{p_name:NICK.rejected, p_note:note||null});
+  nickBusy(false);
+  if(r.status==='ok'){ cloud.review={requested_name:NICK.rejected, status:'open'}; renderNickBox();
+    NICK.mode='suggest'; renderNick(); setNickMsg(NM.REVIEW_MESSAGES.ok,'good'); if(!NICK.name) shuffleNick(); return; }
+  setNickMsg(NM.REVIEW_MESSAGES[r.status]||NM.message(r),'bad');
+}
+$('modal').addEventListener('click',e=>{
+  const b=e.target.closest('[data-nk]'); if(!b||b.disabled) return;
+  const k=b.dataset.nk;
+  if(k==='use') saveNick(NICK.name);
+  else if(k==='shuffle') shuffleNick();
+  else if(k==='own'){ NICK.mode='custom'; NICK.msg=''; NICK.msgKind=''; renderNick(); const i=$('nickIn'); if(i) i.focus(); if(NICK.typed) nickTyped({target:i}); }
+  else if(k==='back'||k==='suggest'){ NICK.mode='suggest'; NICK.rejected=''; NICK.msg=''; renderNick(); if(k==='suggest'||!NICK.name) shuffleNick(); }
+  else if(k==='save') saveNick(($('nickIn')||{}).value||'');
+  else if(k==='review'){ NICK.mode='review'; NICK.msg=''; renderNick(); const t=$('nickNote'); if(t) t.focus(); }
+  else if(k==='sendReview') sendNickReview();
+});
+function reportNickname(ref,name){
+  if(!cloud.user) return goSignIn();
+  if(!ref) return;
+  modal('Report a nickname',
+    '<p>Report <b>'+esc(name||'this nickname')+'</b> if it’s offensive, harassing, sexual, threatening, accuses someone, shares personal details, or pretends to be staff, police or another student.</p>'+
+    '<fieldset class="reasons"><legend class="f">Reason</legend>'+NM.REPORT_REASONS.map((r,i)=>'<label class="opt"><input type="radio" name="rpReason" value="'+r[0]+'"'+(i===0?' checked':'')+'> '+esc(r[1])+'</label>').join('')+'</fieldset>'+
+    '<label class="f" for="rpNote">Details (optional)</label><textarea class="field" id="rpNote" maxlength="280"></textarea>'+
+    '<p class="note">A moderator reviews every report. Names aren’t removed just because they get reports, and the person won’t see who reported them.</p>',
+    [['Send report','pri',async()=>{
+        const reason=(document.querySelector('input[name="rpReason"]:checked')||{}).value, note=($('rpNote')||{}).value||'';
+        const r=await nickRpc('report_username',{p_ref:ref, p_reason:reason, p_note:note||null});
+        toast(NM.REPORT_MESSAGES[r.status]||NM.message(r));
+      }],['Cancel','',()=>{}]]);
 }
 function weekPoints(){
   const pts={}; Object.keys(S.week.visits).forEach(id=>{ const sg=SEG_BY_ID[id]; if(sg) pts[sg.zone]=(pts[sg.zone]||0)+1; }); return pts;
@@ -1004,11 +1180,10 @@ $('cloudBox').addEventListener('click',async e=>{
   if(id==='cSync'){ cloud.err=''; pull(); }
   if(id==='pfSave'){
     const sel=$('pfDorm').value;
-    const name=($('pfName').value||'').trim().slice(0,30)||null;
     const dorm=(sel==='__other' ? ($('pfDormOther').value||'') : sel).trim().slice(0,40)||null;
-    const {error}=await cloud.sb.from('profiles').upsert({id:cloud.user.id, display_name:name, dorm});
+    const error=await saveDorm(dorm);
     if(error) return toast('Couldn\'t save: '+error.message);
-    cloud.profile={display_name:name, dorm}; toast('Profile saved'); loadTerritory();
+    cloud.profile=Object.assign({},cloud.profile,{dorm}); toast('Team saved'); loadTerritory();
   }
 });
 
@@ -1450,7 +1625,8 @@ async function renderCommunity(){
   }).join('')+'</div>';
   html+='<div class="label">Teams this week</div>'+(teams.length?teams.slice(0,10).map((d,i)=>'<div class="lb'+(d===my?' you':'')+'"><span class="r">'+(i+1)+'</span><span class="n"><b>'+esc(d)+'</b></span><span class="v">'+tot[d]+'</span></div>').join(''):'<p class="empty">No team activity yet this week.</p>');
   const wb=cloud.weekBoard||[];
-  html+='<div class="label">Students this week</div>'+(wb.length?wb.slice(0,10).map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><span class="r">'+x.rank+'</span><span class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+'</b><small>'+esc(x.dorm||'No team')+'</small></span><span class="v">'+x.segments+'</span></div>').join(''):'<p class="empty">No one has recorded a walk this week yet.</p>');
+  html+='<div class="label">Students this week</div>'+(wb.length?wb.slice(0,10).map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><span class="r">'+x.rank+'</span><span class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+'</b><small>'+esc(x.dorm||'No team')+'</small></span><span class="v">'+x.segments+'</span>'+
+    (!x.is_me&&x.name_ref?'<button class="lb-more" data-act="reportName" data-ref="'+esc(x.name_ref)+'" data-name="'+esc(x.name)+'" aria-label="Report the nickname '+esc(x.name)+'"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></button>':'')+'</div>').join(''):'<p class="empty">No one has recorded a walk this week yet.</p>');
   html+='<p class="note">Points: 1 for each path section walked this week, counted once per section. Totals come from students’ recorded walks and reset Monday. Leaderboards show names and totals only — never routes or locations.</p>';
   el.innerHTML=html;
 }
@@ -1460,7 +1636,7 @@ function teamPickerHTML(cur){
 async function saveTeam(sel,other){
   const dorm=(sel==='__other'?(other||''):sel).trim().slice(0,40)||null;
   if(!dorm) return toast('Choose a dorm or team first');
-  const {error}=await cloud.sb.from('profiles').upsert({id:cloud.user.id, display_name:(cloud.profile&&cloud.profile.display_name)||null, dorm});
+  const error=await saveDorm(dorm);
   if(error) return toast('Couldn’t save: '+error.message);
   cloud.profile=Object.assign({},cloud.profile,{dorm}); fillProfile(); toast('You’re walking for '+dorm); renderCommunity();
 }
@@ -1970,6 +2146,8 @@ document.addEventListener('click',e=>{
   else if(a==='report') reportHazard();
   else if(a==='draft') advocacyDraft();
   else if(a==='signin') goSignIn();
+  else if(a==='nick') openNickname(t.dataset.ctx||'change');
+  else if(a==='reportName') reportNickname(t.dataset.ref,t.dataset.name);
   else if(a==='reloadPins') loadHazards();
   else if(a==='reloadComm') renderCommunity();
   else if(a==='saveTeam') saveTeam($('teamPick').value,$('teamOther').value);
@@ -1996,7 +2174,7 @@ let focusBeforeModal=null;
 new MutationObserver(()=>{
   if($('modal').classList.contains('show')){
     if(!$('modal').contains(document.activeElement)) focusBeforeModal=document.activeElement;
-    const first=$('modal').querySelector('input,select,textarea,button,a[href]'); if(first) first.focus();
+    const first=$('modal').querySelector('input:not([disabled]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]),a[href]'); if(first) first.focus();
   }else if(focusBeforeModal&&focusBeforeModal.isConnected) focusBeforeModal.focus();
 }).observe($('modal'),{attributes:true,attributeFilter:['class']});
 document.addEventListener('keydown',e=>{
