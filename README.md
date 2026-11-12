@@ -69,7 +69,7 @@ that path.
 ## Walkway data (OpenStreetMap)
 
 `paths.geojson` is generated from OpenStreetMap footways, paths, stairs, bridges and bike paths
-inside the campus box by `scripts/build-paths.mjs`, run by the **Update walkways from
+inside the main campus box and the Williams Village area by `scripts/build-paths.mjs`, run by the **Update walkways from
 OpenStreetMap** GitHub Action (Actions tab → Run workflow). Stairs come from `highway=steps`,
 bridges from `bridge=*`, and goat paths from informal or unpaved trails. Zones are boxes drawn
 around named OSM landmarks; everything else falls into **Rest of Campus**.

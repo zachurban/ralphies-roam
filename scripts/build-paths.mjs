@@ -15,7 +15,7 @@ const bb = BBOX.join(',');
 async function overpass(q) {
   if (process.env.OSM_FIXTURE) {
     const fx = JSON.parse(fs.readFileSync(process.env.OSM_FIXTURE, 'utf8'));
-    return fx[q.includes('highway') ? 'paths' : q.includes('dormitory') ? 'dorms' : 'marks'] || { elements: [] };
+    return fx[q.includes('highway') ? 'paths' : q.includes('dormitory') ? 'dorms' : q.includes('Williams Village') ? 'wv' : 'marks'] || { elements: [] };
   }
   for (let round = 1; round <= 4; round++) {          // public servers are often busy: retry with backoff
     for (const url of ENDPOINTS) {
@@ -35,7 +35,26 @@ async function overpass(q) {
   throw new Error('All Overpass endpoints failed');
 }
 
-const paths = await overpass(`[out:json][timeout:120];way["highway"~"^(footway|path|pedestrian|steps|cycleway|track|bridleway|living_street)$"](${bb});out geom;`);
+// ---- Williams Village (separate area southeast of main campus): outline from its named buildings ----
+const M_LAT0 = 111320, M_LNG0 = 111320 * Math.cos(40.0 * Math.PI / 180);
+const WV_FALLBACK = [39.9945, -105.2530, 40.0010, -105.2435];
+const wvEls = await overpass(`[out:json][timeout:60];nwr["name"~"Williams Village|Darley|Stearns|Bear Creek Apartments",i](39.985,-105.265,40.008,-105.235);out geom;`);
+const wvPts = wvEls.elements.filter(e => e.tags && !e.tags.highway).flatMap(e =>
+  e.type === 'node' ? [[e.lat, e.lon]] : (e.geometry || (e.members || []).flatMap(m => m.geometry || [])).map(g => [g.lat, g.lon]));
+let WV = WV_FALLBACK, wvFrom = 'fallback box';
+if (wvPts.length) {
+  const pad = 70;
+  WV = [Math.min(...wvPts.map(p => p[0])) - pad / M_LAT0, Math.min(...wvPts.map(p => p[1])) - pad / M_LNG0,
+        Math.max(...wvPts.map(p => p[0])) + pad / M_LAT0, Math.max(...wvPts.map(p => p[1])) + pad / M_LNG0];
+  wvFrom = [...new Set(wvEls.elements.filter(e => e.tags && !e.tags.highway).map(e => e.tags.name))].join('; ');
+}
+// sanity: never let a bad match balloon the area past ~1.5 km
+if ((WV[2] - WV[0]) * M_LAT0 > 1500 || (WV[3] - WV[1]) * M_LNG0 > 1500) { WV = WV_FALLBACK; wvFrom += ' (too large — fallback used)'; }
+const wvbb = WV.map(v => v.toFixed(5)).join(',');
+console.log('Williams Village box', wvbb, '←', wvFrom);
+
+const HW = '"highway"~"^(footway|path|pedestrian|steps|cycleway|track|bridleway|living_street)$"';
+const paths = await overpass(`[out:json][timeout:120];(way[${HW}](${bb});way[${HW}](${wvbb}););out geom;`);
 const marks = await overpass(`[out:json][timeout:60];nwr["name"~"Norlin|Farrand Field|Engineering Center|Kittredge|Varsity|Old Main|Macky",i](${bb});out geom;`);
 
 // Residence halls for the dorm pick list (wider box to include Williams Village)
@@ -87,7 +106,9 @@ function label(t) {
 }
 let km = 0;
 const features = [];
+const seenWays = new Set();
 for (const w of paths.elements) {
+  if (seenWays.has(w.id)) continue; seenWays.add(w.id);
   const t = w.tags || {};
   if (w.type !== 'way' || !w.geometry || w.geometry.length < 2) continue;
   if (/^(private|no)$/.test(t.access || '') || /^(no)$/.test(t.foot || '')) continue;
@@ -99,7 +120,9 @@ for (const w of paths.elements) {
   if (t.highway === 'steps') tags.push('stairs');
   if (t.bridge && t.bridge !== 'no') tags.push('bridge');
   if (t.informal === 'yes' || t.highway === 'track' || (t.highway === 'path' && UNPAVED.test(t.surface || ''))) tags.push('goat');
-  let zone = /boulder creek/i.test(t.name || '') ? 'creek' : (ZONES.find(z => inBox(midP, z.box)) || { id: 'campus' }).id;
+  let zone = /boulder creek/i.test(t.name || '') ? 'creek'
+           : inBox(midP, WV) ? 'williams'
+           : (ZONES.find(z => inBox(midP, z.box)) || { id: 'campus' }).id;
   for (let i = 1; i < w.geometry.length; i++) {
     const a = w.geometry[i - 1], b = w.geometry[i];
     km += Math.hypot((a.lat - b.lat) * M_LAT, (a.lon - b.lon) * M_LNG) / 1000;
@@ -111,7 +134,7 @@ features.sort((a, b) => a.properties.id.localeCompare(b.properties.id, 'en', { n
 const out = {
   type: 'FeatureCollection',
   attribution: '© OpenStreetMap contributors, ODbL',
-  bbox: [BBOX[1], BBOX[0], BBOX[3], BBOX[2]],
+  bbox: [Math.min(BBOX[1], WV[1]), Math.min(BBOX[0], WV[0]), Math.max(BBOX[3], WV[3]), Math.max(BBOX[2], WV[2])],
   dorms,
   features
 };
