@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/build-paths.mjs'
+      - 'scripts/build-buildings.mjs'
+      - 'data/building-aliases.json'
       - '.github/workflows/update-paths.yml'
 
 permissions:
@@ -22,11 +24,13 @@ jobs:
           node-version: 22
       - name: Build paths.geojson from OpenStreetMap
         run: node scripts/build-paths.mjs
+      - name: Build buildings.json (class schedule routes) from OpenStreetMap
+        run: node scripts/build-buildings.mjs
       - name: Commit if changed
         run: |
-          git add paths.geojson
+          git add paths.geojson buildings.json
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update walkways from OpenStreetMap"
+          git commit -m "Update walkways and buildings from OpenStreetMap"
           git push

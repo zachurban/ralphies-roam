@@ -29,6 +29,9 @@ Phone GPS only works on an `https://` page, so the files need a host.
 | `index.html` | The app shell and script. |
 | `app.css` | Styles. |
 | `student-core.js` | Goal, walk-summary and request logic shared with the tests. |
+| `schedule-core.js` | Class schedule (.ics) reading, CU term calendar and walkway routing, shared with the tests. |
+| `buildings.json` | CU building codes → location and outline, built from OpenStreetMap by `scripts/build-buildings.mjs`. |
+| `data/building-aliases.json` | Hand-kept fixes for building codes OpenStreetMap lists differently. |
 | `manifest.json`, `icons/` | Home-screen install. |
 | `sw.js` | Offline app shell and map-tile cache. |
 | `paths.geojson` (optional) | Your own walkways; replaces the built-in set. |
@@ -122,3 +125,9 @@ walk-summary, and advocacy-draft helpers. Run `node --test tests/student-core.te
 Completed walk summaries and weekly goal preferences are device-local. Drafts are
 not saved or submitted. Safety resource links are available without signing in;
 community hazard pins still use the existing Supabase policies and functions.
+
+## Class schedule and commute
+
+Students can import their Buff Portal class schedule (an `.ics` calendar file). BuffPrints shows each class day's walks (start → classes → back), routes them on the campus walkways, and offers a **scenic route** when one covers new paths for a minute or two more. Walking a scenic route while recording completes it and earns badges (Scenic Route, Road Less Traveled, Know Your Way). Everything stays on the phone; only course, component, days, times and building codes are kept. Details: [`docs/SCHEDULE_COMMUTE.md`](docs/SCHEDULE_COMMUTE.md).
+
+Each year, update `TERMS` in `schedule-core.js` from the CU academic calendar (first and last day of classes, holidays, breaks, reading days, Monday-schedule days).
