@@ -163,3 +163,13 @@ test('real campus data: East Campus buildings sit on the walkways and connect to
   const crow = R.hav([by.ECCR.lat, by.ECCR.lng], [by.AERO.lat, by.AERO.lng]);
   assert.ok(r && r.meters < crow * 1.8, 'Engineering -> Aerospace routes on walkways (' + Math.round(r && r.meters) + ' m)');
 });
+
+test('calendar helpers: break names, Monday of a week, class dates in a range', () => {
+  assert.equal(R.campusDay('2026-11-24').reason, 'Fall break');
+  assert.equal(R.campusDay('2026-11-26').reason, 'Thanksgiving');
+  assert.equal(R.campusDay('2026-11-30').reason, null);
+  assert.equal(R.mondayOf('2026-11-12'), '2026-11-09');
+  assert.equal(R.mondayOf('2026-11-15'), '2026-11-09', 'Sunday belongs to the week that started Monday');
+  const mwf = { days: [1, 3, 5], first: '2026-08-24', last: '2026-12-10', exdates: [], interval: 1, online: false, code: 'ECCR' };
+  assert.deepEqual(R.classDates([mwf], '2026-11-16', '2026-12-11'), ['2026-11-16', '2026-11-18', '2026-11-20', '2026-11-30', '2026-12-02', '2026-12-04']);
+});

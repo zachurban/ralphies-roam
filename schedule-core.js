@@ -18,9 +18,9 @@ const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
    Midsemester reading days are treated as no-class days. Update each year. */
 const TERMS = [
   {name:'Fall 2026',   start:'2026-08-20', end:'2026-12-04',
-   off:[['2026-09-07','2026-09-07'],['2026-10-08','2026-10-08'],['2026-11-23','2026-11-27']], asMonday:['2026-12-04']},
+   off:[['2026-09-07','2026-09-07','Labor Day'],['2026-10-08','2026-10-08','Midsemester reading day'],['2026-11-23','2026-11-25','Fall break'],['2026-11-26','2026-11-27','Thanksgiving']], asMonday:['2026-12-04']},
   {name:'Spring 2027', start:'2027-01-07', end:'2027-04-23',
-   off:[['2027-01-18','2027-01-18'],['2027-02-25','2027-02-25'],['2027-03-15','2027-03-19']], asMonday:['2027-04-23']}
+   off:[['2027-01-18','2027-01-18','Martin Luther King Jr. Day'],['2027-02-25','2027-02-25','Midsemester reading day'],['2027-03-15','2027-03-19','Spring break']], asMonday:['2027-04-23']}
 ];
 
 const COMPONENTS = [
@@ -170,8 +170,8 @@ function termFor(ymd){ return TERMS.find(t=>ymd>=t.start&&ymd<=t.end)||null; }
 function campusDay(ymd){
   const t=termFor(ymd);
   if(!t) return {term:null, off:false, wd:weekday(ymd)};
-  const off=t.off.some(r=>ymd>=r[0]&&ymd<=r[1]);
-  return {term:t.name, off, wd:t.asMonday.includes(ymd)?1:weekday(ymd), asMonday:t.asMonday.includes(ymd)};
+  const hit=t.off.find(r=>ymd>=r[0]&&ymd<=r[1]);
+  return {term:t.name, off:!!hit, reason:hit?hit[2]||'No classes':null, wd:t.asMonday.includes(ymd)?1:weekday(ymd), asMonday:t.asMonday.includes(ymd)};
 }
 function meetsOn(c, ymd){
   if(c.online||ymd<c.first||ymd>c.last||c.exdates.includes(ymd)) return false;
@@ -190,6 +190,9 @@ function nextClassDay(classes, ymd){
   for(let i=0;i<14;i++){ const d=addDays(ymd,i); if(classesOn(classes,d).length) return d; }
   return null;
 }
+function mondayOf(ymd){ const w=weekday(ymd); return addDays(ymd, w===0?-6:1-w); }
+// Dates from..to (inclusive) with at least one in-person class.
+function classDates(classes, from, to){ const out=[]; for(let d=from; d<=to; d=addDays(d,1)) if(classesOn(classes,d).length) out.push(d); return out; }
 function denverToday(ms){ return denverParts(ms==null?Date.now():ms); }
 
 /* Stops for a day: start place -> each class building in time order -> start place.
@@ -275,6 +278,6 @@ const minutes=m=>Math.max(1,Math.round(m/WALK_MPS/60));
 
 root.RoamSchedule={TZ, TERMS, WALK_MPS, OFF_NET_M, DAY_NAMES,
   unfold, contentLine, unescapeText, icalTime, parseSummary, parseLocation, parseICS,
-  campusDay, meetsOn, classesOn, nextClassDay, dayStops, denverToday, addDays, weekday,
+  campusDay, meetsOn, classesOn, nextClassDay, dayStops, denverToday, addDays, weekday, mondayOf, classDates, termFor,
   buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav};
 })(typeof window!=='undefined'?window:globalThis);

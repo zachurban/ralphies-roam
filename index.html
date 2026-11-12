@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=24">
+<link rel="stylesheet" href="app.css?v=25">
 </head>
 <body data-view="home">
 <div id="app">
@@ -58,9 +58,9 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="student-core.js?v=24"></script>
-<script src="username-core.js?v=24"></script>
-<script src="schedule-core.js?v=24"></script>
+<script src="student-core.js?v=25"></script>
+<script src="username-core.js?v=25"></script>
+<script src="schedule-core.js?v=25"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -169,7 +169,7 @@ function distToSeg(p,s){
 let SEGS=[], SEG_BY_ID={}, TOTAL_LEN=0;
 let PATH_BY_ID={};
 let SEG_META={}, PATH_SEGN={}, PATH_SEGS={}, PATH_LEN={};   // path indexes for goals (filled by indexPaths)
-let GRAPH=null, EDGE_SEGS=null, PLAN_CACHE={};               // walkway routing for the class commute (rebuilt with the paths)
+let GRAPH=null, EDGE_SEGS=null, PLAN_CACHE={}, DAYM={};               // walkway routing for the class commute (rebuilt with the paths)
 function buildSegments(){
   SEGS=[]; SEG_BY_ID={}; TOTAL_LEN=0; PATH_BY_ID={};
   PATHS.forEach(p=>{
@@ -187,7 +187,7 @@ function buildSegments(){
       }
     }
   });
-  indexPaths(); GRAPH=null; EDGE_SEGS=null; PLAN_CACHE={};
+  indexPaths(); GRAPH=null; EDGE_SEGS=null; PLAN_CACHE={}; DAYM={};
 }
 
 /* =====================================================================
@@ -1853,13 +1853,13 @@ async function shareWalk(s,withShape){
 const SCHED_KEY='buffprints-schedule-v1', RS=RoamSchedule;
 let SCHED=null, BLD=null, BLD_P=null, ROUTE_LAYER=null, ROUTE_VIEW=null, PLACING=null, CUR_PLAN=null;
 try{ const v=JSON.parse(localStorage.getItem(SCHED_KEY)||'null'); if(v&&Array.isArray(v.classes)) SCHED=Object.assign({pins:{},skipped:[],home:null},v); }catch(e){}
-function saveSched(){ PLAN_CACHE={}; try{ if(SCHED) localStorage.setItem(SCHED_KEY,JSON.stringify(SCHED)); else localStorage.removeItem(SCHED_KEY); }catch(e){} }
+function saveSched(){ PLAN_CACHE={}; DAYM={}; try{ if(SCHED) localStorage.setItem(SCHED_KEY,JSON.stringify(SCHED)); else localStorage.removeItem(SCHED_KEY); }catch(e){} }
 function loadBuildings(){
   if(BLD) return Promise.resolve(BLD);
   if(!BLD_P) BLD_P=fetch('buildings.json',{cache:'no-cache'}).then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status))).then(j=>{
     const by={}; (j.buildings||[]).forEach(b=>{ by[b.code]=b; });
     Object.keys(j.sameAs||{}).forEach(c=>{ if(by[j.sameAs[c]]&&!by[c]) by[c]=by[j.sameAs[c]]; });
-    BLD={by, places:j.places||[], list:(j.buildings||[]).slice().sort((a,b)=>a.name.localeCompare(b.name))}; PLAN_CACHE={}; return BLD;
+    BLD={by, places:j.places||[], list:(j.buildings||[]).slice().sort((a,b)=>a.name.localeCompare(b.name))}; PLAN_CACHE={}; DAYM={}; return BLD;
   }).catch(e=>{ BLD_P=null; throw e; });
   return BLD_P;
 }
@@ -1919,7 +1919,7 @@ function dayPlan(ymd){
 }
 function planFor(ymd){
   const k=ymd+'|'+Object.keys(S.claimed).length;
-  if(!PLAN_CACHE[k]){ if(Object.keys(PLAN_CACHE).length>6) PLAN_CACHE={}; PLAN_CACHE[k]=dayPlan(ymd); }
+  if(!PLAN_CACHE[k]){ if(Object.keys(PLAN_CACHE).length>20) PLAN_CACHE={}; PLAN_CACHE[k]=dayPlan(ymd); }
   return PLAN_CACHE[k];
 }
 function legLine(l){
@@ -1942,34 +1942,83 @@ function dayTitle(ymd,today){
 }
 
 /* ---------- Home: the next class day ---------- */
+let CLS_SEL=null;                       // the class day being viewed on Home (null = the default)
+/* Walking for one day, without scenic detours. Days with the same stops share one calculation. */
+function dayWalk(ymd){
+  const st=RS.dayStops(SCHED.classes,ymd,SCHED.home);
+  const sig=(SCHED.home?SCHED.home.lat+','+SCHED.home.lng:'-')+'|'+st.map(x=>x.key).join('>');
+  if(!(sig in DAYM)){ const p=dayPlan(ymd); DAYM[sig]=p?{m:p.meters, approx:p.approx||p.legs.some(l=>l.missing)}:{m:0}; }
+  return DAYM[sig];
+}
+function sumWalk(dates){ return dates.reduce((a,d)=>{ const w=dayWalk(d); a.m+=w.m; a.approx=a.approx||w.approx; return a; },{m:0,approx:false}); }
+function fmtMi(m){ const mi=m/1609.344; return (mi<10?mi.toFixed(1):Math.round(mi))+' mi'; }
+function fmtDur(min){ return min<60?min+' min':Math.floor(min/60)+' h'+(min%60?' '+min%60+' min':''); }
+function defaultClassDay(now){
+  let day=RS.nextClassDay(SCHED.classes,now.date);
+  if(day===now.date){ const last=RS.classesOn(SCHED.classes,day).filter(c=>c.code).pop(); if(last&&tMin(last.end)<tMin(now.time)) day=RS.nextClassDay(SCHED.classes,RS.addDays(now.date,1)); }
+  return day;
+}
+/* ---------- Home: class days ---------- */
 function classesHTML(){
   if(!SCHED) return '<div class="label">Classes</div><button class="row" data-act="sched"><span class="ic-lead">'+icon('cal','sm')+'</span><span class="grow"><b>Add your class schedule</b><small>See your walks between classes and pick up scenic routes that uncover new paths</small></span>'+icon('chev','sm')+'</button>';
   const head='<div class="label">Classes <button class="more" data-act="sched">Schedule</button></div>';
   if(!BLD){ loadBuildings().then(()=>{ if(VIEW==='home') renderHome(); }).catch(()=>{}); return head+'<p class="empty">Loading campus buildings…</p>'; }
-  const now=RS.denverToday(); let day=RS.nextClassDay(SCHED.classes,now.date);
-  // after today's last class, look ahead to the next class day
-  if(day===now.date){ const last=RS.classesOn(SCHED.classes,day).filter(c=>c.code).pop(); if(last&&tMin(last.end)<tMin(now.time)) day=RS.nextClassDay(SCHED.classes,RS.addDays(now.date,1)); }
-  if(!day){ const unset=SCHED.classes.filter(c=>!c.online&&!c.code).length;
-    return head+(unset?'<button class="row" data-act="sched"><span class="grow"><b>Choose buildings for '+pl(unset,'class','classes')+'</b><small>Your schedule file didn’t list where '+(unset===1?'it meets':'they meet')+'. Pick each one once.</small></span>'+icon('chev','sm')+'</button>'
-      :'<p class="empty">No in-person classes in the next two weeks'+(SCHED.classes.every(c=>c.online)?' — all of your classes are online.':'.')+'</p>'); }
-  const plan=planFor(day); CUR_PLAN=plan;
-  const cd=RS.campusDay(day), nCls=plan.stops.filter(s=>s.kind==='class').reduce((m,s)=>m+s.classes.length,0);
-  let h=head+'<div class="cday"><div class="ctop"><b>'+esc(dayTitle(day,now.date))+'</b><span>'+pl(nCls,'class','classes')+(plan.meters?' · '+(plan.approx?'about ':'')+fmtD(plan.meters)+' walking':'')+'</span></div>'+
-    (cd.asMonday?'<p class="note" style="margin:2px 0 6px">Campus follows a Monday schedule today.</p>':'');
-  plan.stops.forEach((st,i)=>{
-    if(st.kind!=='class') return;
-    const leg=plan.legs.find(l=>l.to===st), nm=bldName(st.code);
-    h+='<div class="cls"><div class="t">'+t12(st.start).replace(' ','<small>')+'</small></div><div class="grow"><b>'+esc(stopCourses(st))+'</b>'+
-      '<small>'+esc(dispCode(st.code)+(nm?' · '+nm:''))+(leg?' · '+esc(legLine(leg)):'')+'</small>'+(leg?scenicChip(leg):'')+'</div></div>';
-  });
-  const back=plan.legs.find(l=>l.to.kind==='home');
-  if(back) h+='<div class="cls back"><div class="t">'+icon('home','sm')+'</div><div class="grow"><b>Back to '+esc(SCHED.home.name)+'</b><small>'+esc(legLine(back))+'</small>'+scenicChip(back)+'</div></div>';
-  h+='</div>';
-  const miss=missingCodes(), unset=SCHED.classes.filter(c=>!c.online&&!c.code).length;
+  const now=RS.denverToday(), unset=SCHED.classes.filter(c=>!c.online&&!c.code).length;
+  if(SCHED.classes.every(c=>c.online)) return head+'<p class="empty">All of your classes are online, so there are no walks to plan.</p>';
+  const day=CLS_SEL||defaultClassDay(now)||now.date, mon=RS.mondayOf(day);
+  const week=[0,1,2,3,4,5,6].map(i=>RS.addDays(mon,i)).filter((d,i)=>i<5||RS.classesOn(SCHED.classes,d).length);
+  const SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let h=head+'<div class="weeknav"><button class="mbtn" data-act="clsWeek" data-n="-7" aria-label="Previous week">'+icon('chev','sm')+'</button>'+
+    '<span>Week of '+esc(new Date(mon+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'}))+'</span>'+
+    '<button class="mbtn" data-act="clsWeek" data-n="7" aria-label="Next week">'+icon('chev','sm')+'</button></div>'+
+    '<div class="daypick" role="group" aria-label="Choose a day" style="--n:'+week.length+'">'+week.map(d=>{
+      const n=RS.classesOn(SCHED.classes,d).length, cd=RS.campusDay(d), wd=RS.weekday(d);
+      return '<button data-act="clsDay" data-ymd="'+d+'" class="'+(d===day?'on ':'')+(n?'':'none ')+(d===now.date?'today':'')+'" aria-pressed="'+(d===day)+'" aria-label="'+esc(SHORT[wd]+' '+d.slice(8).replace(/^0/,'')+': '+(cd.off?cd.reason:pl(n,'class','classes'))+(d===now.date?', today':''))+'">'+
+        '<b>'+SHORT[wd]+'</b><span>'+d.slice(8).replace(/^0/,'')+'</span><i>'+(cd.off?'off':n||'–')+'</i></button>';
+    }).join('')+'</div>';
+  const cd=RS.campusDay(day), list=RS.classesOn(SCHED.classes,day);
+  if(cd.off) h+='<p class="empty">No classes '+esc(dayTitle(day,now.date).replace(/^(Today|Tomorrow)$/,s=>s.toLowerCase()))+' — '+esc(cd.reason)+'.</p>';
+  else if(!list.length) h+='<p class="empty">No in-person classes '+esc(dayTitle(day,now.date).replace(/^(Today|Tomorrow)$/,s=>s.toLowerCase()))+'.</p>';
+  else{
+    const plan=planFor(day); CUR_PLAN=plan;
+    const nCls=plan.stops.filter(s=>s.kind==='class').reduce((m,s)=>m+s.classes.length,0);
+    h+='<div class="cday"><div class="ctop"><b>'+esc(dayTitle(day,now.date))+'</b><span>'+pl(nCls,'class','classes')+(plan.meters?' · '+(plan.approx?'about ':'')+fmtD(plan.meters)+' · '+fmtDur(RS.minutes(plan.meters)):'')+'</span></div>'+
+      (cd.asMonday?'<p class="note" style="margin:2px 0 6px">Campus follows a Monday schedule this day.</p>':'');
+    plan.stops.forEach(st=>{
+      if(st.kind!=='class') return;
+      const leg=plan.legs.find(l=>l.to===st), nm=bldName(st.code);
+      let warn='';
+      if(leg&&leg.meters&&!leg.missing){
+        const walk=RS.minutes(leg.meters);
+        if(leg.leave){ const gap=tMin(leg.arrive)-tMin(leg.leave);
+          if(walk>gap) warn='<small class="tight">'+icon('alert','sm')+'Tight: '+gap+' min between classes, '+walk+' min walk</small>'; }
+        else if(leg.from.kind==='home'){ const by=tMin(st.start)-walk-3;
+          warn='<small class="leave">Leave '+esc(SCHED.home.name)+' by '+t12(String(Math.floor(by/60)).padStart(2,'0')+':'+String(by%60).padStart(2,'0'))+'</small>'; }
+      }
+      h+='<div class="cls"><div class="t">'+t12(st.start).replace(' ','<small>')+'</small></div><div class="grow"><b>'+esc(stopCourses(st))+'</b>'+
+        '<small>'+esc(dispCode(st.code)+(nm?' · '+nm:''))+(leg?' · '+esc(legLine(leg)):'')+'</small>'+warn+(leg?scenicChip(leg):'')+'</div></div>';
+    });
+    list.filter(c=>!c.code).forEach(c=>{ h+='<div class="cls"><div class="t">'+t12(c.start).replace(' ','<small>')+'</small></div><div class="grow"><b>'+esc(c.course)+'</b><small class="tight">Building not set</small></div></div>'; });
+    const back=plan.legs.find(l=>l.to.kind==='home');
+    if(back) h+='<div class="cls back"><div class="t">'+icon('home','sm')+'</div><div class="grow"><b>Back to '+esc(SCHED.home.name)+'</b><small>'+esc(legLine(back))+'</small>'+scenicChip(back)+'</div></div>';
+    h+='</div>';
+    if(plan.legs.some(l=>l.direct)) h+='<div class="btns"><button class="btn" data-act="commuteMap">'+icon('map','sm')+'Show this day on the map</button></div>';
+  }
+  // totals: this week, and the rest of the term
+  const wk=sumWalk(RS.classDates(SCHED.classes,mon,RS.addDays(mon,6)));
+  const term=RS.termFor(day)||RS.termFor(now.date);
+  if(wk.m||term){
+    const from=term&&now.date>term.start?now.date:term&&term.start, left=term?sumWalk(RS.classDates(SCHED.classes,from,term.end)):null;
+    const all=term?sumWalk(RS.classDates(SCHED.classes,term.start,term.end)):null;
+    const about=x=>x&&x.approx?'about ':'';
+    h+='<div class="week wtot"><div><b>'+(wk.m?fmtMi(wk.m):'0 mi')+'</b><span>'+(wk.m?about(wk)+'this week · '+fmtDur(RS.minutes(wk.m)):'no classes this week')+'</span></div>'+
+      (left?'<div><b>'+fmtMi(left.m)+'</b><span>'+about(left)+'left in '+esc(term.name)+'</span></div><div><b>'+fmtMi(all.m)+'</b><span>'+about(all)+'whole term</span></div>':'')+'</div>'+
+      '<p class="note">Direct routes'+(SCHED.home?' from '+esc(SCHED.home.name)+' and back':' between classes only — set where you start to include the walk there and back')+', staying on campus between classes. Breaks and holidays are skipped.</p>';
+  }
+  const miss=missingCodes();
   if(unset) h+='<button class="row" data-act="sched"><span class="grow"><b>Choose buildings for '+pl(unset,'class','classes')+'</b><small>Your schedule file didn’t list where '+(unset===1?'it meets':'they meet')+'</small></span>'+icon('chev','sm')+'</button>';
   if(!SCHED.home) h+='<button class="row" data-act="sched"><span class="grow"><b>Set where you start your day</b><small>Adds the walk from your dorm, a parking garage or a spot you pick</small></span>'+icon('chev','sm')+'</button>';
   if(miss.length) h+='<button class="row" data-act="sched"><span class="grow"><b>Place '+pl(miss.length,'building')+' on the map</b><small>'+esc(miss.map(dispCode).join(', '))+' isn’t in the campus building list yet</small></span>'+icon('chev','sm')+'</button>';
-  if(plan.legs.some(l=>l.direct)) h+='<div class="btns"><button class="btn" data-act="commuteMap">'+icon('map','sm')+'Show this day on the map</button></div>';
   return h;
 }
 
@@ -2178,6 +2227,9 @@ document.addEventListener('click',e=>{
   else if(a==='share'){ const box=$('shareShape'); shareWalk(FIN,!!(box&&box.checked)); }
   else if(a==='closeFinish') closeFinish();
   else if(a==='sched') openSchedule();
+  else if(a==='clsDay'){ CLS_SEL=t.dataset.ymd; renderHome(); }
+  else if(a==='clsWeek'){ const now=RS.denverToday(), cur=CLS_SEL||defaultClassDay(now)||now.date; CLS_SEL=RS.addDays(RS.mondayOf(cur),+t.dataset.n>0?7:-7);
+    const firstClass=RS.classDates(SCHED.classes,CLS_SEL,RS.addDays(CLS_SEL,6))[0]; if(firstClass) CLS_SEL=firstClass; renderHome(); }
   else if(a==='pickIcs') $('icsFile').click();
   else if(a==='commuteMap') showRoute(CUR_PLAN,null,false);
   else if(a==='clearRoute') clearRoute();

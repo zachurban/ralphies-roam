@@ -8,6 +8,11 @@ paths the student hasn't walked.
 
 ## What the student sees
 
+- **Day picker and weeks.** Mon–Fri chips (weekend days appear if a class meets then) with the class count, "off" for
+  breaks; arrows move a week at a time. Tapping a day shows its walks.
+- **Walking totals.** This week, left in the term, and the whole term (direct routes; breaks and holidays skipped).
+- **Leave-by time** for the first class, and a **tight connection** warning when the walk is longer than the gap between classes.
+
 - **Home → Classes.** The next class day (today until the last class ends, then the next one): each class with its building,
   walk time and distance, the walk back, and a **Scenic route** chip where one is worth it.
 - **Next card.** Within 3 hours of a class with a scenic option, the Next card suggests it. While a scenic route is
