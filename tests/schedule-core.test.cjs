@@ -146,3 +146,14 @@ test('real campus data: Farrand Hall -> Engineering classroom wing routes on the
   assert.ok(r && r.meters > straight * 0.8 && r.meters < straight * 2.2, 'route ' + Math.round(r && r.meters) + ' m vs straight ' + Math.round(straight) + ' m');
   assert.notEqual(b.node, c.node, 'the two Engineering wings reach the walkways at different points');
 });
+
+test('real campus data: East Campus buildings sit on the walkways and connect to main campus', () => {
+  const geo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'paths.geojson'), 'utf8'));
+  const B = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'buildings.json'), 'utf8'));
+  const g = R.buildGraph(geo.features.map(f => ({ id: f.properties.id, pts: f.geometry.coordinates.map(c => [c[1], c[0]]) })));
+  const by = Object.fromEntries(B.buildings.map(b => [b.code, b]));
+  for (const c of ['AERO', 'SEEC', 'BIOT', 'SPSC']) assert.ok(R.placeNode(g, by[c]).gap < R.OFF_NET_M, c + ' near a walkway');
+  const r = R.shortest(g, R.placeNode(g, by.ECCR).node, R.placeNode(g, by.AERO).node);
+  const crow = R.hav([by.ECCR.lat, by.ECCR.lng], [by.AERO.lat, by.AERO.lng]);
+  assert.ok(r && r.meters < crow * 1.8, 'Engineering -> Aerospace routes on walkways (' + Math.round(r && r.meters) + ' m)');
+});

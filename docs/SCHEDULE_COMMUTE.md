@@ -77,8 +77,8 @@ brand-new player also gets a real alternative.
   differ. Test files are in `tests/fixtures/`.
 - **Not tested on a physical phone or with real GPS.** Browser tests used simulated GPS along the route.
 - Assumes the student stays on campus between classes; it doesn't model going home at lunch or a dining stop.
-- East Campus buildings (AERO, SEEC, BIOT…) are outside the mapped walkways, so those walks are straight-line estimates
-  marked "outside the mapped walkways".
+- East Campus walkways are included (zone "East Campus"), so classes in AERO, SEEC, BIOT and Research Park route on
+  real paths. Buildings farther than 250 m from any mapped walkway still get a straight-line estimate, marked as such.
 - OSM splits sidewalks into short pieces, so "new paths" counts run high (same as the weekly goal).
 - `buildings.json` in this branch was built from building centers fetched today; the GitHub Action adds outlines (and
   multi-storey parking such as the Euclid AutoPark) on its next run after merge.
@@ -86,8 +86,8 @@ brand-new player also gets a real alternative.
 
 ## Tests
 
-- `node --test tests/schedule-core.test.cjs` — 9 tests: both sample files, privacy (no rooms/instructors kept), folding,
-  the quirk file, CU calendar rules, day stops, routing and scenic selection, and a real Farrand → ECCR route.
+- `node --test tests/schedule-core.test.cjs` — 10 tests: both sample files, privacy (no rooms/instructors kept), folding,
+  the quirk file, CU calendar rules, day stops, routing and scenic selection, a real Farrand → ECCR route, and East Campus routing (ECCR → AERO).
 - Browser checks (headless Chrome, simulated GPS): import, start pick, tap-to-place, Home card, scenic route on the map,
   walking it completes the quest and awards Scenic Route, quest survives reload, bad file, online-only schedule,
   Monday-schedule Friday, remove schedule, erase device, desktop layout; axe accessibility scans clean.
