@@ -11,6 +11,7 @@ BuffPrints is an independent student project. It is not an official University o
 - Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).
 - Improvement requests you save on the Safety page, and the follow-up notes you add.
 - An unfinished walk, so you can resume or finish it after the app closes.
+- **Your class schedule**, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.
 
 ## What is saved to your account (only if you sign in)
 

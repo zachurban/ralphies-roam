@@ -1,0 +1,19 @@
+{
+  "_note": "Hand-kept fixes for CU building codes that OpenStreetMap lists under another code or only by name. Edit here, then rerun scripts/build-buildings.mjs.",
+  "sameBuilding": {
+    "ONKA": "WVE",
+    "LBB": "EDUC",
+    "CIRES": "CIRE",
+    "DDW": "DUAN",
+    "EC": "ECOT",
+    "RL4": "LSRL",
+    "RL6": "MSSC",
+    "RL-6": "MSSC"
+  },
+  "byName": {
+    "ARNT": "Arnett Hall",
+    "CASE": "The Center for Academic Success and Engagement",
+    "IPRC": "Indoor Practice Facility and Parking Garage",
+    "SEEL": "Sustainability Energy and Environment Laboratories"
+  }
+}
