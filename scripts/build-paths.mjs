@@ -15,7 +15,7 @@ const bb = BBOX.join(',');
 async function overpass(q) {
   if (process.env.OSM_FIXTURE) {
     const fx = JSON.parse(fs.readFileSync(process.env.OSM_FIXTURE, 'utf8'));
-    return fx[q.includes('highway') ? 'paths' : q.includes('dormitory') ? 'dorms' : q.includes('Williams Village') ? 'wv' : 'marks'] || { elements: [] };
+    return fx[q.includes('highway') ? 'paths' : q.includes('dormitory') ? 'dorms' : q.includes('Williams Village') ? 'wv' : q.includes('short_name') ? 'east' : 'marks'] || { elements: [] };
   }
   for (let round = 1; round <= 4; round++) {          // public servers are often busy: retry with backoff
     for (const url of ENDPOINTS) {
@@ -83,8 +83,25 @@ const inWV = p => wvAreas.length ? wvAreas.some(a => pip(p, a.edges) || edgeDist
 console.log('Williams Village outline:', wvAreas.length ? wvAreas.map(a => a.name + ' (' + a.edges.length + ' edges)').join('; ') : 'none found — using box');
 console.log('Williams Village box', wvbb, Math.round((WV[2]-WV[0])*M_LAT0)+' x '+Math.round((WV[3]-WV[1])*M_LNG0)+' m', '←', wvFrom);
 
+// ---- East Campus (east of 30th St: Research Park, Aerospace, SEEC, Biotech, Smiley Court) ----
+// Outline = CU's own coded East Campus buildings, padded, inside a hard limit box. A walkway counts only if it
+// is within EC_NEAR_M of one of those buildings, which keeps out the neighborhood and shopping-center sidewalks.
+const EC_LIMIT = [40.0062, -105.2550, 40.0152, -105.2385];   // Colorado Ave .. Arapahoe Ave, 30th St .. east of SEEC
+const EC_NEAR_M = 220;
+const ecbb = EC_LIMIT.join(',');
+const ecEls = await overpass(`[out:json][timeout:60];(way[building][short_name](${ecbb});relation[building][short_name](${ecbb});way[building=university](${ecbb}););out center tags;`);
+const ecBld = ecEls.elements.filter(e => e.center && e.tags && !/^(house|residential|retail|commercial)$/.test(e.tags.building))
+  .map(e => [e.center.lat, e.center.lon]);
+const nearEC = p => ecBld.some(b => Math.hypot((b[0] - p[0]) * M_LAT0, (b[1] - p[1]) * M_LNG0) < EC_NEAR_M);
+const inEC = p => inBox(p, EC_LIMIT) && (ecBld.length ? nearEC(p) : true);
+console.log('East Campus anchor buildings:', ecBld.length, [...new Set(ecEls.elements.map(e => e.tags && (e.tags.short_name || e.tags.name)).filter(Boolean))].slice(0, 40).join(', '));
+// Link between main campus and East Campus (28th–30th St): only the Boulder Creek Path and named campus walks,
+// so the two areas join up without pulling in city sidewalks.
+const LINK = [40.0075, -105.2585, 40.0150, -105.2540];
+const linkKeep = t => /boulder creek|skunk creek|colorado av/i.test(t.name || '') || t.highway === 'cycleway';
+
 const HW = '"highway"~"^(footway|path|pedestrian|steps|cycleway|track|bridleway|living_street)$"';
-const paths = await overpass(`[out:json][timeout:120];(way[${HW}](${bb});way[${HW}](${wvbb}););out geom;`);
+const paths = await overpass(`[out:json][timeout:120];(way[${HW}](${bb});way[${HW}](${wvbb});way[${HW}](${ecbb});way[${HW}](${LINK.join(',')}););out geom;`);
 const marks = await overpass(`[out:json][timeout:60];nwr["name"~"Norlin|Farrand Field|Engineering Center|Kittredge|Varsity|Old Main|Macky",i](${bb});out geom;`);
 
 // Residence halls for the dorm pick list (wider box to include Williams Village)
@@ -150,10 +167,13 @@ for (const w of paths.elements) {
   if (t.highway === 'steps') tags.push('stairs');
   if (t.bridge && t.bridge !== 'no') tags.push('bridge');
   if (t.informal === 'yes' || t.highway === 'track' || (t.highway === 'path' && UNPAVED.test(t.surface || ''))) tags.push('goat');
-  const isWV = inWV(midP);
-  if (!isWV && !inBox(midP, BBOX)) continue;   // came from the Williams Village query but lies outside CU's property
+  const isWV = inWV(midP), inMain = inBox(midP, BBOX);
+  const isEC = !isWV && !inMain && inEC(midP);
+  const isLink = !isWV && !inMain && !isEC && inBox(midP, LINK) && linkKeep(t);
+  if (!isWV && !inMain && !isEC && !isLink) continue;   // from a wider query but outside CU's property
   let zone = /boulder creek/i.test(t.name || '') ? 'creek'
            : isWV ? 'williams'
+           : isEC ? 'east'
            : (ZONES.find(z => inBox(midP, z.box)) || { id: 'campus' }).id;
   for (let i = 1; i < w.geometry.length; i++) {
     const a = w.geometry[i - 1], b = w.geometry[i];
@@ -166,7 +186,7 @@ features.sort((a, b) => a.properties.id.localeCompare(b.properties.id, 'en', { n
 const out = {
   type: 'FeatureCollection',
   attribution: '© OpenStreetMap contributors, ODbL',
-  bbox: [Math.min(BBOX[1], WV[1]), Math.min(BBOX[0], WV[0]), Math.max(BBOX[3], WV[3]), Math.max(BBOX[2], WV[2])],
+  bbox: [Math.min(BBOX[1], WV[1], EC_LIMIT[1]), Math.min(BBOX[0], WV[0], EC_LIMIT[0]), Math.max(BBOX[3], WV[3], EC_LIMIT[3]), Math.max(BBOX[2], WV[2], EC_LIMIT[2])],
   dorms,
   features
 };
