@@ -4,5 +4,7 @@
    protect student data. Leave them blank to run the app offline-only. */
 window.RR_CONFIG = {
   supabaseUrl: 'https://ykuxgfrmkixownnzutno.supabase.co',
+  // Shown in the privacy notice as the place to send questions or deletion requests.
+  contactEmail: '',
   supabaseKey: 'sb_publishable_N5vfwZIazOl7VibaYDbFMQ_ZpVjTeW4'
 };

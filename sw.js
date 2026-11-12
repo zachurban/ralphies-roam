@@ -1,5 +1,5 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v16';
+const VERSION = 'rr-v17';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [

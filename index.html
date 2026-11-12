@@ -181,6 +181,12 @@ textarea.field{min-height:70px;resize:vertical}
 .hzb{flex:1;padding:7px 6px;border-radius:8px;border:1px solid #ccc;background:#f4f4f4;color:#222;font-size:12.5px;font-weight:700;white-space:nowrap}
 .hzb.on{background:#CFB87C;border-color:#b39b5c;color:#14110a}
 .hzb.danger{color:#c62828;border-color:#e3b4b4;background:#fff5f5}
+.privacy{font-size:13.5px;line-height:1.5}
+.privacy h4{margin:14px 0 4px;font-size:14px}
+.privacy ul{margin:0;padding-left:18px}
+.privacy li{margin:3px 0}
+.privacy p{margin:6px 0}
+#modal .btn.danger{color:var(--red)}
 .hz{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 .leaflet-popup-content{font-size:13.5px}
 
@@ -750,6 +756,7 @@ function render(){
     '<div class="stat"><span>Badges</span><b>'+p.nb+' / '+BADGES.length+'</b></div>'+
     '<div class="stat"><span>Last GPS accuracy</span><b>'+(pos?'±'+Math.round(pos.acc)+' m':'—')+'</b></div>'+
     '<div class="row"><button class="btn" id="btnExport">Export my data</button><button class="btn danger" id="btnReset">Reset progress</button></div>'+
+    '<div class="row"><button class="btn" id="btnPrivacy">Privacy & delete my data</button></div>'+
     '<p class="note">Progress is saved on this device'+(cloud.user?' and synced to your account':'')+'. Keep the app open and on screen while you walk — browsers pause GPS when the phone is locked.</p>';
 }
 $('tab-zones').addEventListener('click',e=>{
@@ -763,6 +770,7 @@ $('tab-stats').addEventListener('click',e=>{
   if(e.target.id==='btnReset') modal('Reset all progress?','<p>This clears claimed paths, miles, XP, badges, your streak and this week\'s dorm points on this device'+(cloud.user?' and in your account':'')+'. Paths you named keep their names.</p>',
     [['Yes, reset','pri',resetAll],['Cancel','',()=>{}]]);
   if(e.target.id==='btnExport') exportData();
+  if(e.target.id==='btnPrivacy') openPrivacy();
 });
 function resetAll(){
   S=Object.assign(DEF(),{fogOn:S.fogOn}); normalize();
@@ -786,7 +794,15 @@ function exportData(){
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 $('handle').onclick=()=>{const expanded=$('panel').classList.toggle('open');$('handle').setAttribute('aria-expanded',String(expanded));};
 map.on('click',()=>$('panel').classList.remove('open'));
-$('trackBtn').onclick=()=>{ watchId===null ? startGPS() : stopGPS(); };
+$('trackBtn').onclick=()=>{
+  if(watchId!==null) return stopGPS();
+  if(S.privacyAck) return startGPS();
+  modal('Before your first walk',
+    '<p>BuffPrints uses your location <b>only while you are recording</b> with the app open, to see which paths you walk.</p>'+
+    '<p>Your detailed route stays on this phone. If you sign in, your progress — not your route — is saved to your account.</p>'+
+    '<p>You can export or delete your data at any time.</p>',
+    [['Start recording','pri',()=>{ S.privacyAck=Date.now(); saveNow(); startGPS(); }],['Read the full notice','',openPrivacy],['Cancel','',()=>{}]]);
+};
 $('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; $('fabFog').classList.toggle('on',S.fogOn); saveSoon(); queueFog(); };
 $('fabFollow').onclick=()=>{ follow=true; $('fabFollow').classList.add('on'); map.setView(pos?[pos.lat,pos.lng]:CAMPUS, Math.max(map.getZoom(),ZOOM)); };
 $('fabFog').classList.toggle('on',S.fogOn);
@@ -983,6 +999,82 @@ map.on('click',e=>{ const sg=pathAt(e.latlng); if(sg) openPath(sg); });
 map.on('contextmenu',e=>{ const sg=pathAt(e.latlng); if(sg) openPath(sg); });
 
 /* =====================================================================
+   PRIVACY NOTICE + DATA DELETION  (keep in sync with PRIVACY.md)
+   ===================================================================== */
+const PRIVACY_UPDATED='November 12, 2026';
+function privacyHTML(){
+  const contact=(window.RR_CONFIG&&RR_CONFIG.contactEmail)||'';
+  return '<div class="privacy">'+
+  '<p class="pmeta">Last updated '+PRIVACY_UPDATED+'</p>'+
+  '<p>BuffPrints is an independent student project. It is not an official University of Colorado Boulder app, and it is not monitored by CU or emergency services. In an emergency, call 911.</p>'+
+  '<h4>What stays on your phone</h4><ul>'+
+  '<li><b>Your location</b>, only while you are recording a walk with the app open. It is used to work out which paths you walk.</li>'+
+  '<li><b>Your detailed route</b> (a log of GPS points) is saved only on this device. It is never uploaded.</li>'+
+  '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries.</li></ul>'+
+  '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
+  '<li>Your email address, used only to sign you in.</li>'+
+  '<li>Your optional display name and dorm or team.</li>'+
+  '<li>Which path segments you have claimed and when, your total distance, badges and streak.</li>'+
+  '<li>For each week, how many path segments you walked in each campus zone (not your route or times).</li>'+
+  '<li>Anything you choose to post: hazard pins (location, category, note), your “Still there” / “Fixed” votes, and names you give paths.</li></ul>'+
+  '<h4>Who can see what</h4><ul>'+
+  '<li><b>Anyone, even signed out:</b> path names and the display name of the student who named them.</li>'+
+  '<li><b>Signed-in students:</b> leaderboards (display name, dorm, totals, streak) and hazard pins. Pins never show who reported or voted.</li>'+
+  '<li><b>No one else</b> sees your email, the paths you have claimed, or your location.</li>'+
+  '<li>We do not sell or share your data, show ads, or use analytics or tracking tools.</li></ul>'+
+  '<h4>Services that help run BuffPrints</h4>'+
+  '<p>Supabase stores account data. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.</p>'+
+  '<h4>How long it is kept</h4>'+
+  '<p>Until you delete it. Hazard pins stop showing after 60 days unless someone confirms they are still there.</p>'+
+  '<h4>Your choices</h4><ul>'+
+  '<li><b>Export</b> everything stored on this device, including your route log (Progress → Export my data).</li>'+
+  '<li><b>Reset progress</b> clears your progress here and in your account but keeps your account.</li>'+
+  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, progress, hazard pins, votes and path names — and erases this device. This cannot be undone.</li>'+
+  '<li><b>Location:</b> stop recording at any time, or turn off location for this site in your phone’s settings.</li></ul>'+
+  (contact?'<p>Questions or requests: <a href="mailto:'+esc(contact)+'">'+esc(contact)+'</a></p>':'')+
+  '</div>';
+}
+function openPrivacy(){
+  const btns=[];
+  if(cloud.user) btns.push(['Delete my account & data','danger',confirmDeleteAccount]);
+  btns.push([cloud.user?'Erase this device only':'Erase data on this device', cloud.user?'':'danger', confirmEraseDevice]);
+  btns.push(['Close','',()=>{}]);
+  modal('Your data & privacy', privacyHTML(), btns);
+}
+function confirmEraseDevice(){
+  modal('Erase this device?','<p>This removes all BuffPrints progress, walk history and your route log from this phone'+(cloud.user?', and signs you out. Your account and its data stay in place.':'.')+' It cannot be undone.</p>',
+    [['Erase this device','danger',()=>eraseDevice(cloud.user?'Signed out and erased this device':'Erased this device')],['Cancel','',()=>{}]]);
+}
+function confirmDeleteAccount(){
+  modal('Delete everything?',
+    '<p>This permanently deletes your BuffPrints account and all of its data: your profile, progress, streaks, badges, dorm points, hazard pins, votes and the names you gave paths. It also erases this device. This cannot be undone.</p>'+
+    '<p>Type <b>DELETE</b> to confirm.</p><input class="field" id="delConfirm" autocomplete="off" autocapitalize="characters" placeholder="DELETE">',
+    [['Delete my account','danger',deleteAccount,'delGo'],['Cancel','',()=>{}]]);
+  const inp=$('delConfirm'), go=$('delGo'); go.disabled=true;
+  inp.addEventListener('input',()=>{ go.disabled=inp.value.trim().toUpperCase()!=='DELETE'; });
+  setTimeout(()=>inp.focus(),50);
+}
+async function deleteAccount(){
+  toast('Deleting your account…');
+  const {error}=await cloud.sb.rpc('delete_my_account');
+  if(error) return toast('Couldn\'t delete: '+error.message);
+  eraseDevice('Your account and all of its data were deleted');
+}
+async function eraseDevice(msg){
+  try{ if(watchId!==null) stopGPS(); }catch(e){}
+  try{ if(cloud.sb) await cloud.sb.auth.signOut(); }catch(e){}
+  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k==='rr-names'||k.indexOf('sb-')===0) localStorage.removeItem(k); }); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  try{ if(db) db.close(); }catch(e){}
+  await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('ralphies-roam'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });
+  try{ if(window.caches) await caches.delete('rr-tiles'); }catch(e){}
+  S=DEF(); normalize();
+  try{ sessionStorage.setItem('rr-erased', msg||'Erased'); }catch(e){}
+  location.reload();
+}
+try{ const m=sessionStorage.getItem('rr-erased'); if(m){ sessionStorage.removeItem('rr-erased'); setTimeout(()=>toast('🗑️ '+m),600); } }catch(e){}
+
+/* =====================================================================
    CLOUD — Supabase sign-in, progress sync, leaderboards, hazard reports.
    Turned on by config.js. Raw GPS never leaves the phone: only segment IDs,
    distance total, badges, and hazard pins the student chooses to file.
@@ -1082,7 +1174,7 @@ function buildCloudBox(){
     return;
   }
   if(cloud.user){
-    box.innerHTML='<div class="card"><h3>Your account</h3><p>Signed in as '+esc(cloud.user.email)+'</p>'+
+    box.innerHTML='<div class="card"><h3>Your account</h3><p>Signed in as '+esc(cloud.user.email)+' · <button class="text-btn" id="cPrivacy2">Privacy & delete</button></p>'+
       '<div class="sync" id="syncLine"></div>'+
       '<input class="field" id="pfName" maxlength="30" placeholder="Leaderboard name (optional)" autocomplete="nickname">'+
       '<select class="field" id="pfDorm">'+dormOptions()+'</select>'+
@@ -1103,6 +1195,7 @@ function buildCloudBox(){
   box.innerHTML='<div class="card"><h3>Sign in to sync & compete</h3><p>Back up your progress, join the leaderboard, and report campus safety hazards.</p>'+
     '<input class="field" id="cEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@colorado.edu" value="'+esc(cloud.email)+'">'+
     '<div class="row"><button class="btn pri" id="cSend">Email me a sign-in code</button></div>'+
+    '<p class="note">Signing in saves your progress — never your route — to your account. <button class="text-btn" id="cPrivacy">How your data is used</button></p>'+
     '<div class="sync err" id="cMsg"></div></div>';
 }
 function goSignIn(){
@@ -1173,6 +1266,7 @@ function friendly(e){
 $('cloudBox').addEventListener('change',e=>{ if(e.target.id==='pfDorm') $('pfDormOther').hidden=e.target.value!=='__other'; });
 $('cloudBox').addEventListener('click',async e=>{
   const id=e.target.id; if(!cloud.sb) return;
+  if(id==='cPrivacy'||id==='cPrivacy2') return openPrivacy();
   if(id==='cSend'){
     const email=($('cEmail').value||'').trim().toLowerCase();
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return cMsg('Enter a valid email address.');
