@@ -8,7 +8,9 @@ BuffPrints is an independent student project. It is not an official University o
 
 - **Your location**, only while you are recording a walk with the app open. It is used to work out which paths you walk.
 - **Your detailed route** (a log of GPS points) is saved only on this device. It is never uploaded.
-- Your progress: claimed paths, miles, badges, streaks, goals and walk summaries.
+- Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).
+- Improvement requests you save on the Safety page, and the follow-up notes you add.
+- An unfinished walk, so you can resume or finish it after the app closes.
 
 ## What is saved to your account (only if you sign in)
 

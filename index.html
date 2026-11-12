@@ -14,247 +14,45 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-:root{
-  --bg:#0d0f14; --panel:#151821; --card:#1d212c; --line:#2a2f3d;
-  --text:#eef0f4; --muted:#98a0b3; --gold:#CFB87C; --gold2:#e9d9a8;
-  --blue:#3b9dff; --green:#4cd38a; --red:#ff6b6b; --peek:226px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
-  font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-#app{display:flex;height:100vh;height:100dvh;width:100%}
-#mapwrap{position:relative;flex:1;min-width:0}
-#map{position:absolute;inset:0;background:#0b0d11}
-
-/* ---------- panel ---------- */
-#panel{width:350px;flex:none;background:var(--panel);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;z-index:1100}
-#handle{display:none}
-.brand{display:flex;align-items:center;gap:10px;padding:14px 16px 6px}
-.brand .logo{width:34px;height:34px;border-radius:9px;background:var(--gold);color:#111;
-  display:grid;place-items:center;font-weight:800;font-size:18px}
-.brand h1{font-size:17px;margin:0;letter-spacing:.2px}
-.brand small{display:block;color:var(--muted);font-size:12px;font-weight:400}
-.peek{padding:8px 16px 12px}
-#trackBtn{width:100%;padding:14px 16px;border-radius:14px;background:var(--gold);color:#14110a;
-  font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;
-  box-shadow:0 4px 18px rgba(207,184,124,.25);transition:transform .1s}
-#trackBtn:active{transform:scale(.98)}
-#trackBtn .dot{width:11px;height:11px;border-radius:50%;background:#14110a;opacity:.55}
-#trackBtn.on{background:#16324f;color:#dff0ff;box-shadow:0 0 0 2px var(--blue) inset}
-#trackBtn.on .dot{background:var(--blue);opacity:1;animation:blink 1.2s infinite}
-@keyframes blink{50%{opacity:.25}}
-.mini{display:flex;gap:8px;margin-top:10px}
-.mini div{flex:1;background:var(--card);border-radius:10px;padding:7px 8px;text-align:center}
-.mini b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
-.mini span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px}
-.tabs button{flex:1;padding:11px 4px;color:var(--muted);font-weight:600;font-size:13.5px;
-  border-bottom:2px solid transparent}
-.tabs button.act{color:var(--gold);border-color:var(--gold)}
-.tabbody{flex:1;overflow-y:auto;padding:12px 12px calc(16px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
-.tabbody>section{display:none}
-.tabbody>section.act{display:block}
-
-.zone{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);
-  border-radius:14px;padding:11px 12px;margin-bottom:9px;border:1px solid transparent}
-.zone:active{border-color:var(--gold)}
-.zone h3{margin:0;font-size:15px}
-.zone p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
-.ring{flex:none;width:54px;height:54px;position:relative}
-.ring svg{transform:rotate(-90deg)}
-.ring span{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:700}
-.done h3::after{content:" ✓";color:var(--green)}
-
-.badges{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.badge{background:var(--card);border-radius:14px;padding:12px 10px;text-align:center;opacity:.45;
-  border:1px solid transparent}
-.badge.got{opacity:1;border-color:rgba(207,184,124,.55)}
-.badge .ic{font-size:28px;filter:grayscale(1)}
-.badge.got .ic{filter:none}
-.badge b{display:block;font-size:13.5px;margin-top:4px}
-.badge small{color:var(--muted);font-size:11.5px;display:block;margin-top:2px}
-
-.stat{display:flex;justify-content:space-between;align-items:baseline;background:var(--card);
-  padding:11px 13px;border-radius:12px;margin-bottom:8px}
-.stat span{color:var(--muted);font-size:13px}
-.stat b{font-size:17px;font-variant-numeric:tabular-nums}
-.bar{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin:6px 0 14px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:8px;transition:width .4s}
-.lvl{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
-.lvl b{color:var(--gold)}
-.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.btn{flex:1;padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);
-  font-size:13.5px;font-weight:600;white-space:nowrap}
-.btn.danger{color:var(--red)}
-.note{color:var(--muted);font-size:12px;margin:12px 2px 0}
-
-/* ---------- map chrome ---------- */
-#status{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-  z-index:1000;background:rgba(13,15,20,.88);backdrop-filter:blur(6px);border:1px solid var(--line);
-  padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:600;white-space:nowrap;
-  display:flex;align-items:center;gap:7px;max-width:72%;overflow:hidden;text-overflow:ellipsis}
-#status i{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
-#status.ok i{background:var(--green)} #status.warn i{background:#ffb84d}
-#status.bad i{background:var(--red)}
-#fabs{position:absolute;right:10px;bottom:calc(26px + env(safe-area-inset-bottom));z-index:1000;
-  display:flex;flex-direction:column;gap:9px}
-.fab{width:46px;height:46px;border-radius:50%;background:rgba(21,24,33,.94);border:1px solid var(--line);
-  font-size:20px;display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.4)}
-.fab.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(207,184,124,.35)}
-.leaflet-control-layers{border-radius:10px!important}
-.leaflet-container{font:inherit}
-
-.me{position:relative;width:22px;height:22px}
-.me .core{position:absolute;inset:4px;border-radius:50%;background:var(--blue);border:2.5px solid #fff;
-  box-shadow:0 0 8px rgba(59,157,255,.9)}
-.me .pulse{position:absolute;inset:0;border-radius:50%;background:rgba(59,157,255,.55);
-  animation:pulse 1.8s ease-out infinite}
-@keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(3.2);opacity:0}}
-
-#toasts{position:absolute;left:50%;top:calc(50px + env(safe-area-inset-top));transform:translateX(-50%);
-  z-index:1200;display:flex;flex-direction:column;gap:7px;align-items:center;pointer-events:none;width:92%}
-.toast{background:rgba(21,24,33,.96);border:1px solid var(--gold);color:var(--text);padding:9px 15px;
-  border-radius:12px;font-size:13.5px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.5);
-  animation:tin .25s ease-out;max-width:100%;text-align:center}
-.toast.out{opacity:0;transition:opacity .4s}
-@keyframes tin{from{transform:translateY(-8px);opacity:0}}
-
-#modal{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);display:none;place-items:center;padding:20px}
-#modal.show{display:grid}
-#modal .box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;max-width:380px;width:100%}
-#modal h2{margin:0 0 8px;font-size:18px}
-#modal p{margin:0 0 10px;color:var(--muted);font-size:14px}
-#modal .btn{display:block;width:100%;margin-top:8px;padding:13px;font-size:15px}
-#modal .btn.pri{background:var(--gold);color:#14110a;border-color:var(--gold)}
-
-/* ---------- cloud / board / hazards ---------- */
-.card{background:var(--card);border-radius:14px;padding:13px;margin:0 0 14px}
-#statsBody+#cloudBox .card{margin:14px 0 0}
-.card h3{margin:0 0 6px;font-size:15px}
-.card p{margin:0 0 8px;color:var(--muted);font-size:13px}
-.field{display:block;width:100%;margin:6px 0;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
-  background:#10131a;color:var(--text);font:inherit;font-size:16px}
-textarea.field{min-height:70px;resize:vertical}
-.btn.pri{background:var(--gold);color:#14110a;border-color:var(--gold)}
-.sync{font-size:12.5px;color:var(--muted);margin:2px 0 8px}
-.sync.err{color:var(--red)}
-.seg{display:flex;background:var(--card);border-radius:10px;padding:3px;margin-bottom:10px}
-.seg button{flex:1;padding:8px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted)}
-.seg button.act{background:var(--line);color:var(--text)}
-.lb{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:9px 12px;margin-bottom:6px}
-.lb .r{width:26px;font-weight:800;color:var(--gold);text-align:center}
-.lb .n{flex:1;min-width:0}
-.lb .n b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb .n small{color:var(--muted);font-size:12px}
-.lb .v{text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
-.lb.you{border:1px solid var(--gold)}
-.nudge{display:block;width:100%;margin-top:8px;padding:8px 11px;border-radius:10px;background:rgba(207,184,124,.12);
-  border:1px solid rgba(207,184,124,.4);color:var(--gold2);font-size:13px;font-weight:600;text-align:left;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis}
-.nudge[hidden]{display:none}
-.zone .terr{display:block;margin-top:3px;font-size:12px;color:var(--gold2)}
-.nextup{background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:10px;border:1px solid rgba(207,184,124,.35)}
-.nextup h4{margin:0 0 4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-.nextup button{display:block;width:100%;text-align:left;padding:7px 0;font-size:13.5px;border-top:1px solid var(--line)}
-.nextup button:first-of-type{border-top:0}
-.tz{background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:9px}
-.tz h3{margin:0 0 6px;font-size:14.5px}
-.tz .d{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--muted)}
-.tz .d.lead{color:var(--text);font-weight:700}
-.tz .d.mine{color:var(--gold)}
-.ping{width:26px;height:26px;border-radius:50%;border:3px solid var(--gold);animation:pulse 1.2s ease-out infinite}
-.leaflet-tooltip.pname{background:rgba(13,15,20,.82);color:var(--gold2);border:1px solid rgba(207,184,124,.5);
-  border-radius:8px;padding:1px 7px;font-size:11.5px;font-weight:700;box-shadow:none;white-space:nowrap}
-.leaflet-tooltip.pname:before{display:none}
-.pmeta{font-size:13px;color:var(--muted);margin:0 0 10px}
-.pmsg{font-size:12.5px;min-height:17px;margin:2px 0 0}
-.pmsg.bad{color:var(--red)} .pmsg.good{color:var(--green)}
-#modal .btn[disabled]{opacity:.45}
-.hzp{font-size:13.5px;line-height:1.35}
-.hzp div{margin:2px 0}
-.hzp small{display:block;color:#666;margin-top:3px}
-.hzr{display:flex;gap:6px;margin-top:8px}
-.hzb{flex:1;padding:7px 6px;border-radius:8px;border:1px solid #ccc;background:#f4f4f4;color:#222;font-size:12.5px;font-weight:700;white-space:nowrap}
-.hzb.on{background:#CFB87C;border-color:#b39b5c;color:#14110a}
-.hzb.danger{color:#c62828;border-color:#e3b4b4;background:#fff5f5}
-.privacy{font-size:13.5px;line-height:1.5}
-.privacy h4{margin:14px 0 4px;font-size:14px}
-.privacy ul{margin:0;padding-left:18px}
-.privacy li{margin:3px 0}
-.privacy p{margin:6px 0}
-#modal .btn.danger{color:var(--red)}
-.hz{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
-.leaflet-popup-content{font-size:13.5px}
-
-/* ---------- mobile: bottom sheet ---------- */
-@media (max-width:820px){
-  #app{display:block}
-  #mapwrap{position:fixed;left:0;right:0;top:0;bottom:var(--peek)}
-  #panel{position:fixed;left:0;right:0;bottom:0;width:auto;height:72vh;height:72dvh;border-right:0;
-    border-top:1px solid var(--line);border-radius:18px 18px 0 0;
-    transform:translateY(calc(100% - var(--peek)));transition:transform .28s ease;
-    box-shadow:0 -8px 30px rgba(0,0,0,.45)}
-  #panel.open{transform:none}
-  #handle{display:block;width:100%;padding:8px 0 4px}
-  #handle::before{content:"";display:block;width:42px;height:5px;border-radius:5px;background:var(--line);margin:0 auto}
-  .brand{display:none}
-  .peek{padding:2px 12px 8px}
-  .mini div{padding:5px 4px}
-  .mini b{font-size:15px}
-  .mini span{font-size:9.5px;letter-spacing:.3px}
-  .badges{grid-template-columns:1fr 1fr 1fr}
-  .tabs button{font-size:13px}
-}
-</style>
-<link rel="stylesheet" href="student.css">
+<link rel="stylesheet" href="app.css">
 </head>
-<body data-view="today">
+<body data-view="home">
 <div id="app">
-  <aside id="panel">
-    <button id="handle" aria-label="Expand panel"></button>
-    <div class="brand">
-      <div class="logo">B</div>
-      <h1>BuffPrints<small>Explore campus. Leave your mark.</small></h1><button class="profile-shortcut" data-open="stats" aria-label="Profile and progress">You</button>
+  <div id="side">
+    <header class="topbar">
+      <div class="wordmark"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#CFB87C" d="M10.6 4.2C9.2 2.6 6.4 3 5.2 5.4 3.8 8.2 3.6 12.4 4.6 15.8c.8 2.7 2.6 4.6 4.6 4.5 1.7-.1 2.4-1.7 2.3-3.6l-.4-6.8c-.1-2.3.6-4.2-.5-5.7Z"/><path fill="#CFB87C" d="M13.4 4.2c1.4-1.6 4.2-1.2 5.4 1.2 1.4 2.8 1.6 7 .6 10.4-.8 2.7-2.6 4.6-4.6 4.5-1.7-.1-2.4-1.7-2.3-3.6l.4-6.8c.1-2.3-.6-4.2.5-5.7Z"/></svg></span>BuffPrints</div><span class="spacer"></span>
+      <button class="acct" data-go="progress" aria-label="Your progress and account">You</button>
+    </header>
+    <div id="offline" role="status">You’re offline. Walks still record and save on this phone and sync when you reconnect.</div>
+    <main id="views">
+      <section class="view act" id="v-home" aria-label="Home"><div id="homeTop"></div><div class="mapcard" id="homeMapSlot"><div class="open"><button class="btn" data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg>Open map</button></div></div><div id="homeNext"></div><div id="homeBottom"></div></section>
+      <section class="view" id="v-explore" aria-label="Explore"><div id="exploreMap"></div><div id="sheet"><button id="sheetHandle" aria-label="Show more" aria-expanded="false" aria-controls="sheetBody"></button><div id="sheetBody"></div></div></section>
+      <section class="view" id="v-progress" aria-label="Progress"><div id="progressBody"></div><div class="label">Account</div><div id="cloudBox"></div><div id="dataBox"></div></section>
+      <section class="view" id="v-community" aria-label="Community"></section>
+      <section class="view" id="v-safety" aria-label="Safety"></section>
+    </main>
+    <button id="recIdle"><span class="dot" aria-hidden="true"></span>Record</button>
+    <div id="recBar" role="region" aria-label="Recording a walk">
+      <span class="live" aria-hidden="true"></span>
+      <div class="stat"><b id="recTime">0:00</b><span>elapsed</span></div>
+      <div class="stat"><b id="recDist">0.00</b><span>miles</span></div>
+      <div class="stat"><b id="recNew">0</b><span>new paths</span></div>
+      <span class="gps" id="recGps">Finding GPS…</span>
+      <button id="recFinish">Finish</button>
     </div>
-    <div class="peek">
-      <button id="trackBtn"><span class="dot"></span><span id="trackLbl">Record walk</span></button><p class="tracking-note">Keep BuffPrints open while walking. GPS stays on this device.</p>
-      <div class="mini">
-        <div><b id="mMiles">0.00</b><span>miles</span></div>
-        <div><b id="mPct">0%</b><span>uncovered</span></div>
-        <div><b id="mStreak">0</b><span>day streak</span></div>
-        <div><b id="mXp">0</b><span>XP</span></div>
-      </div>
-      <button id="nudge" class="nudge" hidden></button>
-    </div>
-    <nav class="tabs" aria-label="Main navigation"><button data-tab="today" class="act" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></svg>Today</button><button data-tab="zones" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z"/><path d="M9 3v16m6-14v16"/></svg>Explore</button><button data-tab="stats" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12m8 8V4m8 16V8"/></svg>Progress</button><button data-tab="board" ><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M2 21v-3a7 7 0 0 1 14 0v3m1-17a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5v2"/></svg>Community</button><button data-tab="safety" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></svg>Safety</button></nav>
-    <div class="tabbody">
-      <section id="tab-today" class="act"></section><section id="tab-zones"></section>
-      <section id="tab-badges"></section>
-      <section id="tab-stats"><div id="statsBody"></div><div id="cloudBox"></div></section>
-      <section id="tab-board"></section>
-<section id="tab-safety"><p class="eyebrow">Look out for your campus</p><h2>Safer steps.<br>Stronger voices.</h2><p class="intro">Flag a problem. Find support. Ask for change.</p>
-<div class="card safety-callout"><h3>Need help right now?</h3><p>In an emergency, call <a href="tel:911">911</a>. BuffPrints is not monitored by CU or emergency responders.</p><a class="resource" href="https://www.colorado.edu/publicsafety/resources" target="_blank" rel="noopener"><span>CU Boulder Safe<small>Official walk monitoring, alerts & support</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/umc/cunightride" target="_blank" rel="noopener"><span>CU NightRide<small>Evening rides · check current availability</small></span><span>↗</span></a></div>
-<div class="card"><h3>Make a useful report</h3><p>A dark walkway, icy steps, or an access barrier? Help others understand the condition.</p><button class="btn pri" id="reportHazardBtn">Add a community pin</button><p class="note">Community pins are not official reports and are not automatically sent to CU.</p><a class="resource" href="https://www.colorado.edu/fm/" target="_blank" rel="noopener"><span>Report maintenance to CU<small>Lighting, sidewalks & campus facilities</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/police/services/report-incident" target="_blank" rel="noopener"><span>Official incident reporting<small>Including pedestrian / crossing concerns</small></span><span>↗</span></a></div>
-<div class="card"><p class="eyebrow">Student advocacy</p><h3>Ask for a fix, not just a pin.</h3><p>Prepare a clear request with a location, observation, and proposed improvement.</p><button class="btn" id="advocateBtn">Create an advocacy draft</button></div>
-<div class="goal-head"><h3 class="section-label">Community reports</h3><button class="text-btn" id="refreshHazards">Refresh</button></div><div id="hazardFeed" class="hazard-list"></div>
-<p class="note">Student reports may be incomplete or outdated. “Fixed” votes are community feedback, not an inspection. Never enter a hazardous area to earn progress or verify a pin.</p></section>
-    </div>
-  </aside>
-  <main id="mapwrap">
-    <div id="map" aria-label="Campus exploration map"></div><div class="map-title">CU BOULDER<small>Walk somewhere new.</small></div>
-    <div id="status"><i></i><span id="statusTxt">GPS off</span></div>
-    <div id="toasts" role="status" aria-live="polite"></div>
-    <div id="fabs">
-      <button class="fab" id="fabHazard" title="Report a safety hazard" aria-label="Report a safety hazard">⚠️</button>
-      <button class="fab on" id="fabFog" title="Toggle fog of war" aria-label="Toggle exploration fog">🌫️</button>
-      <button class="fab on" id="fabFollow" title="Follow my location" aria-label="Follow my location">🎯</button>
-    </div>
-  </main>
+    <nav class="tabs" aria-label="Main"><button data-go="home" class="act" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7 9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg>Home</button><button data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14M15 6v14"/></svg>Explore</button><button data-go="progress"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M12 20V5M19 20v-10M3 20h18"/></svg>Progress</button><button data-go="community"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 4.7a3 3 0 0 1 0 6.2M18 14.8c1.9.7 3 2.6 3 5.2"/></svg>Community</button><button data-go="safety"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6Z"/><path d="m9 12 2 2 4-4"/></svg>Safety</button></nav>
+  </div>
+  <div id="deskMap"></div>
 </div>
+<div id="mapwrap"><div id="map" aria-label="Campus map"></div>
+  <div id="gpsChip"><i aria-hidden="true"></i><span id="statusTxt">GPS off</span></div>
+  <div class="map-btns">
+    <button class="mbtn on" id="fabFollow" title="Center on me" aria-label="Center the map on my location"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+    <button class="mbtn" id="fabFog" title="Show fog" aria-label="Show exploration fog" aria-pressed="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M3 13h18M6 17h12M8 5h8"/></svg></button>
+  </div>
+</div>
+<div id="finish" role="dialog" aria-modal="true" aria-labelledby="fTitle"><div class="in" id="finishIn"></div></div>
+<div id="toasts" role="status" aria-live="polite"></div>
 <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="box"><h2 id="mTitle"></h2><div id="mBody"></div><div id="mBtns"></div></div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -361,6 +159,7 @@ function distToSeg(p,s){
 }
 let SEGS=[], SEG_BY_ID={}, TOTAL_LEN=0;
 let PATH_BY_ID={};
+let SEG_META={}, PATH_SEGN={}, PATH_SEGS={}, PATH_LEN={};   // path indexes for goals (filled by indexPaths)
 function buildSegments(){
   SEGS=[]; SEG_BY_ID={}; TOTAL_LEN=0; PATH_BY_ID={};
   PATHS.forEach(p=>{
@@ -378,6 +177,7 @@ function buildSegments(){
       }
     }
   });
+  indexPaths();
 }
 
 /* =====================================================================
@@ -476,13 +276,13 @@ const BADGES = [
   {id:'streak30',ic:'⚡', name:'Unstoppable',       how:'30-day walking streak', test:p=>p.best>=30},
   {id:'namer',   ic:'✏️', name:'Cartographer',      how:'Name a path you walked', test:()=>Object.keys(NAMES).some(k=>NAMES[k].mine)},
   {id:'flag',    ic:'🚩', name:'Flag Planter',      how:'Help your dorm own a zone for the week', test:()=>helpedOwnZone()},
-  {id:'dawn',    ic:'🌅', name:'Dawn Patrol',       how:'Claim a segment before 7 am', test:(p,c)=>c.claimedNow&&c.hr>=4&&c.hr<7}
+  {id:'first2',  ic:'', name:'Second Look',        how:'Record two walks', test:()=>(S.sessions||[]).length>=2}
 ].concat(ZONES.map(z=>({id:'zone-'+z.id, ic:z.icon, name:z.name+' Complete', how:'Claim every path in '+z.name,
   test:p=>p.z[z.id]&&p.z[z.id].n>0&&p.z[z.id].gotN===p.z[z.id].n})));
 function checkBadges(claimedNow){
   const p=progress(), ctx={claimedNow, hr:new Date().getHours()}; let any=false;
   BADGES.forEach(b=>{ if(!S.badges[b.id] && b.test(p,ctx)){ S.badges[b.id]=Date.now(); S.pending.badges[b.id]=S.badges[b.id]; any=true;
-    toast(b.ic+' Badge unlocked: '+b.name); buzz([60,40,120]); } });
+    toast('Badge earned · '+b.name); buzz([60,40,120]); } });
   return any;
 }
 
@@ -492,7 +292,6 @@ function checkBadges(claimedNow){
 loadLS(); normalize();
 buildSegments();
 const map = L.map('map',{zoomControl:false, attributionControl:true, zoomSnap:0.5}).setView(CAMPUS, ZOOM);
-L.control.zoom({position:'bottomleft'}).addTo(map);
 // Satellite imagery only. Walkway data comes from OpenStreetMap, so it keeps its credit.
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:19, maxNativeZoom:19, attribution:'Imagery &copy; Esri, Maxar'}).addTo(map);
@@ -504,14 +303,20 @@ map.createPane('fog').style.zIndex=450;   map.getPane('fog').style.pointerEvents
 map.createPane('paths').style.zIndex=460; map.getPane('paths').style.pointerEvents='none';
 
 /* ---- path rendering ---- */
-const pathRenderer = L.canvas({pane:'paths', padding:0.3});
-const ST_OPEN = {color:'#F3F0E9', weight:2, opacity:.75, dashArray:'3 6', interactive:false, renderer:pathRenderer};
-const ST_DONE = {color:'#CFB87C', weight:5, opacity:.95, dashArray:null, interactive:false, renderer:pathRenderer, lineCap:'round'};
-let pathLayer = L.layerGroup().addTo(map), segLines={};
+// Discovered paths: solid gold with a dark casing so they read on satellite imagery.
+// Unexplored paths: a thin, light dashed line that stays out of the way.
+map.createPane('casing').style.zIndex=455; map.getPane('casing').style.pointerEvents='none';
+const pathRenderer = L.canvas({pane:'paths', padding:0.3}), casingRenderer = L.canvas({pane:'casing', padding:0.3});
+const ST_OPEN = {color:'#F3F0E9', weight:1.6, opacity:.7, dashArray:'2 6', interactive:false, renderer:pathRenderer};
+const ST_DONE = {color:'#CFB87C', weight:4.5, opacity:1, dashArray:null, interactive:false, renderer:pathRenderer, lineCap:'round'};
+const ST_CASE = {color:'#1E2022', weight:7.5, opacity:.55, interactive:false, renderer:casingRenderer, lineCap:'round'};
+let pathLayer = L.layerGroup().addTo(map), casingLayer = L.layerGroup().addTo(map), segLines={};
 function drawPaths(){
-  pathLayer.clearLayers(); segLines={};
-  SEGS.forEach(s=>{ segLines[s.id]=L.polyline([s.a,s.b], S.claimed[s.id]?ST_DONE:ST_OPEN).addTo(pathLayer); });
+  pathLayer.clearLayers(); casingLayer.clearLayers(); segLines={};
+  SEGS.forEach(s=>{ const done=!!S.claimed[s.id]; if(done) L.polyline([s.a,s.b],ST_CASE).addTo(casingLayer);
+    segLines[s.id]=L.polyline([s.a,s.b], done?ST_DONE:ST_OPEN).addTo(pathLayer); });
 }
+function markClaimed(s){ if(segLines[s.id]) segLines[s.id].setStyle(ST_DONE); L.polyline([s.a,s.b],ST_CASE).addTo(casingLayer); }
 drawPaths();
 
 /* ---- fog of war canvas ---- */
@@ -618,28 +423,23 @@ function onFix(lat,lng,acc,src){
   if(good){
     rollDates();
     const now=Date.now(), here=[lat,lng]; let pts=[here], moved=false;
-    if(!last){ last={ll:here,t:now}; logTrack(lat,lng,acc,src); }
+    if(!last){ last={ll:here,t:now}; logTrack(lat,lng,acc,src); recPoint(lat,lng); }
     else{
       const d=distM(last.ll,here), dt=(now-last.t)/1000;
       if(d>=Math.max(4,acc*0.5)){
         const plausible = dt<=90 && d/Math.max(dt,0.5)<=MAX_SPEED;
         if(plausible){
-          S.meters+=d; if(recording) recording.meters+=d; moved=true;
+          S.meters+=d; if(S.rec){ S.rec.meters+=d; if(d/Math.max(dt,0.5)>=0.3) S.rec.moving=(S.rec.moving||0)+Math.min(dt,30); } moved=true;
           const n=Math.min(40,Math.floor(d/6)); // fill the gap between fixes so nothing is skipped
           for(let k=1;k<n;k++) pts.push([last.ll[0]+(lat-last.ll[0])*k/n, last.ll[1]+(lng-last.ll[1])*k/n]);
         }
-        last={ll:here,t:now}; logTrack(lat,lng,acc,src);
+        last={ll:here,t:now}; logTrack(lat,lng,acc,src); recPoint(lat,lng);
       }
     }
-    const r=claimAlong(pts), fresh=r.fresh; if(recording)recording.newSegments+=fresh.length;
+    const r=claimAlong(pts), fresh=r.fresh; if(S.rec)S.rec.newSegments+=fresh.length;
     const streakUp=updateStreak();
-    if(fresh.length){
-      fresh.forEach(s=>segLines[s.id]&&segLines[s.id].setStyle(ST_DONE));
-      const special=fresh.find(s=>s.tags.length);
-      toast('+'+fresh.length+' segment'+(fresh.length>1?'s':'')+' · '+nameOf(special||fresh[0]));
-      buzz(30);
-    }
-    if(fresh.length) nearMissToasts(fresh);
+    if(fresh.length){ fresh.forEach(markClaimed); onFreshClaims(fresh); buzz(30); }
+    else renderRecBar();
     if(fresh.length||moved||r.visited||streakUp){ checkBadges(fresh.length>0); saveSoon(); render(); syncSoon(); }
   }
   queueFog();
@@ -654,7 +454,7 @@ function startGPS(){
   if(!('geolocation' in navigator)) return gpsProblem('This browser has no location support.','Try Safari on iPhone or Chrome on Android.');
   if(!window.isSecureContext) return gpsProblem('GPS needs a secure (https) page.','Open this app from its https:// address.');
   if(watchId!==null)return;
-  recording={at:Date.now(),meters:0,newSegments:0}; openTab('zones');
+  if(!S.rec) S.rec={at:Date.now(),meters:0,newSegments:0,moving:0,newPaths:0,pts:[],seen:{}}; saveNow(); go('explore');
   setStatus('warn','Finding GPS…');
   watchId=navigator.geolocation.watchPosition(
     p=>onFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy||999,'gps'),
@@ -685,10 +485,7 @@ function gpsProblem(title,body){
     ['Try GPS again','pri',()=>startGPS()],
     ['Close','',()=>{}]]);
 }
-function setTrackUI(on){
-  $('trackBtn').classList.toggle('on',on);
-  $('trackLbl').textContent=on?'Finish walk':'Record walk';
-}
+
 
 
 /* =====================================================================
@@ -696,9 +493,9 @@ function setTrackUI(on){
    ===================================================================== */
 function $(id){ return document.getElementById(id); }
 function buzz(p){ try{ navigator.vibrate&&navigator.vibrate(p); }catch(e){} }
-function setStatus(cls,txt){ $('status').className=cls; $('statusTxt').textContent=txt; }
+function setStatus(cls,txt){ $('gpsChip').className=cls; $('statusTxt').textContent=txt; }
 function toast(msg){
-  const t=document.createElement('div'); t.className='toast'; t.textContent=msg; $('toasts').appendChild(t);
+  const t=document.createElement('div'); t.className='toast'; t.textContent=String(msg).replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,''); $('toasts').appendChild(t);
   while($('toasts').children.length>3) $('toasts').firstChild.remove();
   setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(),450); },2600);
 }
@@ -718,60 +515,6 @@ function ring(pct,color){
     '<circle cx="27" cy="27" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="6" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+(c*(1-pct/100)).toFixed(1)+'"/></svg><span>'+Math.round(pct)+'%</span></div>';
 }
 const ft=m=>Math.round(m*3.28084).toLocaleString();
-function render(){
-  const p=progress();
-  $('mMiles').textContent=p.miles.toFixed(2);
-  $('mPct').textContent=p.pct.toFixed(p.pct>0&&p.pct<10?1:0)+'%';
-  $('mXp').textContent=p.xp.toLocaleString();
-  $('mStreak').textContent=p.streak; renderToday(p);
-
-  NUDGES=buildNudges(p);
-  const top=NUDGES[0];
-  $('nudge').hidden=!top; if(top){ $('nudge').textContent=top.text; $('nudge').dataset.i=0; }
-  const next = NUDGES.length ? '<div class="nextup"><h4>Next up</h4>'+NUDGES.slice(0,3).map((n,i)=>'<button data-n="'+i+'">'+esc(n.text)+'</button>').join('')+'</div>' : '';
-
-  $('tab-zones').innerHTML='<p class="eyebrow">Find your next detour</p><h2>Explore campus</h2>'+next+ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n).map(z=>{
-    const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
-    return '<button class="zone'+(zz.n&&zz.gotN===zz.n?' done':'')+'" data-zone="'+z.id+'">'+ring(pct,z.color)+
-      '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p>'+territoryLine(z.id)+'</div></button>';
-  }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog. Tap any path to see or name it.</p>';
-
-  $('tab-badges').innerHTML='<button class="text-btn" data-open="stats">← Your progress</button><h2>Small wins. Big campus.</h2><div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
-    '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="ic">'+b.ic+'</div><b>'+b.name+'</b><small>'+b.how+'</small></div>').join('')+'</div>';
-
-  $('statsBody').innerHTML='<p class="eyebrow">Every walk adds up</p><h2>Your progress</h2><button class="text-btn" data-open="badges">View earned & upcoming badges →</button>'+
-    '<div class="lvl"><span>Level <b>'+p.level+'</b></span><span>'+p.toNext.toLocaleString()+' XP to next</span></div>'+
-    '<div class="bar"><i style="width:'+p.lvlPct.toFixed(1)+'%"></i></div>'+
-    '<div class="stat"><span>🔥 Streak</span><b>'+p.streak+' day'+(p.streak===1?'':'s')+'</b></div>'+
-    '<div class="stat"><span>Best streak · Freezes</span><b>'+p.best+' · '+'🧊'.repeat(S.streak.freezes||0)+(S.streak.freezes?'':'0')+'</b></div>'+
-    '<div class="stat"><span>Today</span><b>'+(dayQualifies()?'Streak day counted':(Math.min(Object.keys(S.day.seen).length,STREAK_SEGS)+' / '+STREAK_SEGS+' segments'))+'</b></div>'+
-    '<div class="stat"><span>Segments walked this week</span><b>'+p.weekSegs+'</b></div>'+
-    '<div class="stat"><span>Total distance</span><b>'+p.miles.toFixed(2)+' mi</b></div>'+
-    '<div class="stat"><span>XP</span><b>'+p.xp.toLocaleString()+'</b></div>'+
-    '<div class="stat"><span>Campus uncovered</span><b>'+p.pct.toFixed(1)+'%</b></div>'+
-    '<div class="bar"><i style="width:'+p.pct.toFixed(1)+'%"></i></div>'+
-    '<div class="stat"><span>Segments claimed</span><b>'+p.gotN+' / '+SEGS.length+'</b></div>'+
-    '<div class="stat"><span>Path miles claimed</span><b>'+(p.got/1609.344).toFixed(2)+' / '+(TOTAL_LEN/1609.344).toFixed(2)+'</b></div>'+
-    '<div class="stat"><span>Stairs · Bridges · Goat paths</span><b>'+p.tag.stairs[0]+'/'+p.tag.stairs[1]+' · '+p.tag.bridge[0]+'/'+p.tag.bridge[1]+' · '+p.tag.goat[0]+'/'+p.tag.goat[1]+'</b></div>'+
-    '<div class="stat"><span>Badges</span><b>'+p.nb+' / '+BADGES.length+'</b></div>'+
-    '<div class="stat"><span>Last GPS accuracy</span><b>'+(pos?'±'+Math.round(pos.acc)+' m':'—')+'</b></div>'+
-    '<div class="row"><button class="btn" id="btnExport">Export my data</button><button class="btn danger" id="btnReset">Reset progress</button></div>'+
-    '<div class="row"><button class="btn" id="btnPrivacy">Privacy & delete my data</button></div>'+
-    '<p class="note">Progress is saved on this device'+(cloud.user?' and synced to your account':'')+'. Keep the app open and on screen while you walk — browsers pause GPS when the phone is locked.</p>';
-}
-$('tab-zones').addEventListener('click',e=>{
-  const nb=e.target.closest('[data-n]'); if(nb) return goNudge(NUDGES[+nb.dataset.n]);
-  const b=e.target.closest('.zone'); if(!b) return;
-  const pts=[]; SEGS.forEach(s=>{ if(s.zone===b.dataset.zone){ pts.push(s.a,s.b); } });
-  if(pts.length){ follow=false; $('fabFollow').classList.remove('on'); $('panel').classList.remove('open');
-    setTimeout(()=>{ map.invalidateSize(); map.fitBounds(L.latLngBounds(pts).pad(0.25)); },60); }
-});
-$('tab-stats').addEventListener('click',e=>{
-  if(e.target.id==='btnReset') modal('Reset all progress?','<p>This clears claimed paths, miles, XP, badges, your streak and this week\'s dorm points on this device'+(cloud.user?' and in your account':'')+'. Paths you named keep their names.</p>',
-    [['Yes, reset','pri',resetAll],['Cancel','',()=>{}]]);
-  if(e.target.id==='btnExport') exportData();
-  if(e.target.id==='btnPrivacy') openPrivacy();
-});
 function resetAll(){
   S=Object.assign(DEF(),{fogOn:S.fogOn}); normalize();
   if(cloud.user){ const u=cloud.user.id;
@@ -791,21 +534,6 @@ function exportData(){
     document.body.appendChild(a); a.click(); a.remove(); toast('Exported '+track.length+' GPS points');
   });
 }
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
-$('handle').onclick=()=>{const expanded=$('panel').classList.toggle('open');$('handle').setAttribute('aria-expanded',String(expanded));};
-map.on('click',()=>$('panel').classList.remove('open'));
-$('trackBtn').onclick=()=>{
-  if(watchId!==null) return stopGPS();
-  if(S.privacyAck) return startGPS();
-  modal('Before your first walk',
-    '<p>BuffPrints uses your location <b>only while you are recording</b> with the app open, to see which paths you walk.</p>'+
-    '<p>Your detailed route stays on this phone. If you sign in, your progress — not your route — is saved to your account.</p>'+
-    '<p>You can export or delete your data at any time.</p>',
-    [['Start recording','pri',()=>{ S.privacyAck=Date.now(); saveNow(); startGPS(); }],['Read the full notice','',openPrivacy],['Cancel','',()=>{}]]);
-};
-$('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; $('fabFog').classList.toggle('on',S.fogOn); saveSoon(); queueFog(); };
-$('fabFollow').onclick=()=>{ follow=true; $('fabFollow').classList.add('on'); map.setView(pos?[pos.lat,pos.lng]:CAMPUS, Math.max(map.getZoom(),ZOOM)); };
-$('fabFog').classList.toggle('on',S.fogOn);
 window.addEventListener('resize',()=>{ map.invalidateSize(); queueFog(); });
 
 
@@ -832,12 +560,11 @@ function buildNudges(p){
   if(!todayDone){
     const need=STREAK_SEGS-Math.min(Object.keys(S.day.seen).length,STREAK_SEGS);
     const late=new Date().getHours()>=15;
-    if(sNow>0) add(late?120:100,'🔥 Keep your '+sNow+'-day streak: claim 1 new segment or walk '+need+' more today',nearest(s=>!S.claimed[s.id]));
-    else add(35,'🔥 Start a streak: claim 1 new segment or walk '+STREAK_SEGS+' today',nearest(s=>!S.claimed[s.id]));
+    if(sNow>0) add(30,'Walk today to keep your '+sNow+'-day streak — rest days are fine',nearest(s=>!S.claimed[s.id]));
   }
   // zones close to complete
   ZONES.forEach(z=>{ const zz=p.z[z.id]; if(!zz||!zz.n) return; const rem=zz.n-zz.gotN;
-    if(rem>0 && rem<=Math.max(3,Math.ceil(zz.n*0.08))) add(90-rem,'🏁 '+rem+' segment'+(rem>1?'s':'')+' from completing '+z.name,nearest(s=>s.zone===z.id&&!S.claimed[s.id]));
+    if(rem>0 && rem<=Math.max(3,Math.ceil(zz.n*0.08))) add(90-rem,'Almost done with '+z.name+' — '+rem+' short section'+(rem>1?'s':'')+' left',nearest(s=>s.zone===z.id&&!S.claimed[s.id]));
   });
   // territory
   if(typeof cloud!=='undefined' && cloud.territory && cloud.profile && cloud.profile.dorm){
@@ -855,7 +582,7 @@ function buildNudges(p){
   if(typeof cloud!=='undefined' && cloud.weekBoard){
     const me=cloud.weekBoard.find(r=>r.is_me);
     if(me && me.rank>1){ const above=cloud.weekBoard.filter(r=>r.rank<me.rank).pop();
-      if(above){ const gap=Number(above.segments)-Number(me.segments)+1; if(gap<=25) add(76-gap,'📈 '+gap+' segment'+(gap>1?'s':'')+' to pass '+above.name+' for #'+above.rank+' this week',nearest(s=>!S.week.visits[s.id])); } }
+      if(above){ const gap=Number(above.segments)-Number(me.segments)+1; if(gap<=25) add(76-gap,gap+' more path section'+(gap>1?'s':'')+' to pass '+above.name+' this week',nearest(s=>!S.week.visits[s.id])); } }
   }
   // badge sets
   [['stairs','🪜','staircase','stairsA','Stair Master'],['bridge','🌉','bridge','bridgeA','Troll Toll'],['goat','🐐','goat path','goatA','Off-Trail Legend']].forEach(b=>{
@@ -879,18 +606,6 @@ function buildNudges(p){
   }
   return out.sort((a,b)=>b.score-a.score);
 }
-function goNudge(n){
-  if(!n) return;
-  if(n.seg){ openPath(n.seg); return; }
-  if(!n.target){ if(n.tab) openTab(n.tab); return; }
-  openTab('zones');
-  follow=false; $('fabFollow').classList.remove('on'); $('panel').classList.remove('open');
-  setTimeout(()=>{ map.invalidateSize(); map.flyTo(n.target, Math.max(map.getZoom(),18), {duration:.8});
-    if(pingMarker) map.removeLayer(pingMarker);
-    pingMarker=L.marker(n.target,{icon:L.divIcon({className:'',html:'<div class="ping"></div>',iconSize:[26,26],iconAnchor:[13,13]}),interactive:false}).addTo(map);
-    setTimeout(()=>{ if(pingMarker){ map.removeLayer(pingMarker); pingMarker=null; } },6000); },60);
-}
-$('nudge').onclick=()=>goNudge(NUDGES[0]);
 
 /* =====================================================================
    PATH NAMES — students name paths they've walked; everyone sees them.
@@ -972,7 +687,7 @@ function openPath(seg){
   if(!got) return modal(title,'<p class="pmeta">'+meta+'</p><p>Walk any part of this path to earn naming rights.</p>',[close],clearHL);
   modal(n?'Rename this path':'Name this path',
     '<p class="pmeta">'+meta+'</p>'+
-    '<input class="field" id="pnName" maxlength="30" autocomplete="off" placeholder="e.g. Ralphie\'s Shortcut" value="'+esc(n?n.name:'')+'">'+
+    '<label class="f" for="pnName">Path name</label><input class="field" id="pnName" maxlength="30" autocomplete="off" placeholder="e.g. Ralphie\'s Shortcut" value="'+esc(n?n.name:'')+'">'+
     '<div class="pmsg" id="pnMsg"></div>'+
     '<p class="note" style="margin-top:6px">Everyone sees this name, signed in or not. Keep it clean — names with profanity are rejected.</p>',
     [[n?'Save new name':'Name it','pri',()=>saveName(p.id,$('pnName').value),'pnSave']]
@@ -1010,7 +725,9 @@ function privacyHTML(){
   '<h4>What stays on your phone</h4><ul>'+
   '<li><b>Your location</b>, only while you are recording a walk with the app open. It is used to work out which paths you walk.</li>'+
   '<li><b>Your detailed route</b> (a log of GPS points) is saved only on this device. It is never uploaded.</li>'+
-  '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries.</li></ul>'+
+  '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).</li>'+
+  '<li>Improvement requests you save on the Safety page, and the follow-up notes you add.</li>'+
+  '<li>An unfinished walk, so you can resume or finish it after the app closes.</li></ul>'+
   '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
   '<li>Your email address, used only to sign you in.</li>'+
   '<li>Your optional display name and dorm or team.</li>'+
@@ -1048,7 +765,7 @@ function confirmEraseDevice(){
 function confirmDeleteAccount(){
   modal('Delete everything?',
     '<p>This permanently deletes your BuffPrints account and all of its data: your profile, progress, streaks, badges, dorm points, hazard pins, votes and the names you gave paths. It also erases this device. This cannot be undone.</p>'+
-    '<p>Type <b>DELETE</b> to confirm.</p><input class="field" id="delConfirm" autocomplete="off" autocapitalize="characters" placeholder="DELETE">',
+    '<p>Type <b>DELETE</b> to confirm.</p><label class="f" for="delConfirm">Type DELETE</label><input class="field" id="delConfirm" autocomplete="off" autocapitalize="characters" placeholder="DELETE">',
     [['Delete my account','danger',deleteAccount,'delGo'],['Cancel','',()=>{}]]);
   const inp=$('delConfirm'), go=$('delGo'); go.disabled=true;
   inp.addEventListener('input',()=>{ go.disabled=inp.value.trim().toUpperCase()!=='DELETE'; });
@@ -1167,8 +884,6 @@ async function pull(){
 /* ---- account card (Live Stats tab) ---- */
 function buildCloudBox(){
   const box=$('cloudBox'); if(!box) return;
-  const tab=$('tab-stats');
-  if(cloud.user) tab.appendChild(box); else tab.insertBefore(box, tab.firstChild);
   if(!cloud.sb){
     box.innerHTML='<div class="card"><h3>Account & leaderboards</h3><p>Cloud sync isn\'t set up yet, so progress stays on this device.</p></div>';
     return;
@@ -1176,10 +891,10 @@ function buildCloudBox(){
   if(cloud.user){
     box.innerHTML='<div class="card"><h3>Your account</h3><p>Signed in as '+esc(cloud.user.email)+' · <button class="text-btn" id="cPrivacy2">Privacy & delete</button></p>'+
       '<div class="sync" id="syncLine"></div>'+
-      '<input class="field" id="pfName" maxlength="30" placeholder="Leaderboard name (optional)" autocomplete="nickname">'+
-      '<select class="field" id="pfDorm">'+dormOptions()+'</select>'+
-      '<input class="field" id="pfDormOther" maxlength="40" placeholder="Type your dorm or team" hidden>'+
-      '<div class="row"><button class="btn pri" id="pfSave">Save profile</button><button class="btn" id="cSync">Sync now</button><button class="btn" id="cOut">Sign out</button></div>'+
+      '<label class="f" for="pfName">Leaderboard name</label><input class="field" id="pfName" maxlength="30" placeholder="Leaderboard name (optional)" autocomplete="nickname">'+
+      '<label class="f" for="pfDorm">Dorm or team</label><select class="field" id="pfDorm">'+dormOptions()+'</select>'+
+      '<input class="field" id="pfDormOther" maxlength="40" placeholder="Type your dorm or team" aria-label="Dorm or team name" hidden>'+
+      '<div class="btns"><button class="btn pri" id="pfSave">Save profile</button><button class="btn" id="cSync">Sync now</button><button class="btn" id="cOut">Sign out</button></div>'+
       '<p class="note">The leaderboard shows only your name, dorm and totals — never your email or where you walk.</p></div>';
     setSync(cloud.err);
     fillProfile();
@@ -1187,20 +902,16 @@ function buildCloudBox(){
   }
   if(cloud.step==='code'){
     box.innerHTML='<div class="card"><h3>Check your email</h3><p>We sent a sign-in email to '+esc(cloud.email)+'. Tap its link, or type the 6-digit code here — use the code if you installed the app to your home screen.</p>'+
-      '<input class="field" id="cCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456">'+
-      '<div class="row"><button class="btn pri" id="cVerify">Sign in</button><button class="btn" id="cBack">Use a different email</button></div>'+
+      '<label class="f" for="cCode">Sign-in code</label><input class="field" id="cCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456">'+
+      '<div class="btns"><button class="btn pri" id="cVerify">Sign in</button><button class="btn" id="cBack">Use a different email</button></div>'+
       '<div class="sync err" id="cMsg"></div></div>';
     return;
   }
   box.innerHTML='<div class="card"><h3>Sign in to sync & compete</h3><p>Back up your progress, join the leaderboard, and report campus safety hazards.</p>'+
-    '<input class="field" id="cEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@colorado.edu" value="'+esc(cloud.email)+'">'+
-    '<div class="row"><button class="btn pri" id="cSend">Email me a sign-in code</button></div>'+
+    '<label class="f" for="cEmail">Email</label><input class="field" id="cEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@colorado.edu" value="'+esc(cloud.email)+'">'+
+    '<div class="btns"><button class="btn pri" id="cSend">Email me a sign-in code</button></div>'+
     '<p class="note">Signing in saves your progress — never your route — to your account. <button class="text-btn" id="cPrivacy">How your data is used</button></p>'+
     '<div class="sync err" id="cMsg"></div></div>';
-}
-function goSignIn(){
-  document.querySelector('.tabs [data-tab=stats]').click();
-  setTimeout(()=>{ document.querySelector('.tabbody').scrollTop=0; const f=$('cEmail'); if(f) f.focus(); },320);
 }
 function dormOptions(){
   const list=[...new Set(DORM_LIST.concat(['Off-campus','Faculty & staff']))];
@@ -1225,16 +936,6 @@ function helpedOwnZone(){
   if(typeof cloud==='undefined'||!cloud.territory) return false;
   const wp=weekPoints();
   return cloud.territory.some(r=>r.is_my_dorm && Number(r.rank)===1 && wp[r.zone]>0);
-}
-function territoryLine(zid){
-  if(typeof cloud==='undefined'||!cloud.user||!cloud.territory) return '';
-  const rows=cloud.territory.filter(r=>r.zone===zid);
-  if(!rows.length) return '<span class="terr">🚩 Unowned this week — first dorm to walk here takes it</span>';
-  const lead=rows[0], mine=rows.find(r=>r.is_my_dorm);
-  let t='👑 '+esc(lead.dorm)+' · '+lead.points+' pts';
-  if(mine && Number(mine.rank)===1) t+=' — your dorm leads'+(rows[1]?' by '+(lead.points-rows[1].points):'');
-  else if(mine) t+=' — yours #'+mine.rank+', '+(lead.points-mine.points)+' behind';
-  return '<span class="terr">'+t+'</span>';
 }
 function territoryToasts(prev){
   if(!prev||!cloud.profile||!cloud.profile.dorm) return;
@@ -1296,41 +997,10 @@ $('cloudBox').addEventListener('click',async e=>{
 });
 
 /* ---- Board tab ---- */
-async function loadBoard(){
-  const el=$('tab-board');
-  if(!cloud.sb){ el.innerHTML='<p class="note">Leaderboards turn on once cloud sync is set up.</p>'; return; }
-  if(!cloud.user){ el.innerHTML='<p class="eyebrow">Better together</p><h2>Find your herd.</h2><p class="intro">Turn everyday walks into a shared campus adventure.</p><div class="card"><h3>Walk for your dorm or team</h3><p>Sign in to join the weekly leaderboard, contribute to your dorm’s territory, and name the paths you discover.</p><div class="row"><button class="btn pri" id="bSignIn">Sign in</button></div></div>'; return; }
-  const B=cloud.board;
-  const seg='<div class="seg">'+[['week','This week'],['all','All time'],['terr','Territory']].map(x=>'<button data-b="'+x[0]+'" class="'+(B===x[0]?'act':'')+'">'+x[1]+'</button>').join('')+'</div>';
-  el.innerHTML=seg+'<p class="note">Loading…</p>';
-  await flush();
-  if(B==='terr'){
-    await loadTerritory();
-    const my=cloud.profile&&cloud.profile.dorm;
-    const cards=ZONES.map(z=>{
-      const rows=(cloud.territory||[]).filter(r=>r.zone===z.id);
-      const body=rows.length ? rows.slice(0,4).map(r=>'<div class="d'+(Number(r.rank)===1?' lead':'')+(r.is_my_dorm?' mine':'')+'"><span>'+(Number(r.rank)===1?'👑 ':r.rank+'. ')+esc(r.dorm)+'</span><span>'+r.points+' pts</span></div>').join('')
-        : '<div class="d"><span>Unowned — go claim it</span></div>';
-      return '<div class="tz"><h3>'+z.icon+' '+z.name+'</h3>'+body+'</div>';
-    }).join('');
-    el.innerHTML=seg+(my?'':'<div class="card"><p>Pick your dorm on the Live Stats tab so your walking counts for it.</p></div>')+cards+
-      '<p class="note">Each distinct path segment a member walks in a zone this week earns their dorm 1 point. The dorm with the most points owns the zone. Resets every Monday.</p>';
-    return;
-  }
-  const r = B==='week' ? await cloud.sb.rpc('get_weekly_leaderboard',{lim:50}) : await cloud.sb.rpc('get_leaderboard',{lim:50});
-  if(r.error){ el.innerHTML=seg+'<p class="note">Couldn\'t load the leaderboard: '+esc(r.error.message)+'</p>'; return; }
-  const rows=r.data||[]; if(B==='week') cloud.weekBoard=rows;
-  const fire=x=>x.streak>0?' 🔥'+x.streak:'';
-  const list = !rows.length ? '<p class="note">'+(B==='week'?'No one has walked a path this week yet. Go be first!':'No one has claimed a path yet. Go be first!')+'</p>'
-    : rows.map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><div class="r">'+x.rank+'</div><div class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+fire(x)+'</b><small>'+esc(x.dorm||'')+'</small></div><div class="v">'+x.segments+' seg'+(B==='all'?'<br><small>'+x.miles+' mi</small>':'')+'</div></div>').join('');
-  el.innerHTML=seg+list+'<p class="note">'+(B==='week'?'Distinct path segments walked this week. Resets Monday.':'Ranked by path segments claimed, then miles walked.')+'</p>';
-  render();
-}
-$('tab-board').addEventListener('click',e=>{ if(e.target.id==='bSignIn') return goSignIn(); const b=e.target.closest('[data-b]'); if(b){ cloud.board=b.dataset.b; loadBoard(); } });
 
 /* ---- hazard reports ---- */
 const hazardLayer=L.layerGroup().addTo(map);
-let HAZ={}, hzOpen=null;
+let HAZ={}, hzOpen=null, hazardState='idle';
 function hazardHTML(h){
   const when=d=>new Date(d).toLocaleDateString([], {month:'short', day:'numeric'});
   let meta='Reported '+when(h.created_at);
@@ -1338,11 +1008,11 @@ function hazardHTML(h){
   const tally=[]; if(h.still_there) tally.push(h.still_there+(h.still_there===1?' says':' say')+' still there'); if(h.fixed) tally.push(h.fixed+(h.fixed===1?' says':' say')+' fixed');
   let btns;
   if(h.is_mine) btns='<button class="hzb danger" data-hz="del" data-id="'+h.id+'">Delete my report</button>';
-  else btns='<button class="hzb'+(h.my_vote==='there'?' on':'')+'" data-hz="there" data-id="'+h.id+'">⚠️ Still there</button>'+
-            '<button class="hzb'+(h.my_vote==='fixed'?' on':'')+'" data-hz="fixed" data-id="'+h.id+'">✅ Fixed</button>';
+  else btns='<button class="hzb'+(h.my_vote==='there'?' on':'')+'" data-hz="there" data-id="'+h.id+'" aria-pressed="'+(h.my_vote==='there')+'">Still there</button>'+
+            '<button class="hzb'+(h.my_vote==='fixed'?' on':'')+'" data-hz="fixed" data-id="'+h.id+'" aria-pressed="'+(h.my_vote==='fixed')+'">Fixed</button>';
   return '<div class="hzp"><b>'+esc(HZ[h.category]||h.category)+'</b>'+(h.note?'<div>'+esc(h.note)+'</div>':'')+
     '<small>'+meta+(tally.length?'<br>'+tally.join(' · '):'')+(h.is_mine?'<br>You reported this':'')+'</small>'+
-    '<small>Community feedback, not official verification.</small><div class="hzr">'+btns+'</div></div>';
+    '<small>Student votes are community feedback, not an official inspection.</small><div class="hzr">'+btns+'</div></div>';
 }
 async function loadHazards(){
   if(!cloud.user) { hazardLayer.clearLayers(); HAZ={};hazardState='idle';renderSafety(); return; }
@@ -1354,7 +1024,7 @@ async function loadHazards(){
   hazardLayer.clearLayers(); HAZ={};
   data.forEach(h=>{
     HAZ[h.id]=h;
-    const m=L.marker([h.lat,h.lng],{icon:L.divIcon({className:'',html:'<div class="hz">⚠️</div>',iconSize:[24,24],iconAnchor:[12,12]})})
+    const m=L.marker([h.lat,h.lng],{icon:L.divIcon({className:'',html:'<div class="hzmk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 17v.5"/></svg></div>',iconSize:[26,26],iconAnchor:[13,13]}),title:'Student pin: '+(HZ[h.category]||h.category),alt:'Student pin: '+(HZ[h.category]||h.category)})
       .bindPopup(()=>hazardHTML(HAZ[h.id]||h),{maxWidth:260}).addTo(hazardLayer);
     m.on('popupopen',()=>{ hzOpen=h.id; }); m.on('popupclose',()=>{ if(hzOpen===h.id) hzOpen=null; });
     if(hzOpen===h.id) setTimeout(()=>m.openPopup(),0);
@@ -1381,7 +1051,7 @@ document.addEventListener('click',async e=>{
   buzz(30); loadHazards();
 }, true);
 setInterval(loadHazards,5*60*1000);
-$('fabHazard').onclick=()=>{
+function reportHazard(){
   if(!cloud.sb) return modal('Hazard reports','<p>Hazard reporting turns on once cloud sync is set up.</p>',[['OK','',()=>{}]]);
   if(!cloud.user) return modal('Sign in to report','<p>Sign in so reports can\'t be spammed. Other students see the hazard pin, but never who reported it.</p>',
     [['Go to sign in','pri',goSignIn],['Cancel','',()=>{}]]);
@@ -1389,90 +1059,647 @@ $('fabHazard').onclick=()=>{
   const c=fresh?[pos.lat,pos.lng]:[map.getCenter().lat,map.getCenter().lng];
   const where = fresh ? 'your current location' : 'the center of the map — pan to the spot first';
   modal('Report a hazard','<p>The pin goes at '+where+'. For emergencies call 911. This community pin is not sent to CU. Avoid personal details.</p>'+
-    '<select class="field" id="hzCat">'+Object.keys(HZ).map(k=>'<option value="'+k+'">'+HZ[k]+'</option>').join('')+'</select>'+
-    '<textarea class="field" id="hzNote" maxlength="280" placeholder="What\'s wrong? (optional)"></textarea>',
+    '<label class="f" for="hzCat">What’s the issue?</label><select class="field" id="hzCat">'+Object.keys(HZ).map(k=>'<option value="'+k+'">'+HZ[k]+'</option>').join('')+'</select>'+
+    '<label class="f" for="hzNote">Details (optional)</label><textarea class="field" id="hzNote" maxlength="280" placeholder="What\'s wrong? (optional)"></textarea>',
     [['Submit report','pri',async()=>{
         const {error}=await cloud.sb.from('hazard_reports').insert({lat:c[0], lng:c[1], category:$('hzCat').value, note:($('hzNote').value||'').trim().slice(0,280)||null});
         if(error) toast(/check constraint/i.test(error.message)?'Reports must be on campus':'Couldn\'t send: '+error.message);
-        else { toast('⚠️ Hazard reported — thank you'); loadHazards(); buzz(40); }
+        else { toast('Pin added — thank you'); loadHazards(); buzz(40); }
       }],['Cancel','',()=>{}]]);
-};
+}
 
-/* Student dashboard: local history and a review-before-sharing advocacy workflow. */
-let recording=null;
-let hazardState='idle';
-function openTab(name){
-  const main=name==='badges'?'stats':name;
-  document.body.dataset.view=main;
-  document.querySelectorAll('.tabs button').forEach(b=>{b.classList.toggle('act',b.dataset.tab===main); b.setAttribute('aria-current',b.dataset.tab===main?'page':'false');});
-  document.querySelectorAll('.tabbody>section').forEach(s=>s.classList.toggle('act',s.id==='tab-'+name));
-  $('panel').classList.remove('open');
-  document.querySelector('.tabbody').scrollTop=0;
-  $('handle').setAttribute('aria-expanded','false');
-  if(name==='board') loadBoard();
-  if(name==='safety'){renderSafety();loadHazards();}
-  if(name==='today') renderToday(progress());
-  setTimeout(()=>{map.invalidateSize();queueFog();},60);
+/* =====================================================================
+   APP UI — five destinations: Home, Explore, Progress, Community, Safety.
+   Engines above (GPS, claims, fog, badges, names, cloud, hazards) are unchanged;
+   this block only decides what students see and how they move around.
+   ===================================================================== */
+const MOBILE = matchMedia('(max-width:899px)');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)');
+const ICONS = {
+  home:'<path d="m3 10.5 9-7 9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>',
+  map:'<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14M15 6v14"/>',
+  chart:'<path d="M5 20v-7M12 20V5M19 20v-10M3 20h18"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 4.7a3 3 0 0 1 0 6.2M18 14.8c1.9.7 3 2.6 3 5.2"/>',
+  shield:'<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6Z"/><path d="m9 12 2 2 4-4"/>',
+  locate:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  fog:'<path d="M4 9h16M3 13h18M6 17h12M8 5h8"/>',
+  alert:'<path d="M12 4 2.5 20h19Z"/><path d="M12 10v4M12 17v.4"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  share:'<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/>',
+  flame:'<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-3.5 2-5.5 1 1.5 2 2 2 2 0-3 .5-4.5 1-6.5Z"/>',
+  pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  route:'<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H16"/>',
+  stairs:'<path d="M3 20h5v-5h5v-5h5V5h3"/>',
+  bridge:'<path d="M2 16h20M4 16v-3a8 8 0 0 1 16 0v3M8 16v-4M12 16v-5M16 16v-4"/>',
+  trail:'<path d="M5 21c3-4 9-4 7-9s4-6 7-9"/>',
+  flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  pen:'<path d="M4 20h4L19 9l-4-4L4 16Z"/><path d="m13.5 6.5 4 4"/>',
+  check:'<path d="m5 12 5 5 9-10"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  walk:'<circle cx="13" cy="4.5" r="2"/><path d="m9 21 2.5-7 2.5 2v5M7.5 12l2.8-4 3.7 2 3 3"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  phone:'<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2"/>',
+  car:'<path d="M5 16v-5l2-5h10l2 5v5M3 16h18v3H3ZM7 19v2M17 19v2"/>',
+  doc:'<path d="M6 3h8l4 4v14H6Z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/>',
+  star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+};
+function icon(n,cls){ return '<svg class="i'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>'; }
+const HOOF_D=['M10.6 4.2C9.2 2.6 6.4 3 5.2 5.4 3.8 8.2 3.6 12.4 4.6 15.8c.8 2.7 2.6 4.6 4.6 4.5 1.7-.1 2.4-1.7 2.3-3.6l-.4-6.8c-.1-2.3.6-4.2-.5-5.7Z',
+              'M13.4 4.2c1.4-1.6 4.2-1.2 5.4 1.2 1.4 2.8 1.6 7 .6 10.4-.8 2.7-2.6 4.6-4.6 4.5-1.7-.1-2.4-1.7-2.3-3.6l.4-6.8c.1-2.3-.6-4.2.5-5.7Z'];
+function hoof(color){ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+HOOF_D.map(d=>'<path fill="'+(color||'#CFB87C')+'" d="'+d+'"/>').join('')+'</svg>'; }
+const clean=t=>String(t||'').replace(/^[\p{Extended_Pictographic}️‍\s]+/u,'');
+const pl=(n,w,p)=>n+' '+(n===1?w:(p||w+'s'));
+
+/* ---------- path indexes for goals (stable OSM way IDs) ---------- */
+function indexPaths(){
+  SEG_META={}; PATH_SEGN={}; PATH_SEGS={}; PATH_LEN={};
+  SEGS.forEach(s=>{ SEG_META[s.id]={pid:s.pid,zone:s.zone,len:s.len}; PATH_SEGN[s.pid]=(PATH_SEGN[s.pid]||0)+1; PATH_LEN[s.pid]=(PATH_LEN[s.pid]||0)+s.len; (PATH_SEGS[s.pid]=PATH_SEGS[s.pid]||[]).push(s.id); });
 }
-function renderToday(p){
-  const goal=RoamStudent.goal(S.studentGoal), visits=p.weekSegs||0;
-  const sessions=Array.isArray(S.sessions)?S.sessions:[];
-  $('tab-today').innerHTML='<p class="eyebrow">Your campus. Your pace.</p><h2>Make the everyday<br>a little more adventurous.</h2><p class="intro">A new path between classes. A small win for your week.</p>'+
-    '<div class="card hero"><p class="eyebrow">The campus is yours to discover</p><h3>'+ (p.pct>0?'Keep your story going.':'Take the long way to class.')+'</h3><p>'+ (p.pct>0?p.pct.toFixed(1)+'% explored. There’s more around the next corner.':'Find a different walkway and start uncovering CU Boulder.')+'</p><button class="btn" data-open="zones">Explore the map ↗</button></div>'+
-    '<div class="card"><div class="goal-head"><h3>Your weekly goal</h3><button class="text-btn" id="editGoal">Edit goal</button></div><div class="goal-number">'+visits+' <small>/ '+goal+' segments</small></div><progress value="'+Math.min(visits,goal)+'" max="'+goal+'" aria-label="Weekly segment goal"></progress><div class="goal-foot"><span>'+(visits>=goal?'Goal reached. Enjoy your next walk.':(goal-visits)+' to go · repeat paths count once')+'</span></div><p class="note">Monday–Sunday, Boulder time. Take rest days when you need them.</p></div>'+
-    '<div class="card safety-callout"><p class="eyebrow">Make campus better</p><h3>A broken light shouldn’t go unnoticed.</h3><p>Document a concern, find the right office, and help other Buffs follow up.</p><button class="text-btn" data-open="safety">Open campus safety →</button></div>'+
-    '<h3 class="section-label">Your recent walks <span class="pill">On this device</span></h3>'+
-    (sessions.length?sessions.slice(0,5).map(s=>'<article class="session"><small>'+esc(new Date(s.at).toLocaleDateString([], {month:'short',day:'numeric'}))+'</small><h3>Campus walk</h3><div class="session-numbers"><div><b>'+(s.meters/1609.344).toFixed(2)+'</b><span>Miles</span></div><div><b>'+Math.round(s.seconds/60)+'</b><span>Minutes elapsed</span></div><div><b>'+s.newSegments+'</b><span>New segments</span></div></div></article>').join(''):'<div class="empty">Your first walk starts here. Tap <b>Record walk</b>, keep BuffPrints open, and your summary will appear when you finish.</div>');
+function denverMidnight(k){
+  const a=k.split('-').map(Number);
+  for(const off of [6,7]){ const t=Date.UTC(a[0],a[1]-1,a[2],off);
+    const h=new Date(t).toLocaleString('en-US',{timeZone:TZ,hour:'2-digit',hour12:false}); if(h==='00'||h==='24') return t; }
+  return Date.UTC(a[0],a[1]-1,a[2],7);
 }
-function finishRecording(){
-  if(!recording)return;
-  const activity=RoamStudent.session(recording.at,Date.now(),recording.meters,recording.newSegments);
-  recording=null;
-  if(activity.meters<=0&&activity.newSegments<=0)return;
-  S.sessions=[activity,...(S.sessions||[])].slice(0,50);saveNow();renderToday(progress());
-  modal('Nice walk, Buff.','<p>'+ (activity.meters/1609.344).toFixed(2)+' miles · '+Math.round(activity.seconds/60)+' minutes elapsed · '+activity.newSegments+' new segments.</p><p>Your summary is saved on this device.</p>',[['View my walks','pri',()=>openTab('today')],['Back to map','',()=>openTab('zones')]]);
+function weekStartMs(){ return denverMidnight(weekKey(dkey())); }
+function hist(){ return RoamStudent.pathHistory(S.claimed,SEG_META,PATH_SEGN,PATH_LEN); }
+function weekAct(h){ return RoamStudent.activitySince(h||hist(), S.sessions||[], weekStartMs(), {skipZones:['campus']}); }
+function namedZones(p){ return ZONES.filter(z=>z.id!=='campus'&&p.z[z.id]&&p.z[z.id].n); }
+function zonesLeft(h,p){ return namedZones(p).filter(z=>!h.zones[z.id]).length; }
+function goalRowsNow(p,h,a){ return RoamStudent.goalRows(S.goals,a,zonesLeft(h,p)); }
+function pathTitle(pid){
+  const n=NAMES[pid]; if(n) return n.name;
+  const p=PATH_BY_ID[pid]; if(!p) return 'a path';
+  return p.official ? p.name : 'an unnamed '+p.name.toLowerCase();
+}
+function pathMid(p){
+  let tot=0; const d=[]; for(let i=1;i<p.pts.length;i++){ const x=distM(p.pts[i-1],p.pts[i]); d.push(x); tot+=x; }
+  let acc=0; for(let i=0;i<d.length;i++){ if(acc+d[i]>=tot/2){ const t=(tot/2-acc)/(d[i]||1); return [p.pts[i][0]+(p.pts[i+1][0]-p.pts[i][0])*t, p.pts[i][1]+(p.pts[i+1][1]-p.pts[i][1])*t]; } acc+=d[i]; }
+  return p.pts[0];
+}
+
+/* ---------- map extras: completed-path hoofprints and zone labels ---------- */
+const hoofLayer=L.layerGroup(), zoneLabelLayer=L.layerGroup();
+const hoofIcon=L.divIcon({className:'',html:'<div class="hoofmk">'+hoof()+'</div>',iconSize:[18,18],iconAnchor:[9,9]});
+function drawHoofs(){
+  hoofLayer.clearLayers(); const h=hist();
+  Object.keys(h.paths).forEach(pid=>{ if(h.paths[pid].complete && PATH_BY_ID[pid]) L.marker(pathMid(PATH_BY_ID[pid]),{icon:hoofIcon,interactive:false,keyboard:false}).addTo(hoofLayer); });
+  toggleMapExtras();
+}
+function drawZoneLabels(){
+  zoneLabelLayer.clearLayers();
+  ZONES.filter(z=>z.id!=='campus').forEach(z=>{
+    let n=0,la=0,lo=0; SEGS.forEach(s=>{ if(s.zone===z.id){ n++; la+=s.mid[0]; lo+=s.mid[1]; } });
+    if(n) L.tooltip({permanent:true,direction:'center',className:'zlabel',interactive:false,opacity:1}).setLatLng([la/n,lo/n]).setContent(esc(z.name)).addTo(zoneLabelLayer);
+  });
+  toggleMapExtras();
+}
+function toggleMapExtras(){
+  const zm=map.getZoom(), show=(lyr,on)=>{ if(on&&!map.hasLayer(lyr)) lyr.addTo(map); if(!on&&map.hasLayer(lyr)) map.removeLayer(lyr); };
+  show(hoofLayer, zm>=17); show(zoneLabelLayer, zm<=16.5);
+}
+map.on('zoomend',toggleMapExtras);
+map.attributionControl.setPosition('topleft');
+let zoomCtl=null;
+function setupZoomCtl(){
+  if(!MOBILE.matches&&!zoomCtl) zoomCtl=L.control.zoom({position:'bottomright'}).addTo(map);
+  else if(MOBILE.matches&&zoomCtl){ zoomCtl.remove(); zoomCtl=null; }
+}
+function syncFogBtn(){ const b=$('fabFog'); b.classList.toggle('on',!!S.fogOn); b.setAttribute('aria-pressed',S.fogOn?'true':'false'); b.title=S.fogOn?'Hide fog':'Show fog'; b.setAttribute('aria-label',S.fogOn?'Hide exploration fog':'Show exploration fog'); }
+$('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; syncFogBtn(); saveSoon(); queueFog(); };
+$('fabFollow').onclick=()=>{ follow=true; $('fabFollow').classList.add('on'); if(pos) map.setView([pos.lat,pos.lng],Math.max(map.getZoom(),17)); else map.setView(CAMPUS,ZOOM); };
+
+/* ---------- navigation ---------- */
+const VIEWS=['home','explore','progress','community','safety'];
+const LEGACY={today:'home',zones:'explore',stats:'progress',badges:'progress',board:'community'};
+let VIEW='home';
+function go(v,opts){
+  v=LEGACY[v]||v; if(VIEWS.indexOf(v)<0) v='home'; VIEW=v; document.body.dataset.view=v;
+  VIEWS.forEach(n=>$('v-'+n).classList.toggle('act',n===v));
+  document.querySelectorAll('nav.tabs button').forEach(b=>{ const on=b.dataset.go===v; b.classList.toggle('act',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  mountMap();
+  if(v==='home') renderHome(); if(v==='explore'){ renderExplore(); setSheet(false); }
+  if(v==='progress') renderProgress(); if(v==='community') renderCommunity();
+  if(v==='safety'){ renderSafety(); loadHazards(); }
+  if(!(opts&&opts.keepScroll)) $('v-'+v).scrollTop=0;
+  try{ if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); }catch(e){}
+}
+const openTab=go;
+function mountMap(){
+  const desk=!MOBILE.matches, mw=$('mapwrap');
+  const target = desk ? $('deskMap') : (VIEW==='home' ? $('homeMapSlot') : $('exploreMap'));
+  if(target && mw.parentNode!==target) target.insertBefore(mw, target.firstChild);
+  const card = !desk && VIEW==='home';
+  // In the Home card one finger scrolls the page and two fingers zoom the map; full-screen Explore pans normally.
+  if(card && L.Browser.touch) map.dragging.disable(); else map.dragging.enable();
+  if(card) map.scrollWheelZoom.disable(); else map.scrollWheelZoom.enable();
+  setTimeout(()=>{ map.invalidateSize(); queueFog(); },40);
+}
+(MOBILE.addEventListener?MOBILE.addEventListener.bind(MOBILE,'change'):MOBILE.addListener.bind(MOBILE))(()=>{ setupZoomCtl(); mountMap(); });
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+function render(){ if(VIEW==='home') renderHome(); else if(VIEW==='explore') renderExplore(); else if(VIEW==='progress') renderProgress(); }
+const renderAll=render;
+
+/* ---------- Explore bottom sheet (mobile) ---------- */
+function setSheet(open){ $('sheet').classList.toggle('open',!!open); $('sheetHandle').setAttribute('aria-expanded',open?'true':'false'); $('sheetHandle').setAttribute('aria-label',open?'Show less':'Show more'); }
+(function(){
+  const h=$('sheetHandle'); let y0=null;
+  h.addEventListener('click',()=>setSheet(!$('sheet').classList.contains('open')));
+  h.addEventListener('pointerdown',e=>{ y0=e.clientY; });
+  h.addEventListener('pointerup',e=>{ if(y0==null) return; const dy=e.clientY-y0; y0=null; if(dy<-30) setSheet(true); else if(dy>30) setSheet(false); });
+})();
+
+/* ---------- shared pieces ---------- */
+function goalsHTML(rows){
+  if(!rows.length) return '<p class="empty">No weekly goals turned on. <button class="link" data-act="goals">Choose goals</button></p>';
+  return rows.map(r=>'<div class="goal"><div class="top"><b>'+esc(r.label)+'</b><span class="'+(r.done?'done':'')+'">'+(r.done?'Done':r.value+' / '+r.target)+'</span></div>'+
+    '<div class="bar" role="progressbar" aria-label="'+esc(r.label)+'" aria-valuemin="0" aria-valuemax="'+r.target+'" aria-valuenow="'+r.value+'"><i style="width:'+Math.round(r.value/r.target*100)+'%"></i></div></div>').join('');
+}
+function shapeSVG(shape,stroke){
+  const ky=111320, kx=111320*Math.cos(40*Math.PI/180);
+  const xs=shape.map(p=>p[1]*kx), ys=shape.map(p=>-p[0]*ky);
+  const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
+  const w=Math.max(maxx-minx,1), h=Math.max(maxy-miny,1), s=90/Math.max(w,h), ox=(100-w*s)/2, oy=(100-h*s)/2;
+  const pts=shape.map((p,i)=>((xs[i]-minx)*s+ox).toFixed(1)+','+((ys[i]-miny)*s+oy).toFixed(1)).join(' ');
+  return '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+(stroke||'currentColor')+'" stroke-width="'+(stroke?3.5:4)+'" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function dayLabel(iso,withTime){
+  const d=new Date(iso);
+  return d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})+(withTime?' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'');
+}
+function walkRowHTML(s,i){
+  const mi=(s.meters/1609.344).toFixed(2);
+  const disc = s.newPaths!=null ? pl(s.newPaths,'new path') : pl(s.newSegments,'new section');
+  return '<button class="walk" data-walk="'+i+'"><span class="shape" style="color:var(--gold-text)">'+(s.shape?shapeSVG(s.shape):icon('walk'))+'</span>'+
+    '<span class="grow"><b>'+esc(dayLabel(s.at,true))+'</b><span class="nums"><span>'+mi+' mi</span><span>'+RoamStudent.duration(s.seconds)+'</span><span>'+disc+'</span></span></span>'+icon('chev','sm')+'</button>';
+}
+function badgeIconName(id){
+  if(/^stairs/.test(id)) return 'stairs'; if(/^bridge/.test(id)) return 'bridge'; if(/^goat/.test(id)) return 'trail';
+  if(/^mile/.test(id)) return 'route'; if(/^pct/.test(id)) return 'map'; if(/^streak/.test(id)) return 'flame';
+  if(id==='flag') return 'flag'; if(id==='namer') return 'pen'; if(/^zone-/.test(id)) return 'pin'; if(id==='first') return 'walk'; return 'star';
+}
+function badgeHTML(b){ return '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="bi">'+icon(badgeIconName(b.id),'sm')+'</div><b>'+esc(b.name)+'</b><small>'+esc(b.how)+'</small></div>'; }
+function stat(v,l){ return '<div><b>'+v+'</b><span>'+l+'</span></div>'; }
+function res(href,ic,t,sub){ return '<a class="res" href="'+href+'" target="_blank" rel="noopener">'+icon(ic)+'<span class="grow">'+t+'<small>'+sub+'</small></span>'+icon('ext','sm')+'</a>'; }
+function clock(sec){ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0'); }
+
+/* ---------- one useful next action, derived from real data ---------- */
+let NEXT=null;
+function nextAction(p,h,a,rows){
+  const need=id=>rows.find(r=>r.id===id&&!r.done);
+  if(need('paths')){ const n=nearest(s=>!(h.paths[s.pid]&&h.paths[s.pid].visited)); if(n) return {ic:'route',title:'Visit a new path',sub:cap(pathTitle(n.s.pid))+where(n),target:n.s.mid}; }
+  if(need('zone')){ const n=nearest(s=>s.zone!=='campus'&&!h.zones[s.zone]); if(n) return {ic:'pin',title:'Explore '+zoneName(n.s.zone),sub:'A zone you haven’t walked yet'+where(n),target:n.s.mid}; }
+  if(need('complete')){
+    let best=null; Object.keys(h.paths).forEach(pid=>{ const x=h.paths[pid]; if(!x.complete&&x.total>1&&(!best||x.got/x.total>best.r)) best={pid,r:x.got/x.total}; });
+    if(best){ const n=nearest(s=>s.pid===best.pid&&!S.claimed[s.id]); const left=(PATH_SEGS[best.pid]||[]).filter(id=>!S.claimed[id]).reduce((m,id)=>m+(SEG_BY_ID[id]?SEG_BY_ID[id].len:0),0);
+      if(n) return {ic:'check',title:'Finish '+pathTitle(best.pid),sub:'About '+fmtD(left)+' left'+where(n),target:n.s.mid}; }
+  }
+  if(cloud.user&&cloud.profile&&cloud.profile.dorm&&cloud.territory){
+    let best=null; ZONES.forEach(z=>{ const rows2=cloud.territory.filter(r=>r.zone===z.id); const mine=rows2.find(r=>r.is_my_dorm);
+      if(rows2.length&&mine&&Number(mine.rank)>1){ const gap=rows2[0].points-mine.points+1; if(gap<=15&&(!best||gap<best.gap)) best={z,gap,lead:rows2[0].dorm}; } });
+    if(best){ const n=nearest(s=>s.zone===best.z.id&&!S.week.visits[s.id]); return {ic:'flag',title:'Help '+cloud.profile.dorm+' lead '+best.z.name,sub:best.gap+' more points passes '+best.lead+where(n),target:n?n.s.mid:null,go:n?null:'community'}; }
+  }
+  if(need('walks')&&!S.rec){ const r=need('walks'); return {ic:'walk',title:'Record a walk',sub:r.value+' of '+r.target+' walks this week',record:true}; }
+  if(rows.length&&rows.every(r=>r.done)) return {ic:'check',title:'This week’s goals are done',sub:'Nice work. Wander more or take a rest — both count.',none:true};
+  const n=nearest(s=>!S.claimed[s.id]); if(n) return {ic:'route',title:'Walk somewhere new',sub:cap(pathTitle(n.s.pid))+where(n),target:n.s.mid};
+  return null;
+}
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+function nextHTML(n){ NEXT=n; return '<button class="next" data-act="next"><span class="ic">'+icon(n.ic,'sm')+'</span><span class="grow"><b>'+esc(n.title)+'</b><small>'+esc(n.sub||'')+'</small></span>'+(n.none?'':icon('chev','sm'))+'</button>'; }
+function doNext(n){
+  if(!n||n.none) return;
+  if(n.record) return startRecordingFlow();
+  if(n.go) return go(n.go);
+  if(n.target) flyTo(n.target);
+}
+function flyTo(target){
+  if(VIEW!=='explore') go('explore');
+  follow=false; $('fabFollow').classList.remove('on'); setSheet(false);
+  setTimeout(()=>{ map.invalidateSize(); if(REDUCED.matches) map.setView(target,18); else map.flyTo(target,18,{duration:.7});
+    if(pingMarker) map.removeLayer(pingMarker);
+    pingMarker=L.marker(target,{icon:L.divIcon({className:'',html:'<div class="ping"></div>',iconSize:[28,28],iconAnchor:[14,14]}),interactive:false,keyboard:false}).addTo(map);
+    setTimeout(()=>{ if(pingMarker){ map.removeLayer(pingMarker); pingMarker=null; } },6000); },80);
+}
+function goNudge(n){ if(!n) return; if(n.seg) return openPath(n.seg); if(n.target) flyTo(n.target); }
+
+/* ---------- Home ---------- */
+function renderHome(){
+  const p=progress(), h=hist(), a=weekAct(h), rows=goalRowsNow(p,h,a);
+  const isNew=!(S.sessions&&S.sessions.length)&&!Object.keys(S.claimed).length;
+  $('homeTop').innerHTML=(isNew&&!S.welcomed?'<div class="welcome"><span class="mark" style="flex:none">'+hoof()+'</span><div class="grow"><b>Take a new route between classes.</b><p>Tap Record and walk. BuffPrints marks the paths you cover. Your route stays on this phone.</p></div><button class="mbtn" style="box-shadow:none;width:40px;height:40px" data-act="dismissWelcome" aria-label="Dismiss">'+icon('x','sm')+'</button></div>':'')+
+    '<div class="label">This week <button class="more" data-act="goals">Goals</button></div>'+goalTilesHTML(rows,a);
+  const n=S.rec?null:nextAction(p,h,a,rows);
+  $('homeNext').innerHTML=n?'<div class="label">Next</div>'+nextHTML(n):'';
+  const t=teamSummary(), ses=S.sessions||[];
+  let b='';
+  if(t) b+='<div class="label">'+esc(t.name)+' this week <button class="more" data-go="community">Community</button></div>'+teamLineHTML(t);
+  b+='<div class="label">Recent walks'+(ses.length>2?' <button class="more" data-go="progress">All walks</button>':'')+'</div>'+
+     (ses.length?ses.slice(0,2).map(walkRowHTML).join(''):'<p class="empty">Your walks will show up here after you finish one.</p>');
+  $('homeBottom').innerHTML=b;
+}
+const SHORT={paths:['new path','new paths'],walks:['walk','walks'],zone:['new zone','new zones'],complete:['path finished','paths finished']};
+function goalTilesHTML(rows,a){
+  const mi=(a.walkMeters/1609.344).toFixed(1);
+  if(!rows.length) return '<div class="tiles" style="--n:3"><div class="tile"><b>'+a.walks+'</b><span>'+(a.walks===1?'walk':'walks')+'</span></div><div class="tile"><b>'+a.newPaths+'</b><span>'+(a.newPaths===1?'new path':'new paths')+'</span></div><div class="tile"><b>'+mi+'</b><span>miles</span></div></div>';
+  return '<div class="tiles" style="--n:'+rows.length+'">'+rows.map(r=>'<div class="tile'+(r.done?' done':'')+'" role="group" aria-label="'+esc(r.label)+': '+r.value+' of '+r.target+'"><b>'+r.value+'<small> / '+r.target+'</small></b><span>'+SHORT[r.id][r.target===1?0:1]+'</span>'+
+    '<div class="bar" aria-hidden="true"><i style="width:'+Math.round(r.value/r.target*100)+'%"></i></div></div>').join('')+'</div>'+
+    '<p class="wkline">'+mi+' mi in recorded walks this week · Goals reset Monday</p>';
+}
+function teamSummary(){
+  const my=cloud.user&&cloud.profile&&cloud.profile.dorm; if(!my||!cloud.territory) return null;
+  const tot={}; cloud.territory.forEach(r=>{ tot[r.dorm]=(tot[r.dorm]||0)+Number(r.points); });
+  const ranked=Object.keys(tot).sort((x,y)=>tot[y]-tot[x]);
+  const led=cloud.territory.filter(r=>r.is_my_dorm&&Number(r.rank)===1).map(r=>r.zone);
+  // "From you" uses the server's weekly total (same source as the team score); falls back to this phone's count.
+  const me=(cloud.weekBoard||[]).find(r=>r.is_me);
+  const mine=me?Number(me.segments):Object.values(weekPoints()).reduce((x,y)=>x+y,0);
+  return {name:my, points:tot[my]||0, rank:ranked.indexOf(my)+1, teams:ranked.length, led, mine};
+}
+const ord=n=>n+(['th','st','nd','rd'][((n%100)-20)%10]||['th','st','nd','rd'][n%100]||'th');
+function teamLineHTML(t){
+  if(!t.points) return '<p class="empty" style="padding-top:4px">No team points yet this week. Your next walk adds the first ones.</p>';
+  return '<div class="week"><div><b>'+t.points+'</b><span>team points</span></div><div><b>'+t.led.length+'</b><span>'+(t.led.length===1?'zone led':'zones led')+'</span></div><div><b>'+t.mine+'</b><span>from you</span></div></div>'+
+    '<p class="note">'+ord(t.rank)+' of '+pl(t.teams,'active team')+' this week.</p>';
+}
+
+/* ---------- Explore ---------- */
+function zonesHTML(p,h){
+  const zs=ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n);
+  return '<div class="list">'+zs.map(z=>{
+    const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
+    const tot=Object.keys(PATH_SEGN).filter(pid=>(PATH_BY_ID[pid]||{}).zone===z.id).length;
+    const vis=Object.keys(h.paths).filter(pid=>h.paths[pid].zone===z.id&&h.paths[pid].visited).length;
+    return '<button class="zone" data-zone="'+z.id+'"><span class="top"><b><span class="sw" style="background:'+z.color+'"></span> '+esc(z.name)+'</b><span>'+pct.toFixed(pct>0&&pct<10?1:0)+'% walked</span></span>'+
+      '<span class="bar" aria-hidden="true"><i style="width:'+pct.toFixed(1)+'%"></i></span>'+
+      '<span class="terr">'+vis+' of '+tot+' paths visited'+territoryText(z.id)+'</span></button>';
+  }).join('')+'</div>';
+}
+function territoryText(zid){
+  if(!cloud.user||!cloud.territory) return '';
+  const rows=cloud.territory.filter(r=>r.zone===zid);
+  if(!rows.length) return ' · no team leads yet';
+  const lead=rows[0], mine=rows.find(r=>r.is_my_dorm);
+  if(mine&&Number(mine.rank)===1) return ' · your team leads'+(rows[1]?' by '+(lead.points-rows[1].points):'');
+  return ' · '+esc(lead.dorm)+' leads'+(mine?', your team is '+(lead.points-mine.points)+' behind':'');
+}
+function territoryLine(zid){ const t=territoryText(zid); return t?'<span class="terr">'+t.replace(/^ · /,'')+'</span>':''; }
+function renderExplore(){
+  const p=progress(), h=hist(), a=weekAct(h), rows=goalRowsNow(p,h,a), n=nextAction(p,h,a,rows);
+  NUDGES=buildNudges(p);
+  const ideas=NUDGES.filter(x=>x.target||x.seg).filter(x=>!n||x.text.indexOf(n.title)<0).slice(0,3);
+  $('sheetBody').innerHTML=(n?nextHTML(n):'')+
+    '<div class="legend" style="margin-top:12px"><span><i></i>Walked</span><span><i class="open"></i>Not walked yet</span><span><span style="width:16px;height:16px;display:inline-block">'+hoof('#8D7334')+'</span>Path completed</span></div>'+
+    (ideas.length?'<div class="label">Nearby</div><div class="list">'+ideas.map(x=>'<button class="row" data-nudge="'+NUDGES.indexOf(x)+'"><span class="grow">'+esc(clean(x.text))+'</span>'+icon('chev','sm')+'</button>').join('')+'</div>':'')+
+    '<div class="label">Zones</div>'+zonesHTML(p,h)+
+    '<div class="btns"><button class="btn" data-act="report">'+icon('alert','sm')+'Report an issue here</button></div>'+
+    '<p class="note">Tap a path on the map to see its name or name one you’ve walked. Fog is optional — use the fog button on the map.</p>';
+}
+
+/* ---------- Progress ---------- */
+let SHOW_ALL_BADGES=false;
+function renderProgress(){
+  const p=progress(), h=hist(), a=weekAct(h), rows=goalRowsNow(p,h,a);
+  const visited=Object.values(h.paths).filter(x=>x.visited).length, completed=Object.values(h.paths).filter(x=>x.complete).length, total=Object.keys(PATH_SEGN).length;
+  const nz=namedZones(p), zx=nz.filter(z=>h.zones[z.id]).length, ses=S.sessions||[];
+  const listed=BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n));
+  const got=listed.filter(b=>S.badges[b.id]), next=listed.filter(b=>!S.badges[b.id]);
+  const shown=SHOW_ALL_BADGES?got.concat(next):got.slice(-3).concat(next.slice(0,got.length?3:6));
+  $('progressBody').innerHTML='<h1 class="title">Progress</h1>'+
+    '<div class="label">This week <button class="more" data-act="goals">Edit goals</button></div>'+goalsHTML(rows)+
+    '<div class="label">All time</div><div class="stats">'+
+      stat(p.miles.toFixed(1),'miles walked')+stat(visited.toLocaleString(),'paths visited of '+total.toLocaleString())+
+      stat(completed.toLocaleString(),'paths walked end to end')+stat(zx+' / '+nz.length,'zones explored')+
+      stat(p.pct.toFixed(1)+'%','of campus path length')+stat(pl(p.streak,'day'),'streak · best '+p.best)+'</div>'+
+    '<p class="note">A day counts toward your streak when you walk a new path section or 10 sections in total. Rest days are fine: each 7-day streak earns a freeze that covers one missed day.</p>'+
+    '<div class="label">Badges <span style="text-transform:none;letter-spacing:0;font-weight:600">· '+got.length+' earned</span><button class="more" data-act="allBadges">'+(SHOW_ALL_BADGES?'Show fewer':'Show all')+'</button></div>'+
+    '<div class="badges">'+shown.map(badgeHTML).join('')+'</div>'+
+    '<div class="label">Walks <span class="pill">On this phone</span></div>'+
+    (ses.length?ses.slice(0,12).map(walkRowHTML).join(''):'<p class="empty">No walks recorded on this phone yet. Tap Record to start one.</p>');
+  $('dataBox').innerHTML='<div class="label">Your data</div><div class="list">'+
+    '<button class="row" data-act="export"><span class="grow"><b>Export my data</b><small>Everything stored on this phone, including your route log</small></span>'+icon('chev','sm')+'</button>'+
+    '<button class="row" data-act="privacy"><span class="grow"><b>Privacy &amp; delete my data</b><small>What’s collected, who can see it, and how to delete it</small></span>'+icon('chev','sm')+'</button>'+
+    '<button class="row" data-act="reset"><span class="grow"><b style="color:var(--danger)">Reset progress</b><small>Clears progress here and in your account; keeps your account</small></span></button></div>';
+}
+function editGoals(){
+  const c=RoamStudent.goalsConfig(S.goals);
+  const meta={paths:['New paths','Paths you’ve never walked before. Walking any part counts.'],walks:['Walks','Recorded walks of 0.1 mi or more'],
+              zone:['New zones','A campus zone you’ve never visited'],complete:['Paths end to end','Every section of a path walked']};
+  modal('Weekly goals','<p>Choose what to aim for. Goals are optional and reset Monday (Boulder time).</p><div class="list">'+RoamStudent.GOAL_ORDER.map(id=>{
+    const t=RoamStudent.GOAL_TARGETS[id];
+    return '<div class="row"><input type="checkbox" id="g_'+id+'" '+(c[id].on?'checked':'')+' style="width:22px;height:22px;accent-color:#1E2022;flex:none">'+
+      '<label class="grow" for="g_'+id+'"><b>'+meta[id][0]+'</b><small>'+meta[id][1]+'</small></label>'+
+      '<select class="field" style="width:auto;margin:0;min-width:70px" id="gt_'+id+'" aria-label="'+meta[id][0]+' per week">'+t.choices.map(v=>'<option'+(v===c[id].target?' selected':'')+'>'+v+'</option>').join('')+'</select></div>';
+  }).join('')+'</div>',
+  [['Save goals','pri',()=>{ const n={}; RoamStudent.GOAL_ORDER.forEach(id=>{ n[id]={on:$('g_'+id).checked,target:Number($('gt_'+id).value)}; }); S.goals=RoamStudent.goalsConfig(n); saveNow(); render(); }],['Cancel','',()=>{}]]);
+}
+
+/* ---------- Community: your team first ---------- */
+let commToken=0;
+async function renderCommunity(){
+  const el=$('v-community'), tk=++commToken, head='<h1 class="title">Community</h1>';
+  if(!cloud.sb){ el.innerHTML=head+'<p class="empty">Team features need the online service, which isn’t set up in this copy of BuffPrints.</p>'; return; }
+  if(!cloud.user){ el.innerHTML=head+'<div class="block"><b>Walk with your dorm or team</b><p class="small muted" style="margin:4px 0 0">Each path section you walk this week adds a point for your team. The team with the most points in a zone leads it until Monday.</p><div class="btns"><button class="btn pri" data-act="signin">Sign in to join</button></div></div>'; return; }
+  if(!navigator.onLine){ el.innerHTML=head+'<p class="empty">You’re offline. Team standings will load when you reconnect. Your walks still count.</p>'; return; }
+  if(!cloud.profile){ el.innerHTML=head+'<p class="empty">Loading your team…</p>'; await loadProfile(); if(tk!==commToken) return; }
+  el.innerHTML=head+'<p class="empty">Loading this week’s activity…</p>';
+  await flush();
+  const [, dl]=await Promise.all([loadTerritory(), cloud.sb.rpc('get_dorm_leaderboard').then(r=>r,e=>({error:e}))]);
+  if(tk!==commToken||VIEW!=='community') return;
+  const my=cloud.profile&&cloud.profile.dorm;
+  if(!cloud.territory){ el.innerHTML=head+'<p class="empty">Couldn’t load team activity. Check your connection and try again.</p><button class="btn" data-act="reloadComm">Try again</button>'; return; }
+  let html=head;
+  if(!my){
+    html+='<div class="block"><b>Choose your dorm or team</b><p class="small muted" style="margin:4px 0 6px">Your walks this week will count toward it. You can change it any time.</p>'+teamPickerHTML()+'<button class="btn pri block-btn" data-act="saveTeam">Join team</button></div>';
+  }else{
+    const t=teamSummary(), members=dl&&!dl.error&&Array.isArray(dl.data)?(dl.data.find(r=>r.dorm===my)||{}).members:null;
+    html+='<div class="team"><span class="pill gold">Your team</span><h3 style="margin-top:6px">'+esc(my)+'</h3>'+
+      (members?'<p class="small muted" style="margin:2px 0 0">'+pl(Number(members),'member has','members have')+' recorded walks</p>':'')+
+      (t&&t.points?'<div class="nums"><div><b>'+t.points+'</b><span>team points</span></div><div><b>'+t.led.length+'</b><span>'+(t.led.length===1?'zone led':'zones led')+'</span></div><div><b>'+t.mine+'</b><span>from you</span></div></div><p class="small" style="margin:10px 0 0">'+ord(t.rank)+' of '+pl(t.teams,'active team')+' this week</p>'
+        :'<p class="small" style="margin:10px 0 0">No points for '+esc(my)+' yet this week. Your next walk adds the first ones.</p>')+
+      '<button class="link" data-act="changeTeam">Change team</button></div>';
+  }
+  const tot={}; cloud.territory.forEach(r=>{ tot[r.dorm]=(tot[r.dorm]||0)+Number(r.points); });
+  const teams=Object.keys(tot).sort((x,y)=>tot[y]-tot[x]);
+  html+='<div class="label">Zones this week</div><div class="list">'+ZONES.filter(z=>SEGS.some(s=>s.zone===z.id)).map(z=>{
+    const rows=cloud.territory.filter(r=>r.zone===z.id), lead=rows[0], mine=rows.find(r=>r.is_my_dorm);
+    const sub=!lead?'No team leads yet':(mine&&Number(mine.rank)===1?'Your team leads with '+lead.points+' points':esc(lead.dorm)+' leads with '+lead.points+(mine?' · your team is '+(lead.points-mine.points)+' behind':''));
+    return '<div class="row"><span class="grow"><b>'+esc(z.name)+'</b><small>'+sub+'</small></span></div>';
+  }).join('')+'</div>';
+  html+='<div class="label">Teams this week</div>'+(teams.length?teams.slice(0,10).map((d,i)=>'<div class="lb'+(d===my?' you':'')+'"><span class="r">'+(i+1)+'</span><span class="n"><b>'+esc(d)+'</b></span><span class="v">'+tot[d]+'</span></div>').join(''):'<p class="empty">No team activity yet this week.</p>');
+  const wb=cloud.weekBoard||[];
+  html+='<div class="label">Students this week</div>'+(wb.length?wb.slice(0,10).map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><span class="r">'+x.rank+'</span><span class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+'</b><small>'+esc(x.dorm||'No team')+'</small></span><span class="v">'+x.segments+'</span></div>').join(''):'<p class="empty">No one has recorded a walk this week yet.</p>');
+  html+='<p class="note">Points: 1 for each path section walked this week, counted once per section. Totals come from students’ recorded walks and reset Monday. Leaderboards show names and totals only — never routes or locations.</p>';
+  el.innerHTML=html;
+}
+function teamPickerHTML(cur){
+  return '<label class="f" for="teamPick">Dorm or team</label><select class="field" id="teamPick">'+dormOptions()+'</select><input class="field" id="teamOther" maxlength="40" placeholder="Type your dorm or team" aria-label="Dorm or team name" hidden>';
+}
+async function saveTeam(sel,other){
+  const dorm=(sel==='__other'?(other||''):sel).trim().slice(0,40)||null;
+  if(!dorm) return toast('Choose a dorm or team first');
+  const {error}=await cloud.sb.from('profiles').upsert({id:cloud.user.id, display_name:(cloud.profile&&cloud.profile.display_name)||null, dorm});
+  if(error) return toast('Couldn’t save: '+error.message);
+  cloud.profile=Object.assign({},cloud.profile,{dorm}); fillProfile(); toast('You’re walking for '+dorm); renderCommunity();
+}
+
+/* ---------- Safety ---------- */
+function votesText(h){
+  const a=[]; if(h.still_there) a.push(pl(h.still_there,'student says','students say')+' still there'); if(h.fixed) a.push(pl(h.fixed,'student says','students say')+' fixed');
+  return a.length?'Student votes: '+a.join(' · '):'No student votes yet';
+}
+function feedHTML(rows){
+  if(!cloud.sb) return '<p class="empty">Community pins need the online service, which isn’t set up in this copy.</p>';
+  if(!cloud.user) return '<p class="empty">Sign in to see and add student pins. Help resources and request drafts work without an account.</p><button class="btn" data-act="signin">Sign in</button>';
+  if(hazardState==='error') return '<p class="empty">Couldn’t load pins. This doesn’t mean there are none.</p><button class="btn" data-act="reloadPins">Try again</button>';
+  if(hazardState!=='ready') return '<p class="empty">Loading student pins…</p>';
+  if(!rows.length) return '<p class="empty">No open student pins right now. That doesn’t mean an area is safe.</p>';
+  return rows.map(h=>'<div class="hz-item"><span class="pill warn">Student report</span>'+(h.is_mine?' <span class="pill">Yours</span>':'')+' <span class="meta">'+esc(new Date(h.created_at).toLocaleDateString([], {month:'short',day:'numeric'}))+'</span>'+
+    '<h4>'+esc(HZ[h.category]||h.category)+'</h4>'+(h.note?'<p>'+esc(h.note)+'</p>':'')+'<p class="meta">'+votesText(h)+'</p><button class="link" data-pin="'+h.id+'">View on map</button></div>').join('');
+}
+function requestsHTML(){
+  const rq=S.requests||[];
+  if(!rq.length) return '<p class="empty">Requests you prepare can be saved here so you can record where you sent them and what happened next.</p>';
+  return rq.map((r,i)=>{
+    const st=RoamStudent.requestStatus(r);
+    const tl='<ol class="timeline"><li><span>Request prepared</span><small>'+esc(r.created)+' · not sent by BuffPrints</small></li>'+
+      (r.submitted?'<li class="self"><span>You submitted it to '+esc(r.submitted.to)+'</span><small>'+esc(r.submitted.date)+(r.submitted.ref?' · reference '+esc(r.submitted.ref):'')+' · recorded by you</small></li>':'')+
+      (r.updates||[]).map(u=>'<li class="self"><span>'+esc(u.status)+'</span><small>'+esc(u.date)+' · source: '+esc(u.source)+' · recorded by you</small>'+(u.note?'<small>'+esc(u.note)+'</small>':'')+'</li>').join('')+'</ol>';
+    return '<div class="block"><span class="pill'+(st.kind==='draft'?'':' ok')+'">'+esc(st.label)+'</span><h4 style="margin:6px 0 0;font-size:15px">'+esc(r.category)+'</h4><p class="small muted" style="margin:2px 0 0">'+esc(r.location)+'</p>'+tl+
+      '<div class="btns">'+(!r.submitted?'<button class="btn" data-req="sub" data-i="'+i+'">I submitted it</button>':'<button class="btn" data-req="up" data-i="'+i+'">Add an update</button>')+
+      '<button class="btn" data-req="copy" data-i="'+i+'">Copy text</button><button class="btn danger" data-req="del" data-i="'+i+'">Delete</button></div></div>';
+  }).join('');
 }
 function renderSafety(){
-  const rows=Object.values(HAZ);
-  $('hazardFeed').innerHTML=!cloud.user?'<p class="empty">Sign in to view student reports and add a pin. Official resources and the advocacy draft work without an account.</p><button class="btn" data-open="stats">Sign in / profile</button>':hazardState==='error'?'<p class="empty">Reports could not be refreshed. Try again when connected. This does not mean there are no hazards.</p>':hazardState==='loading'||hazardState==='idle'?'<p class="empty">Loading community reports…</p>':rows.length?'<p class="note">'+rows.length+' recent open reports loaded (up to 300). Student observations, not verified conditions. Older or community-cleared pins may be absent.</p>'+rows.map(h=>'<article class="card"><span class="pill">Student reported</span><h3>'+esc(HZ[h.category]||h.category)+'</h3><p>'+esc(h.note||'No description added.')+'</p><p class="note">Reported '+esc(new Date(h.created_at).toLocaleDateString())+'</p><button class="text-btn" data-report-map="'+h.id+'">View pin & follow up →</button></article>').join(''):'<p class="empty">No recent open reports returned. Missing reports do not mean an area is safe.</p>';
+  const rows=Object.values(HAZ).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
+  $('v-safety').innerHTML='<h1 class="title">Safety</h1>'+
+    '<div class="urgent"><b>Emergency? Call 911.</b><div class="small" style="margin-top:2px">BuffPrints isn’t monitored by CU or emergency services.</div></div>'+
+    '<div class="label">Help and getting home</div><div class="list">'+
+      res('https://www.colorado.edu/publicsafety/resources','shield','CU Boulder Safe','Official CU app: alerts, Virtual Walkhome, help')+
+      res('https://www.colorado.edu/umc/cunightride','car','CU NightRide','Free evening rides · check current hours')+
+      '<a class="res" href="tel:+13034926666">'+icon('phone')+'<span class="grow">CU Boulder Police, non-emergency<small>303-492-6666</small></span></a></div>'+
+    '<div class="label">Community observations <button class="more" data-act="report">Add a pin</button></div>'+feedHTML(rows)+
+    '<p class="note">Pins are student observations, not official reports, and aren’t sent to CU. A pin disappears after 60 days without a “still there” vote, or after students vote it fixed. Neither means CU inspected or repaired it.</p>'+
+    '<div class="label">Request an improvement</div><div class="block"><b>Turn a concern into a clear request</b><p class="small muted" style="margin:4px 0 0">Describe the place, what you saw, and what should change. BuffPrints never sends it — you submit it through an official channel.</p>'+
+      '<div class="btns"><button class="btn pri" data-act="draft">'+icon('doc','sm')+'Prepare a request</button></div>'+
+      '<div class="list" style="margin-top:8px;border-top:0">'+res('https://www.colorado.edu/fm/','ext','CU Facilities service requests','Lighting, sidewalks, building issues')+res('https://www.colorado.edu/police/services/report-incident','ext','CU Boulder Police reporting','Including pedestrian and crossing concerns')+'</div></div>'+
+    '<div class="label">Follow up <span class="pill">On this phone</span></div>'+requestsHTML()+
+    '<p class="note">BuffPrints can’t see official systems. Follow-up entries are what you record, with the source you name. They aren’t verified by BuffPrints or CU.</p>';
 }
 function advocacyDraft(){
-  modal('Turn a concern into a clear request','<p>Prepare a draft for the responsible office. Nothing is sent automatically. Leave out names, personal schedules, and other people’s identifying details.</p><label class="label" for="advCategory">Concern</label><select class="field" id="advCategory"><option>Broken lighting</option><option>Ice or snow</option><option>Sidewalk / trip hazard</option><option>Accessibility barrier</option><option>Crossing / near miss</option><option>Other maintenance concern</option></select><label class="label" for="advLocation">Location or landmark</label><input class="field" id="advLocation" maxlength="160" placeholder="e.g. walkway east of Norlin Library"><label class="label" for="advObservation">What did you observe?</label><textarea class="field" id="advObservation" maxlength="1000" placeholder="Describe the condition and when you noticed it."></textarea><label class="label" for="advRequest">What would help?</label><textarea class="field" id="advRequest" maxlength="500" placeholder="e.g. inspect the light and share a repair timeline."></textarea><p id="advError" role="alert"></p>',[['Prepare draft','pri',()=>{},'prepareDraft'],['Cancel','',()=>{}]]);
+  modal('Prepare a request','<p>Nothing is sent automatically. Leave out names, schedules and anyone’s identifying details.</p>'+
+    '<label class="f" for="advCategory">Concern</label><select class="field" id="advCategory"><option>Broken lighting</option><option>Ice or snow</option><option>Sidewalk or trip hazard</option><option>Accessibility barrier</option><option>Crossing or near miss</option><option>Other maintenance concern</option></select>'+
+    '<label class="f" for="advLocation">Location or landmark</label><input class="field" id="advLocation" maxlength="160" placeholder="e.g. walkway east of Norlin Library">'+
+    '<label class="f" for="advObservation">What did you see?</label><textarea class="field" id="advObservation" maxlength="1000" placeholder="The condition and when you noticed it"></textarea>'+
+    '<label class="f" for="advRequest">What should change?</label><textarea class="field" id="advRequest" maxlength="600" placeholder="e.g. replace the light and confirm a timeline"></textarea>'+
+    '<p class="pmsg bad" id="advError" role="alert"></p>',
+    [['Prepare request','pri',()=>{},'prepareDraft'],['Cancel','',()=>{}]]);
   $('prepareDraft').onclick=()=>{
-    const location=$('advLocation').value,observation=$('advObservation').value,request=$('advRequest').value;
-    if(!location.trim()||!observation.trim()||!request.trim()){ $('advError').textContent='Add a location, an observation, and a requested action.';return; }
-    const draft=RoamStudent.draft({category:$('advCategory').value,location,observation,request,date:new Date().toLocaleDateString('en-US',{timeZone:TZ})});
-    modal('Review your advocacy draft','<label class="label" for="advOutput">Edit before sharing</label><textarea class="field draft-output" id="advOutput">'+esc(draft)+'</textarea><p>Copy this into the relevant official form. You still need to submit it there.</p><a class="resource" href="https://www.colorado.edu/fm/" target="_blank" rel="noopener">CU Facilities service requests ↗</a><a class="resource" href="https://www.colorado.edu/police/services/report-incident" target="_blank" rel="noopener">Crossing / pedestrian concerns ↗</a><p id="copyStatus" role="status"></p>',[['Copy draft','pri',()=>{},'copyDraft'],['Done','',()=>{}]]);
-    $('copyDraft').onclick=async()=>{try{await navigator.clipboard.writeText($('advOutput').value);$('copyStatus').textContent='Copied. Nothing has been submitted.';}catch(e){$('advOutput').focus();$('advOutput').select();$('copyStatus').textContent='Select and copy the draft manually.';}};
+    const category=$('advCategory').value, location=$('advLocation').value, observation=$('advObservation').value, request=$('advRequest').value;
+    if(!location.trim()||!observation.trim()||!request.trim()){ $('advError').textContent='Add a location, what you saw, and what should change.'; return; }
+    const date=new Date().toLocaleDateString('en-US',{timeZone:TZ});
+    const draft=RoamStudent.draft({category,location,observation,request,date});
+    modal('Review your request','<label class="f" for="advOutput">Edit before you submit it</label><textarea class="field" id="advOutput" style="min-height:220px">'+esc(draft)+'</textarea>'+
+      '<p>Copy this into an official form. Saving it here lets you record where you sent it and what happened.</p><p class="pmsg good" id="copyStatus" role="status"></p>',
+      [['Copy text','pri',()=>{},'copyDraft'],['Save to follow up','',()=>{},'saveDraft'],['Done','',()=>{}]]);
+    $('copyDraft').onclick=async()=>{ try{ await navigator.clipboard.writeText($('advOutput').value); $('copyStatus').textContent='Copied. Nothing has been submitted.'; }catch(e){ $('advOutput').focus(); $('advOutput').select(); $('copyStatus').textContent='Select the text and copy it manually.'; } };
+    $('saveDraft').onclick=()=>{ S.requests=[{id:Date.now(),created:date,category,location:location.trim().slice(0,160),text:$('advOutput').value.slice(0,4000),submitted:null,updates:[]}].concat(S.requests||[]).slice(0,30);
+      saveNow(); $('modal').classList.remove('show'); renderSafety(); toast('Saved to Follow up'); };
   };
 }
+function requestAction(kind,i){
+  const r=(S.requests||[])[i]; if(!r) return;
+  const today=new Date().toLocaleDateString('en-CA',{timeZone:TZ});
+  if(kind==='copy'){ navigator.clipboard.writeText(r.text).then(()=>toast('Copied'),()=>toast('Couldn’t copy on this browser')); return; }
+  if(kind==='del') return modal('Delete this request?','<p>This removes it and its follow-up notes from this phone.</p>',[['Delete','danger',()=>{ S.requests.splice(i,1); saveNow(); renderSafety(); }],['Cancel','',()=>{}]]);
+  if(kind==='sub') return modal('Where did you submit it?','<p>Record where you sent it so you can follow up. BuffPrints can’t confirm the submission.</p>'+
+    '<label class="f" for="rqTo">Sent to</label><select class="field" id="rqTo"><option>CU Facilities service request</option><option>CU Boulder Police report</option><option>Email to a CU office</option><option>Other</option></select>'+
+    '<label class="f" for="rqDate">Date</label><input class="field" id="rqDate" type="date" value="'+today+'">'+
+    '<label class="f" for="rqRef">Reference or ticket number (optional)</label><input class="field" id="rqRef" maxlength="60">',
+    [['Save','pri',()=>{ r.submitted={to:$('rqTo').value,date:$('rqDate').value||today,ref:$('rqRef').value.trim()}; saveNow(); renderSafety(); }],['Cancel','',()=>{}]]);
+  if(kind==='up') return modal('Add an update','<p>Record what an office told you. It will be labeled as recorded by you, with the source you enter.</p>'+
+    '<label class="f" for="upStatus">What happened</label><select class="field" id="upStatus"><option>Acknowledged</option><option>More information requested</option><option>Work scheduled</option><option>Reported repaired</option><option>Closed without action</option><option>Other</option></select>'+
+    '<label class="f" for="upSource">Source</label><input class="field" id="upSource" maxlength="80" placeholder="e.g. email from CU Facilities">'+
+    '<label class="f" for="upDate">Date</label><input class="field" id="upDate" type="date" value="'+today+'">'+
+    '<label class="f" for="upNote">Note (optional)</label><textarea class="field" id="upNote" maxlength="400"></textarea><p class="pmsg bad" id="upErr" role="alert"></p>',
+    [['Save update','pri',()=>{},'upSave'],['Cancel','',()=>{}]]) || (function(){
+      $('upSave').onclick=()=>{ const src=$('upSource').value.trim(); if(!src){ $('upErr').textContent='Add where this update came from.'; return; }
+        (r.updates=r.updates||[]).push({status:$('upStatus').value,source:src,date:$('upDate').value||today,note:$('upNote').value.trim()}); saveNow(); $('modal').classList.remove('show'); renderSafety(); };
+    })();
+}
+
+/* ---------- Record / Finish ---------- */
+let recTimer=null;
+function setTrackUI(on){
+  document.body.classList.toggle('rec',!!on);
+  clearInterval(recTimer); recTimer=null;
+  if(on){ renderRecBar(); recTimer=setInterval(renderRecBar,1000); }
+}
+function renderRecBar(){
+  const r=S.rec; if(!r) return;
+  $('recTime').textContent=clock((Date.now()-r.at)/1000);
+  $('recDist').textContent=(r.meters/1609.344).toFixed(2);
+  $('recNew').textContent=r.newPaths||0;
+  const g=$('recGps');
+  if(!pos){ g.textContent='Finding GPS…'; g.className='gps'; }
+  else { g.textContent='GPS ±'+Math.round(pos.acc)+' m'; g.className='gps'+(pos.acc>ACC_MAX_M?' weak':''); }
+}
+function recPoint(lat,lng){
+  if(!S.rec) return; const pts=S.rec.pts||(S.rec.pts=[]);
+  pts.push([Math.round(lat*1e6)/1e6, Math.round(lng*1e6)/1e6]); if(pts.length>5000) pts.shift();
+}
+function pathVisitAt(pid){   // when this path first counted as visited (same rule as the goals), or null
+  const ids=(PATH_SEGS[pid]||[]).filter(id=>S.claimed[id]).sort((a,b)=>S.claimed[a]-S.claimed[b]);
+  const need=Math.min(RoamStudent.VISIT_M,(PATH_LEN[pid]||0)/2); let acc=0;
+  for(const id of ids){ acc+=SEG_BY_ID[id]?SEG_BY_ID[id].len:0; if(acc>=need-1e-6) return S.claimed[id]; }
+  return null;
+}
+function pathDone(pid){ return (PATH_SEGS[pid]||[]).every(id=>S.claimed[id]); }
+function onFreshClaims(fresh){
+  const pids={}; fresh.forEach(s=>pids[s.pid]=1);
+  Object.keys(pids).forEach(pid=>{
+    const since=S.rec?S.rec.at:Date.now()-60000, va=pathVisitAt(pid);
+    if(va!=null && va>=since && !(S.rec&&S.rec.seen&&S.rec.seen[pid])){ if(S.rec){ (S.rec.seen=S.rec.seen||{})[pid]=1; S.rec.newPaths=(S.rec.newPaths||0)+1; } toast('New path · '+cap(pathTitle(pid))); }
+    if(pathDone(pid)){ toast('Path completed · '+cap(pathTitle(pid))); drawHoofs(); }
+  });
+  renderRecBar();
+}
+function startRecordingFlow(){
+  if(watchId!==null) return;
+  if(S.privacyAck) return startGPS();
+  modal('Before your first walk','<p>BuffPrints uses your location <b>only while you’re recording</b> with the app open, to see which paths you walk.</p><p>Your detailed route stays on this phone. If you sign in, your progress — not your route — is saved to your account.</p><p>You can export or delete your data at any time.</p>',
+    [['Start recording','pri',()=>{ S.privacyAck=Date.now(); saveNow(); startGPS(); }],['Read the full notice','',openPrivacy],['Cancel','',()=>{}]]);
+}
+$('recIdle').onclick=startRecordingFlow;
+$('recFinish').onclick=()=>stopGPS();
+function finishRecording(){
+  const r=S.rec; if(!r) return; S.rec=null;
+  const end=Date.now(), h=hist();
+  let newPaths=0, completedPaths=0;
+  Object.keys(h.paths).forEach(pid=>{ const x=h.paths[pid]; if(x.visited&&x.visitedAt>=r.at) newPaths++; if(x.complete&&x.last>=r.at) completedPaths++; });
+  const shape=RoamStudent.trimRoute(r.pts||[]);
+  const s=RoamStudent.session(r.at,end,r.meters,r.newSegments,{moving:r.moving,newPaths,completedPaths,shape});
+  if(s.meters<1&&!s.newSegments){ saveNow(); render(); toast('Walk not saved — no movement was recorded'); return; }
+  // what changed because of this walk: compare goals before and after it
+  const p=progress(), before={}; Object.keys(S.claimed).forEach(id=>{ if(S.claimed[id]<r.at) before[id]=S.claimed[id]; });
+  const hb=RoamStudent.pathHistory(before,SEG_META,PATH_SEGN,PATH_LEN), ws=weekStartMs();
+  const rowsB=RoamStudent.goalRows(S.goals,RoamStudent.activitySince(hb,S.sessions||[],ws,{skipZones:['campus']}),zonesLeft(hb,p));
+  const sessionsA=[s].concat(S.sessions||[]);
+  const rowsA=RoamStudent.goalRows(S.goals,RoamStudent.activitySince(h,sessionsA,ws,{skipZones:['campus']}),zonesLeft(h,p));
+  const earned=BADGES.filter(b=>S.badges[b.id]&&S.badges[b.id]>=r.at);
+  const reached=rowsA.find(a=>a.done&&!(rowsB.find(b=>b.id===a.id)||{}).done);
+  const pending=rowsA.find(a=>!a.done);
+  s.accomp = reached ? 'Weekly goal reached: '+reached.label.toLowerCase()
+           : earned.length ? 'Badge earned: '+earned[0].name
+           : pending ? 'Next: '+pending.label.toLowerCase()+' — '+pending.value+' of '+pending.target+' this week'
+           : 'All of this week’s goals are done.';
+  S.sessions=sessionsA.slice(0,50); saveNow(); render();
+  showFinish(s,true);
+}
+let FIN=null;
+function showFinish(s,fresh){
+  FIN=s;
+  const moving = s.moving!=null && s.moving>0;
+  $('finishIn').innerHTML='<div class="hero"><span class="mark">'+hoof()+'</span><div><h2 id="fTitle">'+(fresh?'Walk complete':'Walk')+'</h2><div class="small muted">'+esc(dayLabel(s.at,true))+'</div></div></div>'+
+    '<div class="fstats">'+stat((s.meters/1609.344).toFixed(2),'miles')+stat(RoamStudent.duration(s.seconds),'elapsed time')+
+      (moving?stat(RoamStudent.duration(s.moving),'moving time · estimated from GPS'):'')+
+      (s.newPaths!=null?stat(s.newPaths,s.newPaths===1?'new path':'new paths'):stat(s.newSegments,'new path sections'))+
+      (s.completedPaths?stat(s.completedPaths,'paths completed'):'')+'</div>'+
+    (s.shape?'<div class="route">'+shapeSVG(s.shape,'#CFB87C')+'<small>Route shape · the start and finish are hidden</small></div>':(fresh?'<p class="note">A route shape appears for walks longer than about 0.25 mi. The start and finish are always hidden.</p>':''))+
+    (s.accomp?'<div class="accomp"><span class="next" style="border:0;background:none;padding:0;min-height:0;width:auto"><span class="ic">'+icon('check','sm')+'</span></span><span>'+esc(s.accomp)+'</span></div>':'')+
+    (s.shape?'<label class="check"><input type="checkbox" id="shareShape" checked> Include route shape in the shared image</label>':'')+
+    '<div class="btns"><button class="btn pri" data-act="share">'+icon('share','sm')+'Share summary</button><button class="btn" data-act="closeFinish">Done</button></div>'+
+    '<p class="note">Shared images show your stats'+(s.shape?' and, if you choose, the trimmed route shape':'')+'. They never include your name, exact start or finish, place names or time of day.</p>';
+  $('finish').classList.add('show'); setTimeout(()=>{ const b=$('finish').querySelector('[data-act=share]'); if(b) b.focus(); },50);
+}
+function closeFinish(){ $('finish').classList.remove('show'); FIN=null; if(VIEW==='explore') go('home'); else render(); }
+async function shareWalk(s,withShape){
+  const W=1080,H=1350,c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  const F='"Helvetica Neue",Helvetica,Arial,sans-serif';
+  g.fillStyle='#1E2022'; g.fillRect(0,0,W,H);
+  g.save(); g.translate(84,78); g.scale(4.2,4.2); g.fillStyle='#CFB87C'; HOOF_D.forEach(d=>g.fill(new Path2D(d))); g.restore();
+  g.fillStyle='#fff'; g.font='700 60px '+F; g.fillText('BuffPrints',200,152);
+  g.fillStyle='#CFB87C'; g.font='600 34px '+F; g.fillText(new Date(s.at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),84,256);
+  let y=320;
+  if(withShape&&s.shape){
+    const ky=111320,kx=111320*Math.cos(40*Math.PI/180), xs=s.shape.map(p=>p[1]*kx), ys=s.shape.map(p=>-p[0]*ky);
+    const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys), bw=912,bh=440;
+    const sc=Math.min(bw/Math.max(maxx-minx,1),bh/Math.max(maxy-miny,1))*0.9, ox=84+(bw-(maxx-minx)*sc)/2, oy=y+(bh-(maxy-miny)*sc)/2;
+    g.strokeStyle='#CFB87C'; g.lineWidth=12; g.lineCap='round'; g.lineJoin='round'; g.beginPath();
+    xs.forEach((x,i)=>{ const px=ox+(x-minx)*sc, py=oy+(ys[i]-miny)*sc; i?g.lineTo(px,py):g.moveTo(px,py); }); g.stroke();
+    y+=bh+60;
+  }else y+=40;
+  const lines=RoamStudent.shareLines(s);
+  lines.forEach((l,i)=>{ const col=i%2, row=Math.floor(i/2), x=84+col*470, yy=y+row*175;
+    g.fillStyle='#fff'; g.font='700 92px '+F; g.fillText(l.v,x,yy+92);
+    g.fillStyle='#C9C5BC'; g.font='500 32px '+F; g.fillText(l.k,x,yy+142); });
+  g.fillStyle='#CFB87C'; g.font='600 32px '+F; g.fillText('Explore campus. Leave your mark.',84,H-70);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png')); if(!blob) return toast('Couldn’t create the image');
+  const file=typeof File==='function'?new File([blob],'buffprints-walk.png',{type:'image/png'}):null;
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:'BuffPrints walk'}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='buffprints-walk-'+String(s.at).slice(0,10)+'.png';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); toast('Summary image downloaded');
+}
+
+/* ---------- one click handler for the whole app ---------- */
 document.addEventListener('click',e=>{
-  const nav=e.target.closest('[data-open]'); if(nav)openTab(nav.dataset.open);
-  if(e.target.closest('#editGoal')){
-    modal('Set your weekly goal','<p>Choose a manageable number of distinct walkway segments. A segment is a short piece of a path, not a full route.</p><label class="label" for="weeklyGoal">Segments per week</label><select class="field" id="weeklyGoal">'+[25,50,100,200].map(v=>'<option '+(v===RoamStudent.goal(S.studentGoal)?'selected':'')+'>'+v+'</option>').join('')+'</select>',[['Save goal','pri',()=>{S.studentGoal=RoamStudent.goal($('weeklyGoal').value);saveSoon();renderToday(progress());}],['Cancel','',()=>{}]]);
-  }
-  if(e.target.closest('#advocateBtn'))advocacyDraft();
-  if(e.target.closest('#refreshHazards'))loadHazards();
-  if(e.target.closest('#reportHazardBtn'))$('fabHazard').click();
-  const pin=e.target.closest('[data-report-map]');if(pin){const h=HAZ[pin.dataset.reportMap];if(h){openTab('zones');follow=false;$('fabFollow').classList.remove('on');setTimeout(()=>{map.setView([h.lat,h.lng],18);L.popup().setLatLng([h.lat,h.lng]).setContent(hazardHTML(h)).openOn(map);},100);}}
+  const t=e.target.closest('[data-go],[data-act],[data-walk],[data-zone],[data-nudge],[data-pin],[data-req]'); if(!t) return;
+  if(t.dataset.go){ go(t.dataset.go); return; }
+  if(t.dataset.walk!=null){ const s=(S.sessions||[])[+t.dataset.walk]; if(s) showFinish(s,false); return; }
+  if(t.dataset.nudge!=null){ goNudge(NUDGES[+t.dataset.nudge]); return; }
+  if(t.dataset.pin){ const h=HAZ[t.dataset.pin]; if(h){ flyTo([h.lat,h.lng]); setTimeout(()=>L.popup().setLatLng([h.lat,h.lng]).setContent(hazardHTML(h)).openOn(map),900); } return; }
+  if(t.dataset.req){ requestAction(t.dataset.req,+t.dataset.i); return; }
+  if(t.dataset.zone){ const pts=[]; SEGS.forEach(s=>{ if(s.zone===t.dataset.zone) pts.push(s.a,s.b); });
+    if(pts.length){ if(VIEW!=='explore') go('explore'); follow=false; $('fabFollow').classList.remove('on'); setSheet(false);
+      setTimeout(()=>{ map.invalidateSize(); map.fitBounds(L.latLngBounds(pts).pad(0.15)); },80); } return; }
+  const a=t.dataset.act;
+  if(a==='next') doNext(NEXT);
+  else if(a==='goals') editGoals();
+  else if(a==='dismissWelcome'){ S.welcomed=Date.now(); saveSoon(); renderHome(); }
+  else if(a==='allBadges'){ SHOW_ALL_BADGES=!SHOW_ALL_BADGES; renderProgress(); }
+  else if(a==='export') exportData();
+  else if(a==='privacy') openPrivacy();
+  else if(a==='reset') modal('Reset all progress?','<p>This clears walked paths, miles, badges, your streak and this week’s team points on this phone'+(cloud.user?' and in your account':'')+'. Your walk history on this phone and paths you named stay.</p>',[['Reset progress','danger',resetAll],['Cancel','',()=>{}]]);
+  else if(a==='report') reportHazard();
+  else if(a==='draft') advocacyDraft();
+  else if(a==='signin') goSignIn();
+  else if(a==='reloadPins') loadHazards();
+  else if(a==='reloadComm') renderCommunity();
+  else if(a==='saveTeam') saveTeam($('teamPick').value,$('teamOther').value);
+  else if(a==='changeTeam') modal('Change team','<p>Your walks from now on count toward the team you choose. Points already earned this week stay with your previous team’s total until Monday.</p>'+teamPickerHTML(),
+      [['Save','pri',()=>saveTeam($('teamPick').value,$('teamOther').value)],['Cancel','',()=>{}]]);
+  else if(a==='share'){ const box=$('shareShape'); shareWalk(FIN,!!(box&&box.checked)); }
+  else if(a==='closeFinish') closeFinish();
 });
-// Keep tab navigation and modal focus usable with keyboards and assistive technology.
+document.addEventListener('change',e=>{ if(e.target.id==='teamPick') $('teamOther').hidden=e.target.value!=='__other'; });
+function goSignIn(){ go('progress'); setTimeout(()=>{ const b=$('cloudBox'); if(b) b.scrollIntoView({block:'start',behavior:REDUCED.matches?'auto':'smooth'}); const f=$('cEmail'); if(f) f.focus({preventScroll:true}); },120); }
+
+/* ---------- connection status ---------- */
+function syncOnline(){ document.body.classList.toggle('offline',!navigator.onLine); }
+window.addEventListener('online',syncOnline); window.addEventListener('offline',syncOnline); syncOnline();
+
+/* ---------- keyboard and dialog focus ---------- */
 let focusBeforeModal=null;
-const modalObserver=new MutationObserver(()=>{
+new MutationObserver(()=>{
   if($('modal').classList.contains('show')){
-    if(!$('modal').contains(document.activeElement))focusBeforeModal=document.activeElement;
-    const first=$('modal').querySelector('input,select,textarea,button,a[href]');if(first)first.focus();
-  }else if(focusBeforeModal&&focusBeforeModal.isConnected)focusBeforeModal.focus();
-});
-modalObserver.observe($('modal'),{attributes:true,attributeFilter:['class']});
+    if(!$('modal').contains(document.activeElement)) focusBeforeModal=document.activeElement;
+    const first=$('modal').querySelector('input,select,textarea,button,a[href]'); if(first) first.focus();
+  }else if(focusBeforeModal&&focusBeforeModal.isConnected) focusBeforeModal.focus();
+}).observe($('modal'),{attributes:true,attributeFilter:['class']});
 document.addEventListener('keydown',e=>{
-  if(!$('modal').classList.contains('show'))return;
-  if(e.key==='Escape'){ $('modal').classList.remove('show'); if(modalClose){modalClose();modalClose=null;} }
+  const open=$('modal').classList.contains('show')?$('modal'):$('finish').classList.contains('show')?$('finish'):null;
+  if(!open) return;
+  if(e.key==='Escape'){ if(open===$('finish')) closeFinish(); else { $('modal').classList.remove('show'); if(modalClose){ modalClose(); modalClose=null; } } }
   if(e.key==='Tab'){
-    const items=[...$('modal').querySelectorAll('button:not([disabled]),input,textarea,select,a[href]')],first=items[0],last=items[items.length-1];
-    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    const items=[...open.querySelectorAll('button:not([disabled]),input,textarea,select,a[href]')].filter(x=>x.offsetParent!==null), first=items[0], last=items[items.length-1];
+    if(!first) return;
+    if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); } else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
   }
 });
+$('modal').addEventListener('click',e=>{ if(e.target===$('modal')){ $('modal').classList.remove('show'); if(modalClose){ modalClose(); modalClose=null; } } });
 
 /* ---- auth state ---- */
 if(cloud.sb){
@@ -1481,20 +1708,24 @@ if(cloud.sb){
     if((u&&u.id)===(cloud.user&&cloud.user.id)) return;
     cloud.user=u; if(!u){ cloud.step='email'; cloud.lastSync=0; cloud.err=''; }
     setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); loadNames(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); HAZ={};renderSafety(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
-      if($('tab-board').classList.contains('act')) loadBoard(); },0);
+      if(VIEW==='community') renderCommunity(); if(VIEW==='safety') renderSafety(); },0);
   });
   window.addEventListener('online',()=>flush());
 }
 buildCloudBox();
-render();
-renderSafety();
-drawNameLabels(); loadNames(); setInterval(()=>{ if(document.visibilityState==='visible') loadNames(); }, 5*60*1000);
+setupZoomCtl(); syncFogBtn();
+go((location.hash||'').replace('#','')||'home',{keepScroll:true});
+drawNameLabels(); drawZoneLabels(); drawHoofs();
+if(S.rec&&S.rec.at){
+  modal('Unfinished walk','<p>You started a walk on '+esc(dayLabel(new Date(S.rec.at).toISOString(),true))+' that wasn’t finished. Recording stops when the app closes.</p>',
+    [['Resume recording','pri',()=>startGPS()],['Finish it now','',()=>finishRecording()],['Discard it','danger',()=>{ S.rec=null; saveNow(); }]]);
+} loadNames(); setInterval(()=>{ if(document.visibilityState==='visible') loadNames(); }, 5*60*1000);
 
 /* =====================================================================
    BOOT EXTRAS — restore from IndexedDB if localStorage was wiped,
    optional paths.geojson override, service worker
    ===================================================================== */
-function refreshAll(){ buildSegments(); drawPaths(); render(); queueFog(); }
+function refreshAll(){ buildSegments(); drawPaths(); drawHoofs(); drawZoneLabels(); render(); queueFog(); }
 function setStatusIfIdle(){ if(watchId===null) setStatus('', 'Ready to explore · GPS off'); }
 if(!localStorage.getItem(LS_KEY)){
   idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign(DEF(),v); normalize(); refreshAll(); } });
@@ -1508,7 +1739,7 @@ if(location.protocol.indexOf('http')===0){
       name:(f.properties&&f.properties.name)||'Walkway', tags:(f.properties&&f.properties.tags)||[],
       official:(f.properties&&f.properties.named===true)||!GENERIC_NAMES.has((f.properties&&f.properties.name)||'Walkway'),
       pts:f.geometry.coordinates.map(c=>[c[1],c[0]])}));
-    if(custom.length){ PATHS=custom; refreshAll(); drawNameLabels(); setStatusIfIdle(); }
+    if(custom.length){ PATHS=custom; refreshAll(); drawNameLabels(); setStatusIfIdle(); if(VIEW==='community') renderCommunity(); }
   }).catch(()=>{});
   if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
