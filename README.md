@@ -4,6 +4,8 @@
 
 Privacy: see [PRIVACY.md](PRIVACY.md) — the same notice is in the app under Progress → Privacy & delete my data.
 
+Design and goal definitions: [docs/STUDENT_APP_V2.md](docs/STUDENT_APP_V2.md). Tests: `node --test tests/student-core.test.cjs`.
+
 A fog-of-war walking game for the CU Boulder campus. Real GPS, Leaflet map, installable PWA. No build step, no server code.
 
 ## Put it online (GitHub Pages, about 3 minutes)
@@ -24,7 +26,9 @@ Phone GPS only works on an `https://` page, so the files need a host.
 
 | File | Purpose |
 |---|---|
-| `index.html` | The whole app (HTML, CSS, JS). Works on its own. |
+| `index.html` | The app shell and script. |
+| `app.css` | Styles. |
+| `student-core.js` | Goal, walk-summary and request logic shared with the tests. |
 | `manifest.json`, `icons/` | Home-screen install. |
 | `sw.js` | Offline app shell and map-tile cache. |
 | `paths.geojson` (optional) | Your own walkways; replaces the built-in set. |
