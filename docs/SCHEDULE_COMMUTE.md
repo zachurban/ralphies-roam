@@ -17,7 +17,7 @@ paths the student hasn't walked.
 - **Completing it.** Recording while walking the scenic route and covering 80% of its new ground completes it (toast +
   vibration). A scenic route stays active for its class day.
 - **Badges.** Scenic Route (1), Road Less Traveled (5), Know Your Way (every route of one class day walked).
-- **Schedule screen** (Home → Schedule, or Progress → Class schedule): where you start (residence halls and courts, campus
+- **Schedule screen** (Home → Schedule, or Progress → Class schedule): a building picker on every class (fix TBA rooms, room changes, or a class wrongly marked online), where you start (residence halls and courts, campus
   parking garages, or a spot you tap), the class list, buildings to place, replace file, remove schedule.
 
 ## Privacy
@@ -38,7 +38,8 @@ Handles the RFC 5545 and CU quirks listed for Buff Portal exports:
 | Line folding (CRLF + space or tab) | Unfolded before any field is read |
 | Escapes `\,` `\;` `\n` `\\` | Unescaped in SUMMARY, LOCATION, DESCRIPTION |
 | Lecture + recitation as separate VEVENTs | Kept as separate classes; same building back to back becomes one stop |
-| `TBA`, `REMOTE`, `ONLINE`, blank, arranged | Marked online; no walk |
+| `ONLINE`, `REMOTE`, `ZOOM`, async | Marked online; no walk |
+| `TBA`, blank, arranged | In person, **building not set**: the student picks it from the campus building list (or taps the map) |
 | `ECCR 265`, `Engineering Center, ECCR 265`, `HUMN 1B50` | Building code kept, room dropped |
 | `EXDATE` (one per line or comma lists, TZID or UTC) | Skipped dates |
 | `TZID=America/Denver`, floating, or UTC `Z` times; UTC `UNTIL` | Converted to Boulder wall-clock time |

@@ -28,7 +28,9 @@ const COMPONENTS = [
   [/\bSEM\b|SEMINAR/i,'Seminar'], [/\bSTU\b|STUDIO/i,'Studio'], [/\bDIS\b|DISCUSSION/i,'Discussion'],
   [/\bPRA\b|PRACTICUM/i,'Practicum'], [/\bIND\b|INDEPENDENT/i,'Independent study'], [/\bCLN\b|CLINICAL/i,'Clinical']
 ];
-const NO_PLACE = /^\s*$|\b(TBA|TBD|REMOTE|ONLINE|ARRANGED|ARR|ZOOM|ASYNC\w*|SYNCHRONOUS|WEB|NO ROOM|OFF[- ]?CAMPUS|HYBRID ONLINE)\b/i;
+// Explicitly online -> no walk. Unknown (TBA, blank, arranged) is NOT online: the student picks the building.
+const ONLINE = /\b(REMOTE|ONLINE|ZOOM|ASYNC\w*|SYNCHRONOUS|WEB[- ]?BASED|DISTANCE)\b/i;
+const NO_ROOM = /^\s*$|^\s*(TBA|TBD|ARR|ARRANGED|NO ROOM|NOT ASSIGNED|STAFF)\b|\b(TBA|TBD)\s*$/i;
 
 /* ---------- iCalendar (RFC 5545) reading ---------- */
 
@@ -86,11 +88,12 @@ function componentFrom(desc){
   for(const [re,n] of COMPONENTS) if(re.test(first)) return n;
   return null;
 }
-/* LOCATION -> {code} | {online:true} | {unknown:'raw building text'}. The room never leaves this function.
-   Handles "ECCR 265", "Engineering Center, ECCR 265", "HUMN 1B50", "ONLINE", "TBA", "". */
+/* LOCATION -> {code} | {online:true} | {unknown:'raw building text'|'TBA'}. The room never leaves this function.
+   Handles "ECCR 265", "Engineering Center, ECCR 265", "HUMN 1B50", "ONLINE", "REMOTE", "TBA", "". */
 function parseLocation(loc, known){
   const raw=String(loc||'').trim();
-  if(NO_PLACE.test(raw)) return {online:true};
+  if(ONLINE.test(raw)) return {online:true};
+  if(NO_ROOM.test(raw)) return {unknown:'TBA'};
   const tail=raw.split(',').pop().trim().toUpperCase();
   const isKnown=c=>!known||known.has(c);
   const cands=[];
