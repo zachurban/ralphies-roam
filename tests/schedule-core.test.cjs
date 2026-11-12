@@ -56,11 +56,17 @@ test('quirks file: escapes, 3- and 4-letter subjects, lettered sections, online/
   assert.equal(by['ASTR 1000 Lecture'].start, '10:00');
   // COUNT=3 on Tue/Thu starting Tue Aug 25 -> Tue 25, Thu 27, Tue Sep 1
   assert.equal(by['ASTR 1000 Lecture'].last, '2026-09-01');
-  // no-place locations
-  for (const k of ['WRTG 1150 Seminar', 'CSCI 2270 Lecture', 'ECON 2010 Lecture', 'PSYC 1001 Lecture']) {
+  // explicitly online -> online; TBA or blank -> in person, building not set yet (the student picks it)
+  for (const k of ['CSCI 2270 Lecture', 'ECON 2010 Lecture']) {
     assert.ok(by[k], 'missing ' + k);
     assert.equal(by[k].online, true, k);
     assert.equal(by[k].code, null, k);
+  }
+  for (const k of ['WRTG 1150 Seminar', 'PSYC 1001 Lecture']) {
+    assert.ok(by[k], 'missing ' + k);
+    assert.equal(by[k].online, false, k + ' is not online');
+    assert.equal(by[k].code, null, k);
+    assert.equal(by[k].unknownPlace, 'TBA', k);
   }
   // building not in the list is kept as a code so the student can place it once
   assert.equal(by['GEOL 1010 Lecture'].code, 'ZZZZ');

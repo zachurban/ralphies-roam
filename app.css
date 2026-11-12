@@ -356,3 +356,6 @@ body.rec #sheetBody{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec
 .reasons{border:0;margin:6px 0 4px;padding:0}
 .reasons .opt{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;border-bottom:1px solid var(--line)}
 .reasons .opt input{width:20px;height:20px;flex:none;accent-color:var(--ink)}
+.clsrow{flex-wrap:wrap}
+.clsrow .bldpick{margin:6px 0 0;min-height:40px;padding:6px 10px;font-size:15px}
+.clsrow.unset small{color:var(--warn)}
