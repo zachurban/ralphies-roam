@@ -39,19 +39,22 @@ async function overpass(q) {
 const M_LAT0 = 111320, M_LNG0 = 111320 * Math.cos(40.0 * Math.PI / 180);
 const WV_FALLBACK = [39.9945, -105.2530, 40.0010, -105.2435];
 const wvEls = await overpass(`[out:json][timeout:60];nwr["name"~"Williams Village|Darley|Stearns|Bear Creek Apartments",i](39.985,-105.265,40.008,-105.235);out geom;`);
-const wvPts = wvEls.elements.filter(e => e.tags && !e.tags.highway).flatMap(e =>
+// only buildings and grounds — skip bus routes, roads and businesses that merely share the name
+const wvKeep = e => e.tags && !e.tags.highway && !e.tags.route && e.tags.type !== 'route' && !e.tags.shop && !/liquor/i.test(e.tags.name || '') &&
+  (e.tags.building || e.tags.amenity || e.tags.leisure || e.tags.landuse);
+const wvPts = wvEls.elements.filter(wvKeep).flatMap(e =>
   e.type === 'node' ? [[e.lat, e.lon]] : (e.geometry || (e.members || []).flatMap(m => m.geometry || [])).map(g => [g.lat, g.lon]));
 let WV = WV_FALLBACK, wvFrom = 'fallback box';
 if (wvPts.length) {
   const pad = 70;
   WV = [Math.min(...wvPts.map(p => p[0])) - pad / M_LAT0, Math.min(...wvPts.map(p => p[1])) - pad / M_LNG0,
         Math.max(...wvPts.map(p => p[0])) + pad / M_LAT0, Math.max(...wvPts.map(p => p[1])) + pad / M_LNG0];
-  wvFrom = [...new Set(wvEls.elements.filter(e => e.tags && !e.tags.highway).map(e => e.tags.name))].join('; ');
+  wvFrom = [...new Set(wvEls.elements.filter(wvKeep).map(e => e.tags.name))].join('; ');
 }
 // sanity: never let a bad match balloon the area past ~1.5 km
 if ((WV[2] - WV[0]) * M_LAT0 > 1500 || (WV[3] - WV[1]) * M_LNG0 > 1500) { WV = WV_FALLBACK; wvFrom += ' (too large — fallback used)'; }
 const wvbb = WV.map(v => v.toFixed(5)).join(',');
-console.log('Williams Village box', wvbb, '←', wvFrom);
+console.log('Williams Village box', wvbb, Math.round((WV[2]-WV[0])*M_LAT0)+' x '+Math.round((WV[3]-WV[1])*M_LNG0)+' m', '←', wvFrom);
 
 const HW = '"highway"~"^(footway|path|pedestrian|steps|cycleway|track|bridleway|living_street)$"';
 const paths = await overpass(`[out:json][timeout:120];(way[${HW}](${bb});way[${HW}](${wvbb}););out geom;`);
