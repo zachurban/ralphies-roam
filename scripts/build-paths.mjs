@@ -54,6 +54,33 @@ if (wvPts.length) {
 // sanity: never let a bad match balloon the area past ~1.5 km
 if ((WV[2] - WV[0]) * M_LAT0 > 1500 || (WV[3] - WV[1]) * M_LNG0 > 1500) { WV = WV_FALLBACK; wvFrom += ' (too large — fallback used)'; }
 const wvbb = WV.map(v => v.toFixed(5)).join(',');
+
+// Prefer CU's actual Williams Village property outline over a rectangle (keeps out neighborhood sidewalks)
+const wvAreas = wvEls.elements.filter(e => e.tags && !e.tags.building && !e.tags.route && e.type !== 'node' &&
+  (e.tags.amenity === 'university' || e.tags.landuse || e.tags.place) && /williams village/i.test(e.tags.name || ''))
+  .map(e => ({ name: e.tags.name,
+    edges: (e.type === 'way' ? [e.geometry || []] : (e.members || []).filter(m => m.geometry).map(m => m.geometry))
+      .flatMap(g => g.slice(1).map((q, i) => [[g[i].lat, g[i].lon], [q.lat, q.lon]])) }))
+  .filter(a => a.edges.length >= 3);
+function pip(p, edges) {        // even-odd ray cast; works for multipolygons split across member ways
+  let inside = false;
+  for (const [a, b] of edges) {
+    if ((a[0] > p[0]) !== (b[0] > p[0]) && p[1] < (b[1] - a[1]) * (p[0] - a[0]) / (b[0] - a[0]) + a[1]) inside = !inside;
+  }
+  return inside;
+}
+function edgeDist(p, edges) {   // meters to the outline
+  let best = Infinity;
+  for (const [a, b] of edges) {
+    const ax = (a[1] - p[1]) * M_LNG0, ay = (a[0] - p[0]) * M_LAT0, bx = (b[1] - p[1]) * M_LNG0, by = (b[0] - p[0]) * M_LAT0;
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    const t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+    best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy));
+  }
+  return best;
+}
+const inWV = p => wvAreas.length ? wvAreas.some(a => pip(p, a.edges) || edgeDist(p, a.edges) < 20) : inBox(p, WV);
+console.log('Williams Village outline:', wvAreas.length ? wvAreas.map(a => a.name + ' (' + a.edges.length + ' edges)').join('; ') : 'none found — using box');
 console.log('Williams Village box', wvbb, Math.round((WV[2]-WV[0])*M_LAT0)+' x '+Math.round((WV[3]-WV[1])*M_LNG0)+' m', '←', wvFrom);
 
 const HW = '"highway"~"^(footway|path|pedestrian|steps|cycleway|track|bridleway|living_street)$"';
@@ -93,7 +120,7 @@ for (const z of ZONES) {
   } else { z.box = z.fallback; z.from = 'fallback box'; }
   console.log('zone', z.id, '←', z.from);
 }
-const inBox = (p, b) => p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3];
+function inBox(p, b) { return p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]; }
 
 // ---- walkways ----
 const UNPAVED = /^(dirt|ground|earth|grass|mud|sand|unpaved|gravel|fine_gravel|compacted|woodchips|rock)$/;
@@ -123,8 +150,10 @@ for (const w of paths.elements) {
   if (t.highway === 'steps') tags.push('stairs');
   if (t.bridge && t.bridge !== 'no') tags.push('bridge');
   if (t.informal === 'yes' || t.highway === 'track' || (t.highway === 'path' && UNPAVED.test(t.surface || ''))) tags.push('goat');
+  const isWV = inWV(midP);
+  if (!isWV && !inBox(midP, BBOX)) continue;   // came from the Williams Village query but lies outside CU's property
   let zone = /boulder creek/i.test(t.name || '') ? 'creek'
-           : inBox(midP, WV) ? 'williams'
+           : isWV ? 'williams'
            : (ZONES.find(z => inBox(midP, z.box)) || { id: 'campus' }).id;
   for (let i = 1; i < w.geometry.length; i++) {
     const a = w.geometry[i - 1], b = w.geometry[i];
