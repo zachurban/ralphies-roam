@@ -337,3 +337,22 @@ body.rec #sheetBody{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec
   background:#1E2022;color:#fff;border-radius:14px;padding:10px 10px 10px 14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .placebar .grow{flex:1;font-weight:600}
 .placebar .btn{background:#fff;color:var(--ink)}
+
+/* ---------- nicknames ---------- */
+.nickbox{margin:6px 0 4px}
+.nickrow{display:flex;align-items:center;gap:10px;min-height:44px}
+.nickrow .nick{flex:1;min-width:0;font-size:17px;overflow-wrap:anywhere}
+.nickrow .btn{flex:none}
+.warnrow{background:var(--warn-soft);border:1px solid #F0C9B4;border-radius:10px;padding:10px 12px;color:var(--ink);font-size:14px;margin-bottom:8px}
+.nick-card{border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:14px;padding:16px 14px 14px;margin:12px 0 6px}
+#modal .nick-big{font-size:24px;line-height:1.25;font-weight:700;color:var(--ink);letter-spacing:.01em;text-align:center;margin:2px 0 4px;overflow-wrap:anywhere;min-height:32px}
+.nick-card .btns{margin-top:10px}
+.nick-own{margin-top:8px;background:transparent}
+.nick-note{border-top:1px solid var(--line);padding-top:10px;margin-top:14px}
+#modal #nickUI .pmsg{min-height:20px;margin:4px 0 0;font-size:14px}
+#modal #nickUI .pmsg.bad{color:var(--danger)} #modal #nickUI .pmsg.good{color:#2E6B3F}
+.lb-more{flex:none;width:44px;height:44px;margin:-6px -10px -6px 0;border-radius:10px;color:var(--muted);display:grid;place-items:center}
+.lb-more:hover,.lb-more:focus-visible{color:var(--ink);background:var(--surface)}
+.reasons{border:0;margin:6px 0 4px;padding:0}
+.reasons .opt{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;border-bottom:1px solid var(--line)}
+.reasons .opt input{width:20px;height:20px;flex:none;accent-color:var(--ink)}

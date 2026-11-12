@@ -4,7 +4,7 @@
 
 Privacy: see [PRIVACY.md](PRIVACY.md) — the same notice is in the app under Progress → Privacy & delete my data.
 
-Design and goal definitions: [docs/STUDENT_APP_V2.md](docs/STUDENT_APP_V2.md). Tests: `node --test tests/student-core.test.cjs`.
+Design and goal definitions: [docs/STUDENT_APP_V2.md](docs/STUDENT_APP_V2.md). Nicknames and moderation: [docs/USERNAMES.md](docs/USERNAMES.md). Tests: `node --test tests/*.test.cjs` (database tests need a local PostgreSQL; they skip without one).
 
 A fog-of-war walking game for the CU Boulder campus. Real GPS, Leaflet map, installable PWA. No build step, no server code.
 
@@ -30,6 +30,8 @@ Phone GPS only works on an `https://` page, so the files need a host.
 | `app.css` | Styles. |
 | `student-core.js` | Goal, walk-summary and request logic shared with the tests. |
 | `schedule-core.js` | Class schedule (.ics) reading, CU term calendar and walkway routing, shared with the tests. |
+| `username-core.js` | Nickname format rules and messages (moderation itself runs only on the server). |
+| `admin.html` | Nickname moderation queue for moderators (server-checked; see docs/USERNAMES.md). |
 | `buildings.json` | CU building codes → location and outline, built from OpenStreetMap by `scripts/build-buildings.mjs`. |
 | `data/building-aliases.json` | Hand-kept fixes for building codes OpenStreetMap lists differently. |
 | `manifest.json`, `icons/` | Home-screen install. |
@@ -55,8 +57,8 @@ Top of the script in `index.html`: `CLAIM_M` (15 m snap threshold), `REVEAL_M` (
 Optional. With `config.js` blank, the app runs offline-only exactly as before.
 
 - `supabase/migrations/` — database schema: profiles, claimed segments, badges, distance totals,
-  hazard reports, row-level security (students read and write only their own rows), and leaderboard
-  and hazard functions that expose names and totals only. Applied automatically by the Supabase
+  hazard reports, nicknames and their moderation, row-level security (students read and write only their own rows), and leaderboard
+  and hazard functions that expose nicknames and totals only. Applied automatically by the Supabase
   GitHub integration on push to `main` when **Deploy to production** is on.
 - `config.js` — Supabase Project URL and publishable key (both safe to commit).
 
@@ -98,6 +100,12 @@ OSM edits that split or redraw a way reset progress on that way.
   a zone, keep a streak, pass the person above you, nearby stairs or bridges). Tap it to fly there.
 - **Dorm list** comes from OpenStreetMap residence halls (`dorms` in `paths.geojson`), plus
   Off-campus, Faculty & staff, and Other.
+
+## Nicknames
+
+Signed-in students pick a public nickname: a suggested campus one (*FlatironFox482*) or their own. Names are moderated on the server, unique ignoring case and look-alikes, and reportable; moderators work a queue in `admin.html`. Add a moderator: `insert into public.app_admins (user_id) select id from auth.users where email = 'you@colorado.edu';`. Full details, rate limits, the migration plan for existing names and known limitations: [docs/USERNAMES.md](docs/USERNAMES.md).
+
+The profanity list includes the English [List of Dirty, Naughty, Obscene, and Otherwise Bad Words](https://github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words) (CC BY 4.0), loaded by `scripts/build-moderation-terms.mjs`.
 
 ## Student-named paths
 

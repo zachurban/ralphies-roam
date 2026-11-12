@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>BuffPrints · Nickname moderation</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root{--ink:#1E2022;--muted:#565A5C;--line:#E7E3DA;--surface:#F7F5F0;--gold:#CFB87C;--gold-soft:#F3F0E9;--danger:#B3261E;--warn:#B7410E;--ok:#2E6B3F;--link:#096FAE}
+  *{box-sizing:border-box} body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--surface)}
+  header{background:#000;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px}
+  header b{color:var(--gold)} header a{color:#fff;margin-left:auto;font-size:14px}
+  main{max-width:860px;margin:0 auto;padding:12px 14px 60px}
+  h2{font-size:18px;margin:22px 0 8px} h3{font-size:16px;margin:0 0 4px;overflow-wrap:anywhere}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:2px 6px;border:1px solid var(--line);background:var(--surface);margin:0 4px 4px 0}
+  .pill.warn{color:var(--warn);border-color:#F0C9B4;background:#FBEDE5}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  button,.btn{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font:600 14px system-ui,sans-serif;color:var(--ink);cursor:pointer}
+  button.pri{background:var(--ink);color:#fff;border-color:var(--ink)} button.danger{color:#fff;background:var(--danger);border-color:var(--danger)}
+  button[disabled]{opacity:.5;cursor:default}
+  input,select,textarea{font:16px system-ui,sans-serif;min-height:44px;padding:8px 10px;border-radius:10px;border:1px solid #CFCAC0;width:100%;background:#fff}
+  label{display:block;font-size:13px;font-weight:600;margin:8px 0 2px}
+  .row{display:flex;gap:8px;flex-wrap:wrap} .row>*{flex:1 1 160px}
+  ul.notes{margin:6px 0 0;padding-left:18px} ul.notes li{overflow-wrap:anywhere}
+  table{width:100%;border-collapse:collapse;font-size:13px} td,th{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+  #msg{position:sticky;top:0;z-index:2;background:var(--gold-soft);border:1px solid var(--gold);border-radius:10px;padding:10px 12px;margin:10px 0;display:none}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header><span><b>BuffPrints</b> · Nickname moderation</span><a href="./">Back to the app</a></header>
+<main>
+  <div id="msg" role="status" aria-live="polite"></div>
+  <div id="gate" class="card">Checking access…</div>
+  <div id="ui" class="hidden">
+    <p class="small muted">Everything here is private to administrators. Reports never hide a name on their own — only the actions below do. Every action is logged.</p>
+
+    <h2>Reported nicknames</h2>
+    <div id="reports"></div>
+
+    <h2>Review requests</h2>
+    <div id="reviews"></div>
+
+    <h2>Test a name</h2>
+    <div class="card">
+      <label for="tName">Name</label><input id="tName" maxlength="60" autocomplete="off" spellcheck="false">
+      <div class="btns"><button class="pri" id="tGo">Check</button></div>
+      <div id="tOut" class="small"></div>
+    </div>
+
+    <h2>Policy</h2>
+    <div class="card">
+      <p class="small muted">Additions are stored only in the database, not in the code repository. After changing the policy, re-scan to queue existing names that now fail (nothing is hidden automatically).</p>
+      <div class="row">
+        <div><label for="pTerm">Blocked term or regex</label><input id="pTerm" autocomplete="off" spellcheck="false"></div>
+        <div><label for="pMatch">Match</label><select id="pMatch"><option value="token">Whole word</option><option value="edge">Start or end of a word</option><option value="substring">Anywhere</option><option value="phrase">Phrase (words with spaces)</option><option value="regex">Regex on joined letters</option></select></div>
+        <div><label for="pCat">Category</label><select id="pCat"><option>profanity</option><option>slur</option><option>sexual</option><option>violence</option><option>self_harm</option><option>harassment</option><option>accusation</option><option>impersonation</option><option>personal_info</option><option>spam</option></select></div>
+      </div>
+      <div class="btns"><button id="pAdd">Add term</button></div>
+      <div class="row">
+        <div><label for="eWord">Allowed word (exception)</label><input id="eWord" autocomplete="off" spellcheck="false"></div>
+        <div><label for="eKind">Applies</label><select id="eKind"><option value="token">Inside one word only</option><option value="compact">Also across word breaks</option><option value="phrase">As a phrase</option></select></div>
+      </div>
+      <div class="btns"><button id="eAdd">Add exception</button><button id="rescan">Re-scan all names</button><button id="tList">Show app terms</button></div>
+      <div id="terms"></div>
+    </div>
+
+    <h2>Audit trail</h2>
+    <div class="card"><div id="audit" class="small"></div></div>
+  </div>
+</main>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+'use strict';
+const CFG=window.RR_CONFIG||{};
+const $=id=>document.getElementById(id);
+// Build DOM with text nodes only — reported names and notes are untrusted text.
+function el(tag,attrs){ const e=document.createElement(tag); if(attrs) for(const k in attrs){ if(k==='text') e.textContent=attrs[k]; else if(k==='on') e.addEventListener('click',attrs[k]); else e.setAttribute(k,attrs[k]); }
+  for(let i=2;i<arguments.length;i++){ const c=arguments[i]; if(c==null) continue; e.appendChild(typeof c==='string'?document.createTextNode(c):c); } return e; }
+function msg(t){ const m=$('msg'); m.textContent=t; m.style.display=t?'block':'none'; if(t) setTimeout(()=>{ if(m.textContent===t) msg(''); },5000); }
+const when=t=>t?new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+if(!CFG.supabaseUrl||!window.supabase){ $('gate').textContent='Cloud sync isn’t configured.'; return; }
+const sb=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true}});
+async function rpc(fn,args){ const {data,error}=await sb.rpc(fn,args||{}); if(error){ msg(error.message||'Request failed'); throw error; } return data; }
+
+const ACTIONS=[['dismiss','Dismiss','',''],['require_change','Require a new name','',''],
+               ['hide','Confirm abusive: hide now','danger','Hide this name behind a placeholder, block it permanently, and require a new one?'],
+               ['restore','Restore','','']];
+async function act(ref,action,note,confirmText){
+  if(confirmText && !confirm(confirmText)) return;
+  const r=await rpc('admin_moderate_name',{p_target_ref:ref,p_action:action,p_note:note||null});
+  msg(r.status==='ok'?('Done · '+r.closed_reports+' report(s) closed'):r.status); loadAll();
+}
+async function loadReports(){
+  const rows=await rpc('admin_open_reports'); const box=$('reports'); box.textContent='';
+  if(!rows.length){ box.appendChild(el('p',{class:'muted',text:'No open reports.'})); return; }
+  rows.forEach(r=>{
+    const note=el('input',{placeholder:'Note for the audit trail (optional)','aria-label':'Note for '+r.current_name, maxlength:'280'});
+    const btns=el('div',{class:'btns'});
+    ACTIONS.forEach(([a,label,cls,conf])=>{
+      if(a==='restore'&&r.name_state==='ok') return;
+      btns.appendChild(el('button',{class:cls,text:label,on:()=>act(r.target_ref,a,note.value,conf)}));
+    });
+    box.appendChild(el('div',{class:'card'},
+      el('h3',{text:r.username||'(no name)'}),
+      el('div',null,
+        el('span',{class:'pill'+(r.name_state!=='ok'?' warn':''),text:r.name_state==='ok'?'visible':r.name_state==='hidden'?'hidden':'change required'}),
+        r.automated?el('span',{class:'pill warn',text:'flagged by filter'}):null,
+        el('span',{class:'pill',text:r.distinct_reporters+' reporter'+(r.distinct_reporters==1?'':'s')}),
+        ...(r.reasons||[]).map(x=>el('span',{class:'pill',text:x}))),
+      el('p',{class:'small muted',text:'Public now: '+r.current_name+' · first reported '+when(r.first_at)+' · last '+when(r.last_at)}),
+      (r.reported_names||[]).length>1?el('p',{class:'small',text:'Names reported: '+r.reported_names.join(', ')}):null,
+      (r.notes||[]).length?el('ul',{class:'notes small'},...r.notes.map(n=>el('li',{text:n}))):null,
+      el('label',null,'Note'),note,btns));
+  });
+}
+async function loadReviews(){
+  const rows=await rpc('admin_open_reviews'); const box=$('reviews'); box.textContent='';
+  if(!rows.length){ box.appendChild(el('p',{class:'muted',text:'No open review requests.'})); return; }
+  rows.forEach(r=>{
+    const note=el('input',{placeholder:'Note (optional)','aria-label':'Note for request '+r.id, maxlength:'280'});
+    const go=async ok=>{ const x=await rpc('admin_resolve_review',{p_id:r.id,p_approve:ok,p_note:note.value||null});
+      msg(ok?('Approved'+(x.assigned==='ok'?' and assigned':' (not assigned: '+x.assigned+')')):'Denied'); loadAll(); };
+    box.appendChild(el('div',{class:'card'},
+      el('h3',{text:r.requested_name}),
+      el('p',{class:'small muted',text:'Requested by '+r.current_name+' · '+when(r.created_at)+' · filter: '+(r.matched_category||'none')+(r.matched_term?' ('+r.matched_term+')':'')+' · '+(r.available?'available':'taken')}),
+      r.note?el('p',{class:'small',text:'“'+r.note+'”'}):null,
+      note, el('div',{class:'btns'}, el('button',{class:'pri',text:'Approve',on:()=>go(true)}), el('button',{text:'Deny',on:()=>go(false)}))));
+  });
+}
+async function loadAudit(){
+  const rows=await rpc('admin_audit_log',{p_limit:60}); const box=$('audit'); box.textContent='';
+  if(!rows.length){ box.textContent='Nothing yet.'; return; }
+  const tb=el('tbody');
+  rows.forEach(a=>{ const d=a.detail||{}; const bits=[];
+    if(d.old!==undefined||d.new!==undefined) bits.push((d.old||'—')+' → '+(d.new||'—'));
+    if(d.name) bits.push(d.name); if(d.note) bits.push('“'+d.note+'”'); if(d.category) bits.push(d.category); if(d.queued!=null) bits.push(d.queued+' queued');
+    if(a.report_ids&&a.report_ids.length) bits.push('reports '+a.report_ids.join(','));
+    tb.appendChild(el('tr',null,el('td',{text:when(a.at)}),el('td',{text:a.action.replace(/_/g,' ')}),el('td',{text:bits.join(' · ')})));
+  });
+  box.appendChild(el('table',null,el('thead',null,el('tr',null,el('th',{text:'When'}),el('th',{text:'Action'}),el('th',{text:'Detail'}))),tb));
+}
+function loadAll(){ return Promise.all([loadReports(),loadReviews(),loadAudit()]).catch(()=>{}); }
+
+$('tGo').onclick=async()=>{ const v=$('tName').value; const r=(await rpc('admin_test_username',{p_name:v}))[0]||{}; const o=$('tOut'); o.textContent='';
+  o.appendChild(el('p',null,(r.format_ok?'Format OK':'Format not allowed')+' · '+(r.category?('Blocked: '+r.category+' — "'+r.term+'" ('+r.rule+', seen as "'+r.variant+'")'):'Passes moderation')+
+    (r.allowed?' · approved override':'')+(r.blocked?' · permanently blocked':'')+' · '+(r.available?'available':'taken or held'))); };
+$('pAdd').onclick=async()=>{ const r=await rpc('admin_add_term',{p_term:$('pTerm').value,p_category:$('pCat').value,p_match:$('pMatch').value}); msg(r.status==='ok'?'Term added':'That term isn’t valid for this match type'); if(r.status==='ok') $('pTerm').value=''; loadAudit(); };
+$('eAdd').onclick=async()=>{ const r=await rpc('admin_add_exception',{p_word:$('eWord').value,p_kind:$('eKind').value}); msg(r.status==='ok'?'Exception added':'Use lowercase letters (and spaces for phrases)'); if(r.status==='ok') $('eWord').value=''; loadAudit(); };
+$('rescan').onclick=async()=>{ const r=await rpc('admin_rescan_names'); msg(r.queued+' name(s) queued for review'); loadAll(); };
+$('tList').onclick=async()=>{ const rows=await rpc('admin_list_terms'); const box=$('terms'); box.textContent='';
+  const tb=el('tbody');
+  rows.forEach(t=>{ const b=el('button',{text:t.enabled?'Disable':'Enable',on:async()=>{ await rpc('admin_set_term_enabled',{p_id:t.id,p_enabled:!t.enabled}); $('tList').click(); }});
+    tb.appendChild(el('tr',null,el('td',{text:t.term}),el('td',{text:t.match}),el('td',{text:t.category}),el('td',{text:t.source}),el('td',null,b))); });
+  box.appendChild(el('table',null,el('thead',null,el('tr',null,...['Term','Match','Category','Source',''].map(h=>el('th',{text:h})))),tb)); };
+
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){ $('gate').textContent=''; $('gate').appendChild(el('p',null,'Sign in in the app first (Progress → Account), then come back here. ',el('a',{href:'./',text:'Open the app'}))); return; }
+  const {data:isAdmin}=await sb.rpc('am_i_admin');
+  if(isAdmin!==true){ $('gate').textContent='You don’t have access to moderation.'; return; }
+  $('gate').classList.add('hidden'); $('ui').classList.remove('hidden'); loadAll();
+})();
+})();
+</script>
+</body>
+</html>
