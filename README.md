@@ -105,3 +105,12 @@ Tap a ⚠️ pin. Reporters see **Delete my report**; other signed-in students s
 **Fixed** (one vote each, changeable). A report clears itself when, over the last 14 days, at least
 2 students said Fixed and Fixed outnumbers Still there. A Still-there vote keeps a pin visible for
 60 days from that confirmation. Voters and reporters are never shown to other students.
+
+## Student experience redesign
+
+See [the product review and roadmap](docs/STUDENT_EXPERIENCE_REVIEW.md).
+`student.css` contains the visual refresh; `student-core.js` contains tested goal,
+walk-summary, and advocacy-draft helpers. Run `node --test tests/student-core.test.cjs`.
+Completed walk summaries and weekly goal preferences are device-local. Drafts are
+not saved or submitted. Safety resource links are available without signing in;
+community hazard pins still use the existing Supabase policies and functions.
