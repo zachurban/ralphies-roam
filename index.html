@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ralphie's Roam</title>
 <meta name="description" content="Explore the CU Boulder campus on foot and clear the fog of war.">
-<meta name="theme-color" content="#0d0f14">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -205,53 +205,56 @@ textarea.field{min-height:70px;resize:vertical}
   .tabs button{font-size:13px}
 }
 </style>
+<link rel="stylesheet" href="student.css">
 </head>
-<body>
+<body data-view="today">
 <div id="app">
   <aside id="panel">
     <button id="handle" aria-label="Expand panel"></button>
     <div class="brand">
       <div class="logo">R</div>
-      <h1>Ralphie's Roam<small>CU Boulder campus explorer</small></h1>
+      <h1>Ralphie's Roam<small>CU Boulder · campus explorer</small></h1><button class="profile-shortcut" data-open="stats" aria-label="Profile and progress">You</button>
     </div>
     <div class="peek">
-      <button id="trackBtn"><span class="dot"></span><span id="trackLbl">Start Passive Tracking</span></button>
+      <button id="trackBtn"><span class="dot"></span><span id="trackLbl">Record walk</span></button><p class="tracking-note">Keep Roam open while walking. GPS stays on this device.</p>
       <div class="mini">
         <div><b id="mMiles">0.00</b><span>miles</span></div>
         <div><b id="mPct">0%</b><span>uncovered</span></div>
-        <div><b id="mStreak">0</b><span>🔥 streak</span></div>
+        <div><b id="mStreak">0</b><span>day streak</span></div>
         <div><b id="mXp">0</b><span>XP</span></div>
       </div>
       <button id="nudge" class="nudge" hidden></button>
     </div>
-    <nav class="tabs">
-      <button data-tab="zones" class="act">Zones</button>
-      <button data-tab="badges">Badges</button>
-      <button data-tab="stats">Live Stats</button>
-      <button data-tab="board">Board</button>
-    </nav>
+    <nav class="tabs" aria-label="Main navigation"><button data-tab="today" class="act" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></svg>Today</button><button data-tab="zones" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Z"/><path d="M9 3v16m6-14v16"/></svg>Explore</button><button data-tab="stats" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12m8 8V4m8 16V8"/></svg>Progress</button><button data-tab="board" ><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M2 21v-3a7 7 0 0 1 14 0v3m1-17a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5v2"/></svg>Community</button><button data-tab="safety" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></svg>Safety</button></nav>
     <div class="tabbody">
-      <section id="tab-zones" class="act"></section>
+      <section id="tab-today" class="act"></section><section id="tab-zones"></section>
       <section id="tab-badges"></section>
       <section id="tab-stats"><div id="statsBody"></div><div id="cloudBox"></div></section>
       <section id="tab-board"></section>
+<section id="tab-safety"><p class="eyebrow">Look out for your campus</p><h2>Safer steps.<br>Stronger voices.</h2><p class="intro">Flag a problem. Find support. Ask for change.</p>
+<div class="card safety-callout"><h3>Need help right now?</h3><p>In an emergency, call <a href="tel:911">911</a>. Roam is not monitored by CU or emergency responders.</p><a class="resource" href="https://www.colorado.edu/publicsafety/resources" target="_blank" rel="noopener"><span>CU Boulder Safe<small>Official walk monitoring, alerts & support</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/umc/cunightride" target="_blank" rel="noopener"><span>CU NightRide<small>Evening rides · check current availability</small></span><span>↗</span></a></div>
+<div class="card"><h3>Make a useful report</h3><p>A dark walkway, icy steps, or an access barrier? Help others understand the condition.</p><button class="btn pri" id="reportHazardBtn">Add a community pin</button><p class="note">Community pins are not official reports and are not automatically sent to CU.</p><a class="resource" href="https://www.colorado.edu/fm/" target="_blank" rel="noopener"><span>Report maintenance to CU<small>Lighting, sidewalks & campus facilities</small></span><span>↗</span></a><a class="resource" href="https://www.colorado.edu/police/services/report-incident" target="_blank" rel="noopener"><span>Official incident reporting<small>Including pedestrian / crossing concerns</small></span><span>↗</span></a></div>
+<div class="card"><p class="eyebrow">Student advocacy</p><h3>Ask for a fix, not just a pin.</h3><p>Prepare a clear request with a location, observation, and proposed improvement.</p><button class="btn" id="advocateBtn">Create an advocacy draft</button></div>
+<div class="goal-head"><h3 class="section-label">Community reports</h3><button class="text-btn" id="refreshHazards">Refresh</button></div><div id="hazardFeed" class="hazard-list"></div>
+<p class="note">Student reports may be incomplete or outdated. “Fixed” votes are community feedback, not an inspection. Never enter a hazardous area to earn progress or verify a pin.</p></section>
     </div>
   </aside>
   <main id="mapwrap">
-    <div id="map"></div>
+    <div id="map" aria-label="Campus exploration map"></div><div class="map-title">CU BOULDER<small>Walk somewhere new.</small></div>
     <div id="status"><i></i><span id="statusTxt">GPS off</span></div>
-    <div id="toasts"></div>
+    <div id="toasts" role="status" aria-live="polite"></div>
     <div id="fabs">
-      <button class="fab" id="fabHazard" title="Report a safety hazard">⚠️</button>
-      <button class="fab on" id="fabFog" title="Toggle fog of war">🌫️</button>
-      <button class="fab on" id="fabFollow" title="Follow my location">🎯</button>
+      <button class="fab" id="fabHazard" title="Report a safety hazard" aria-label="Report a safety hazard">⚠️</button>
+      <button class="fab on" id="fabFog" title="Toggle fog of war" aria-label="Toggle exploration fog">🌫️</button>
+      <button class="fab on" id="fabFollow" title="Follow my location" aria-label="Follow my location">🎯</button>
     </div>
   </main>
 </div>
-<div id="modal"><div class="box"><h2 id="mTitle"></h2><div id="mBody"></div><div id="mBtns"></div></div></div>
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="box"><h2 id="mTitle"></h2><div id="mBody"></div><div id="mBtns"></div></div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
+<script src="student-core.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -264,7 +267,7 @@ const CAMPUS = [40.0073, -105.2660], ZOOM = 16;
 const CLAIM_M   = 15;   // snap-to-path threshold (meters)
 const SEG_MAX_M = 20;   // paths are diced into claimable pieces this long
 const REVEAL_M  = 34;   // fog hole radius per claimed piece (meters)
-const FOG_ALPHA = 0.55; // fog darkness, 0 (none) to 1 (solid)
+const FOG_ALPHA = 0.22; // fog darkness, 0 (none) to 1 (solid)
 const ACC_MAX_M = 35;   // ignore GPS fixes with worse accuracy than this
 const MAX_SPEED = 8;    // m/s — anything faster is a GPS jump (or a bus)
 const LS_KEY = 'ralphies-roam-v1';
@@ -375,7 +378,7 @@ function buildSegments(){
 /* =====================================================================
    STATE + PERSISTENCE (localStorage = fast snapshot, IndexedDB = mirror + GPS track log)
    ===================================================================== */
-function DEF(){ return {claimed:{}, meters:0, badges:{}, layer:'Street', fogOn:true, started:Date.now(),
+function DEF(){ return {claimed:{}, meters:0, badges:{}, layer:'Light', fogOn:false, started:Date.now(),
   pending:{claims:{},badges:{},week:false,streak:false},
   streak:{count:0,best:0,last:null,freezes:0}, week:{id:null,visits:{}}, day:{id:null,seen:{},newSegs:0}}; }
 function normalize(){
@@ -486,6 +489,7 @@ buildSegments();
 const map = L.map('map',{zoomControl:false, attributionControl:true, zoomSnap:0.5}).setView(CAMPUS, ZOOM);
 L.control.zoom({position:'bottomleft'}).addTo(map);
 const LAYERS = {
+  'Light': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:20, subdomains:'abcd', attribution:'&copy; OpenStreetMap, &copy; CARTO'}),
   'Street': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'&copy; OpenStreetMap contributors'}),
   'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Imagery &copy; Esri'}),
   'Dark Mode': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:20, subdomains:'abcd', attribution:'&copy; OpenStreetMap, &copy; CARTO'})
@@ -500,7 +504,7 @@ map.createPane('paths').style.zIndex=460; map.getPane('paths').style.pointerEven
 
 /* ---- path rendering ---- */
 const pathRenderer = L.canvas({pane:'paths', padding:0.3});
-const ST_OPEN = {color:'#ffffff', weight:2, opacity:.45, dashArray:'3 6', interactive:false, renderer:pathRenderer};
+const ST_OPEN = {color:'#83907c', weight:2, opacity:.5, dashArray:'3 6', interactive:false, renderer:pathRenderer};
 const ST_DONE = {color:'#CFB87C', weight:5, opacity:.95, dashArray:null, interactive:false, renderer:pathRenderer, lineCap:'round'};
 let pathLayer = L.layerGroup().addTo(map), segLines={};
 function drawPaths(){
@@ -619,14 +623,14 @@ function onFix(lat,lng,acc,src){
       if(d>=Math.max(4,acc*0.5)){
         const plausible = dt<=90 && d/Math.max(dt,0.5)<=MAX_SPEED;
         if(plausible){
-          S.meters+=d; moved=true;
+          S.meters+=d; if(recording) recording.meters+=d; moved=true;
           const n=Math.min(40,Math.floor(d/6)); // fill the gap between fixes so nothing is skipped
           for(let k=1;k<n;k++) pts.push([last.ll[0]+(lat-last.ll[0])*k/n, last.ll[1]+(lng-last.ll[1])*k/n]);
         }
         last={ll:here,t:now}; logTrack(lat,lng,acc,src);
       }
     }
-    const r=claimAlong(pts), fresh=r.fresh;
+    const r=claimAlong(pts), fresh=r.fresh; if(recording)recording.newSegments+=fresh.length;
     const streakUp=updateStreak();
     if(fresh.length){
       fresh.forEach(s=>segLines[s.id]&&segLines[s.id].setStyle(ST_DONE));
@@ -648,6 +652,8 @@ const GEO_OPTS={enableHighAccuracy:true, maximumAge:1000, timeout:10000};
 function startGPS(){
   if(!('geolocation' in navigator)) return gpsProblem('This browser has no location support.','Try Safari on iPhone or Chrome on Android.');
   if(!window.isSecureContext) return gpsProblem('GPS needs a secure (https) page.','Open this app from its https:// address.');
+  if(watchId!==null)return;
+  recording={at:Date.now(),meters:0,newSegments:0}; openTab('zones');
   setStatus('warn','Finding GPS…');
   watchId=navigator.geolocation.watchPosition(
     p=>onFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy||999,'gps'),
@@ -662,7 +668,7 @@ function startGPS(){
 function stopGPS(){
   if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
   if(wakeLock){ try{wakeLock.release();}catch(e){} wakeLock=null; }
-  last=null; setTrackUI(false); setStatus('', 'GPS off'); saveNow();
+  last=null; setTrackUI(false); setStatus('', 'GPS off'); finishRecording(); saveNow();
 }
 function lockScreen(){ // keep the screen awake so the browser keeps delivering GPS fixes
   if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});
@@ -680,7 +686,7 @@ function gpsProblem(title,body){
 }
 function setTrackUI(on){
   $('trackBtn').classList.toggle('on',on);
-  $('trackLbl').textContent=on?'Tracking — tap to stop':'Start Passive Tracking';
+  $('trackLbl').textContent=on?'Finish walk':'Record walk';
 }
 
 
@@ -716,28 +722,28 @@ function render(){
   $('mMiles').textContent=p.miles.toFixed(2);
   $('mPct').textContent=p.pct.toFixed(p.pct>0&&p.pct<10?1:0)+'%';
   $('mXp').textContent=p.xp.toLocaleString();
-  $('mStreak').textContent=p.streak;
+  $('mStreak').textContent=p.streak; renderToday(p);
 
   NUDGES=buildNudges(p);
   const top=NUDGES[0];
   $('nudge').hidden=!top; if(top){ $('nudge').textContent=top.text; $('nudge').dataset.i=0; }
   const next = NUDGES.length ? '<div class="nextup"><h4>Next up</h4>'+NUDGES.slice(0,3).map((n,i)=>'<button data-n="'+i+'">'+esc(n.text)+'</button>').join('')+'</div>' : '';
 
-  $('tab-zones').innerHTML=next+ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n).map(z=>{
+  $('tab-zones').innerHTML='<p class="eyebrow">Find your next detour</p><h2>Explore campus</h2>'+next+ZONES.filter(z=>p.z[z.id]&&p.z[z.id].n).map(z=>{
     const zz=p.z[z.id], pct=zz.len?zz.got/zz.len*100:0;
     return '<button class="zone'+(zz.n&&zz.gotN===zz.n?' done':'')+'" data-zone="'+z.id+'">'+ring(pct,z.color)+
       '<div><h3>'+z.icon+' '+z.name+'</h3><p>'+zz.gotN+' / '+zz.n+' segments · '+ft(zz.got)+' of '+ft(zz.len)+' ft</p>'+territoryLine(z.id)+'</div></button>';
   }).join('')+'<p class="note">Tap a zone to jump there. Dashed lines are unclaimed walkways — walk within '+CLAIM_M+' m to claim them and burn off the fog. Tap any path to see or name it.</p>';
 
-  $('tab-badges').innerHTML='<div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
+  $('tab-badges').innerHTML='<button class="text-btn" data-open="stats">← Your progress</button><h2>Small wins. Big campus.</h2><div class="badges">'+BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n)).map(b=>
     '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="ic">'+b.ic+'</div><b>'+b.name+'</b><small>'+b.how+'</small></div>').join('')+'</div>';
 
-  $('statsBody').innerHTML=
+  $('statsBody').innerHTML='<p class="eyebrow">Every walk adds up</p><h2>Your progress</h2><button class="text-btn" data-open="badges">View earned & upcoming badges →</button>'+
     '<div class="lvl"><span>Level <b>'+p.level+'</b></span><span>'+p.toNext.toLocaleString()+' XP to next</span></div>'+
     '<div class="bar"><i style="width:'+p.lvlPct.toFixed(1)+'%"></i></div>'+
     '<div class="stat"><span>🔥 Streak</span><b>'+p.streak+' day'+(p.streak===1?'':'s')+'</b></div>'+
     '<div class="stat"><span>Best streak · Freezes</span><b>'+p.best+' · '+'🧊'.repeat(S.streak.freezes||0)+(S.streak.freezes?'':'0')+'</b></div>'+
-    '<div class="stat"><span>Today</span><b>'+(dayQualifies()?'✅ Streak day counted':(Math.min(Object.keys(S.day.seen).length,STREAK_SEGS)+' / '+STREAK_SEGS+' segments'))+'</b></div>'+
+    '<div class="stat"><span>Today</span><b>'+(dayQualifies()?'Streak day counted':(Math.min(Object.keys(S.day.seen).length,STREAK_SEGS)+' / '+STREAK_SEGS+' segments'))+'</b></div>'+
     '<div class="stat"><span>Segments walked this week</span><b>'+p.weekSegs+'</b></div>'+
     '<div class="stat"><span>Total distance</span><b>'+p.miles.toFixed(2)+' mi</b></div>'+
     '<div class="stat"><span>XP</span><b>'+p.xp.toLocaleString()+'</b></div>'+
@@ -782,13 +788,8 @@ function exportData(){
     document.body.appendChild(a); a.click(); a.remove(); toast('Exported '+track.length+' GPS points');
   });
 }
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act',x===b));
-  document.querySelectorAll('.tabbody>section').forEach(s=>s.classList.toggle('act',s.id==='tab-'+b.dataset.tab));
-  $('panel').classList.add('open');
-  if(b.dataset.tab==='board') loadBoard();
-});
-$('handle').onclick=()=>$('panel').classList.toggle('open');
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+$('handle').onclick=()=>{const expanded=$('panel').classList.toggle('open');$('handle').setAttribute('aria-expanded',String(expanded));};
 map.on('click',()=>$('panel').classList.remove('open'));
 $('trackBtn').onclick=()=>{ watchId===null ? startGPS() : stopGPS(); };
 $('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; $('fabFog').classList.toggle('on',S.fogOn); saveSoon(); queueFog(); };
@@ -870,7 +871,8 @@ function buildNudges(p){
 function goNudge(n){
   if(!n) return;
   if(n.seg){ openPath(n.seg); return; }
-  if(!n.target){ if(n.tab) document.querySelector('.tabs [data-tab='+n.tab+']').click(); return; }
+  if(!n.target){ if(n.tab) openTab(n.tab); return; }
+  openTab('zones');
   follow=false; $('fabFollow').classList.remove('on'); $('panel').classList.remove('open');
   setTimeout(()=>{ map.invalidateSize(); map.flyTo(n.target, Math.max(map.getZoom(),18), {duration:.8});
     if(pingMarker) map.removeLayer(pingMarker);
@@ -1208,7 +1210,7 @@ $('cloudBox').addEventListener('click',async e=>{
 async function loadBoard(){
   const el=$('tab-board');
   if(!cloud.sb){ el.innerHTML='<p class="note">Leaderboards turn on once cloud sync is set up.</p>'; return; }
-  if(!cloud.user){ el.innerHTML='<div class="card"><h3>Leaderboard</h3><p>Sign in to see how you stack up against other Buffs.</p><div class="row"><button class="btn pri" id="bSignIn">Sign in</button></div></div>'; return; }
+  if(!cloud.user){ el.innerHTML='<p class="eyebrow">Better together</p><h2>Find your herd.</h2><p class="intro">Turn everyday walks into a shared campus adventure.</p><div class="card"><h3>Walk for your dorm or team</h3><p>Sign in to join the weekly leaderboard, contribute to your dorm’s territory, and name the paths you discover.</p><div class="row"><button class="btn pri" id="bSignIn">Sign in</button></div></div>'; return; }
   const B=cloud.board;
   const seg='<div class="seg">'+[['week','This week'],['all','All time'],['terr','Territory']].map(x=>'<button data-b="'+x[0]+'" class="'+(B===x[0]?'act':'')+'">'+x[1]+'</button>').join('')+'</div>';
   el.innerHTML=seg+'<p class="note">Loading…</p>';
@@ -1251,11 +1253,15 @@ function hazardHTML(h){
             '<button class="hzb'+(h.my_vote==='fixed'?' on':'')+'" data-hz="fixed" data-id="'+h.id+'">✅ Fixed</button>';
   return '<div class="hzp"><b>'+esc(HZ[h.category]||h.category)+'</b>'+(h.note?'<div>'+esc(h.note)+'</div>':'')+
     '<small>'+meta+(tally.length?'<br>'+tally.join(' · '):'')+(h.is_mine?'<br>You reported this':'')+'</small>'+
-    '<div class="hzr">'+btns+'</div></div>';
+    '<small>Community feedback, not official verification.</small><div class="hzr">'+btns+'</div></div>';
 }
 async function loadHazards(){
-  if(!cloud.user) { hazardLayer.clearLayers(); HAZ={}; return; }
-  const {data,error}=await cloud.sb.rpc('get_open_hazards'); if(error||!data) return;
+  if(!cloud.user) { hazardLayer.clearLayers(); HAZ={};hazardState='idle';renderSafety(); return; }
+  hazardState='loading';renderSafety();
+  let result;try{result=await cloud.sb.rpc('get_open_hazards');}catch(e){result={error:e};}
+  if(!cloud.user)return;
+  const {data,error}=result; if(error||!data){hazardState='error';renderSafety();return;}
+  hazardState='ready';
   hazardLayer.clearLayers(); HAZ={};
   data.forEach(h=>{
     HAZ[h.id]=h;
@@ -1264,6 +1270,7 @@ async function loadHazards(){
     m.on('popupopen',()=>{ hzOpen=h.id; }); m.on('popupclose',()=>{ if(hzOpen===h.id) hzOpen=null; });
     if(hzOpen===h.id) setTimeout(()=>m.openPopup(),0);
   });
+  renderSafety();
 }
 // capture phase: Leaflet stops clicks inside popups from bubbling
 document.addEventListener('click',async e=>{
@@ -1280,8 +1287,8 @@ document.addEventListener('click',async e=>{
   b.disabled=true;
   const {data,error}=await cloud.sb.rpc('vote_hazard',{p_id:id, p_vote:act});
   if(error){ b.disabled=false; return toast('Couldn\'t vote: '+error.message); }
-  if(data==='resolved'){ map.closePopup(); hzOpen=null; toast('✅ Marked fixed — the pin is cleared. Thanks!'); }
-  else toast(act==='there'?'⚠️ Thanks — others will see it\'s still there':'✅ Thanks — it clears once another student confirms');
+  if(data==='resolved'){ map.closePopup(); hzOpen=null; toast('Community-cleared after votes; not officially verified.'); }
+  else toast(act==='there'?'⚠️ Thanks — others will see it\'s still there':'Thanks — your fixed vote was recorded');
   buzz(30); loadHazards();
 }, true);
 setInterval(loadHazards,5*60*1000);
@@ -1290,17 +1297,93 @@ $('fabHazard').onclick=()=>{
   if(!cloud.user) return modal('Sign in to report','<p>Sign in so reports can\'t be spammed. Other students see the hazard pin, but never who reported it.</p>',
     [['Go to sign in','pri',goSignIn],['Cancel','',()=>{}]]);
   const fresh = pos && watchId!==null;
+  const c=fresh?[pos.lat,pos.lng]:[map.getCenter().lat,map.getCenter().lng];
   const where = fresh ? 'your current location' : 'the center of the map — pan to the spot first';
-  modal('Report a hazard','<p>The pin goes at '+where+'. For emergencies call 911.</p>'+
+  modal('Report a hazard','<p>The pin goes at '+where+'. For emergencies call 911. This community pin is not sent to CU. Avoid personal details.</p>'+
     '<select class="field" id="hzCat">'+Object.keys(HZ).map(k=>'<option value="'+k+'">'+HZ[k]+'</option>').join('')+'</select>'+
     '<textarea class="field" id="hzNote" maxlength="280" placeholder="What\'s wrong? (optional)"></textarea>',
     [['Submit report','pri',async()=>{
-        const c=fresh?[pos.lat,pos.lng]:[map.getCenter().lat,map.getCenter().lng];
         const {error}=await cloud.sb.from('hazard_reports').insert({lat:c[0], lng:c[1], category:$('hzCat').value, note:($('hzNote').value||'').trim().slice(0,280)||null});
         if(error) toast(/check constraint/i.test(error.message)?'Reports must be on campus':'Couldn\'t send: '+error.message);
         else { toast('⚠️ Hazard reported — thank you'); loadHazards(); buzz(40); }
       }],['Cancel','',()=>{}]]);
 };
+
+/* Student dashboard: local history and a review-before-sharing advocacy workflow. */
+let recording=null;
+let hazardState='idle';
+function openTab(name){
+  const main=name==='badges'?'stats':name;
+  document.body.dataset.view=main;
+  document.querySelectorAll('.tabs button').forEach(b=>{b.classList.toggle('act',b.dataset.tab===main); b.setAttribute('aria-current',b.dataset.tab===main?'page':'false');});
+  document.querySelectorAll('.tabbody>section').forEach(s=>s.classList.toggle('act',s.id==='tab-'+name));
+  $('panel').classList.remove('open');
+  document.querySelector('.tabbody').scrollTop=0;
+  $('handle').setAttribute('aria-expanded','false');
+  if(name==='board') loadBoard();
+  if(name==='safety'){renderSafety();loadHazards();}
+  if(name==='today') renderToday(progress());
+  setTimeout(()=>{map.invalidateSize();queueFog();},60);
+}
+function renderToday(p){
+  const goal=RoamStudent.goal(S.studentGoal), visits=p.weekSegs||0;
+  const sessions=Array.isArray(S.sessions)?S.sessions:[];
+  $('tab-today').innerHTML='<p class="eyebrow">Your campus. Your pace.</p><h2>Make the everyday<br>a little more adventurous.</h2><p class="intro">A new path between classes. A small win for your week.</p>'+
+    '<div class="card hero"><p class="eyebrow">The campus is yours to discover</p><h3>'+ (p.pct>0?'Keep your story going.':'Take the long way to class.')+'</h3><p>'+ (p.pct>0?p.pct.toFixed(1)+'% explored. There’s more around the next corner.':'Find a different walkway and start uncovering CU Boulder.')+'</p><button class="btn" data-open="zones">Explore the map ↗</button></div>'+
+    '<div class="card"><div class="goal-head"><h3>Your weekly goal</h3><button class="text-btn" id="editGoal">Edit goal</button></div><div class="goal-number">'+visits+' <small>/ '+goal+' segments</small></div><progress value="'+Math.min(visits,goal)+'" max="'+goal+'" aria-label="Weekly segment goal"></progress><div class="goal-foot"><span>'+(visits>=goal?'Goal reached. Enjoy your next walk.':(goal-visits)+' to go · repeat paths count once')+'</span></div><p class="note">Monday–Sunday, Boulder time. Take rest days when you need them.</p></div>'+
+    '<div class="card safety-callout"><p class="eyebrow">Make campus better</p><h3>A broken light shouldn’t go unnoticed.</h3><p>Document a concern, find the right office, and help other Buffs follow up.</p><button class="text-btn" data-open="safety">Open campus safety →</button></div>'+
+    '<h3 class="section-label">Your recent walks <span class="pill">On this device</span></h3>'+
+    (sessions.length?sessions.slice(0,5).map(s=>'<article class="session"><small>'+esc(new Date(s.at).toLocaleDateString([], {month:'short',day:'numeric'}))+'</small><h3>Campus walk</h3><div class="session-numbers"><div><b>'+(s.meters/1609.344).toFixed(2)+'</b><span>Miles</span></div><div><b>'+Math.round(s.seconds/60)+'</b><span>Minutes elapsed</span></div><div><b>'+s.newSegments+'</b><span>New segments</span></div></div></article>').join(''):'<div class="empty">Your first walk starts here. Tap <b>Record walk</b>, keep Roam open, and your summary will appear when you finish.</div>');
+}
+function finishRecording(){
+  if(!recording)return;
+  const activity=RoamStudent.session(recording.at,Date.now(),recording.meters,recording.newSegments);
+  recording=null;
+  if(activity.meters<=0&&activity.newSegments<=0)return;
+  S.sessions=[activity,...(S.sessions||[])].slice(0,50);saveNow();renderToday(progress());
+  modal('Nice walk, Buff.','<p>'+ (activity.meters/1609.344).toFixed(2)+' miles · '+Math.round(activity.seconds/60)+' minutes elapsed · '+activity.newSegments+' new segments.</p><p>Your summary is saved on this device.</p>',[['View my walks','pri',()=>openTab('today')],['Back to map','',()=>openTab('zones')]]);
+}
+function renderSafety(){
+  const rows=Object.values(HAZ);
+  $('hazardFeed').innerHTML=!cloud.user?'<p class="empty">Sign in to view student reports and add a pin. Official resources and the advocacy draft work without an account.</p><button class="btn" data-open="stats">Sign in / profile</button>':hazardState==='error'?'<p class="empty">Reports could not be refreshed. Try again when connected. This does not mean there are no hazards.</p>':hazardState==='loading'||hazardState==='idle'?'<p class="empty">Loading community reports…</p>':rows.length?'<p class="note">'+rows.length+' recent open reports loaded (up to 300). Student observations, not verified conditions. Older or community-cleared pins may be absent.</p>'+rows.map(h=>'<article class="card"><span class="pill">Student reported</span><h3>'+esc(HZ[h.category]||h.category)+'</h3><p>'+esc(h.note||'No description added.')+'</p><p class="note">Reported '+esc(new Date(h.created_at).toLocaleDateString())+'</p><button class="text-btn" data-report-map="'+h.id+'">View pin & follow up →</button></article>').join(''):'<p class="empty">No recent open reports returned. Missing reports do not mean an area is safe.</p>';
+}
+function advocacyDraft(){
+  modal('Turn a concern into a clear request','<p>Prepare a draft for the responsible office. Nothing is sent automatically. Leave out names, personal schedules, and other people’s identifying details.</p><label class="label" for="advCategory">Concern</label><select class="field" id="advCategory"><option>Broken lighting</option><option>Ice or snow</option><option>Sidewalk / trip hazard</option><option>Accessibility barrier</option><option>Crossing / near miss</option><option>Other maintenance concern</option></select><label class="label" for="advLocation">Location or landmark</label><input class="field" id="advLocation" maxlength="160" placeholder="e.g. walkway east of Norlin Library"><label class="label" for="advObservation">What did you observe?</label><textarea class="field" id="advObservation" maxlength="1000" placeholder="Describe the condition and when you noticed it."></textarea><label class="label" for="advRequest">What would help?</label><textarea class="field" id="advRequest" maxlength="500" placeholder="e.g. inspect the light and share a repair timeline."></textarea><p id="advError" role="alert"></p>',[['Prepare draft','pri',()=>{},'prepareDraft'],['Cancel','',()=>{}]]);
+  $('prepareDraft').onclick=()=>{
+    const location=$('advLocation').value,observation=$('advObservation').value,request=$('advRequest').value;
+    if(!location.trim()||!observation.trim()||!request.trim()){ $('advError').textContent='Add a location, an observation, and a requested action.';return; }
+    const draft=RoamStudent.draft({category:$('advCategory').value,location,observation,request,date:new Date().toLocaleDateString('en-US',{timeZone:TZ})});
+    modal('Review your advocacy draft','<label class="label" for="advOutput">Edit before sharing</label><textarea class="field draft-output" id="advOutput">'+esc(draft)+'</textarea><p>Copy this into the relevant official form. You still need to submit it there.</p><a class="resource" href="https://www.colorado.edu/fm/" target="_blank" rel="noopener">CU Facilities service requests ↗</a><a class="resource" href="https://www.colorado.edu/police/services/report-incident" target="_blank" rel="noopener">Crossing / pedestrian concerns ↗</a><p id="copyStatus" role="status"></p>',[['Copy draft','pri',()=>{},'copyDraft'],['Done','',()=>{}]]);
+    $('copyDraft').onclick=async()=>{try{await navigator.clipboard.writeText($('advOutput').value);$('copyStatus').textContent='Copied. Nothing has been submitted.';}catch(e){$('advOutput').focus();$('advOutput').select();$('copyStatus').textContent='Select and copy the draft manually.';}};
+  };
+}
+document.addEventListener('click',e=>{
+  const nav=e.target.closest('[data-open]'); if(nav)openTab(nav.dataset.open);
+  if(e.target.closest('#editGoal')){
+    modal('Set your weekly goal','<p>Choose a manageable number of distinct walkway segments. A segment is a short piece of a path, not a full route.</p><label class="label" for="weeklyGoal">Segments per week</label><select class="field" id="weeklyGoal">'+[25,50,100,200].map(v=>'<option '+(v===RoamStudent.goal(S.studentGoal)?'selected':'')+'>'+v+'</option>').join('')+'</select>',[['Save goal','pri',()=>{S.studentGoal=RoamStudent.goal($('weeklyGoal').value);saveSoon();renderToday(progress());}],['Cancel','',()=>{}]]);
+  }
+  if(e.target.closest('#advocateBtn'))advocacyDraft();
+  if(e.target.closest('#refreshHazards'))loadHazards();
+  if(e.target.closest('#reportHazardBtn'))$('fabHazard').click();
+  const pin=e.target.closest('[data-report-map]');if(pin){const h=HAZ[pin.dataset.reportMap];if(h){openTab('zones');follow=false;$('fabFollow').classList.remove('on');setTimeout(()=>{map.setView([h.lat,h.lng],18);L.popup().setLatLng([h.lat,h.lng]).setContent(hazardHTML(h)).openOn(map);},100);}}
+});
+// Keep tab navigation and modal focus usable with keyboards and assistive technology.
+let focusBeforeModal=null;
+const modalObserver=new MutationObserver(()=>{
+  if($('modal').classList.contains('show')){
+    if(!$('modal').contains(document.activeElement))focusBeforeModal=document.activeElement;
+    const first=$('modal').querySelector('input,select,textarea,button,a[href]');if(first)first.focus();
+  }else if(focusBeforeModal&&focusBeforeModal.isConnected)focusBeforeModal.focus();
+});
+modalObserver.observe($('modal'),{attributes:true,attributeFilter:['class']});
+document.addEventListener('keydown',e=>{
+  if(!$('modal').classList.contains('show'))return;
+  if(e.key==='Escape'){ $('modal').classList.remove('show'); if(modalClose){modalClose();modalClose=null;} }
+  if(e.key==='Tab'){
+    const items=[...$('modal').querySelectorAll('button:not([disabled]),input,textarea,select,a[href]')],first=items[0],last=items[items.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
 
 /* ---- auth state ---- */
 if(cloud.sb){
@@ -1308,13 +1391,14 @@ if(cloud.sb){
     const u=session?session.user:null;
     if((u&&u.id)===(cloud.user&&cloud.user.id)) return;
     cloud.user=u; if(!u){ cloud.step='email'; cloud.lastSync=0; cloud.err=''; }
-    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); loadNames(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
+    setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); loadNames(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); HAZ={};renderSafety(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
       if($('tab-board').classList.contains('act')) loadBoard(); },0);
   });
   window.addEventListener('online',()=>flush());
 }
 buildCloudBox();
 render();
+renderSafety();
 drawNameLabels(); loadNames(); setInterval(()=>{ if(document.visibilityState==='visible') loadNames(); }, 5*60*1000);
 
 /* =====================================================================
@@ -1322,7 +1406,7 @@ drawNameLabels(); loadNames(); setInterval(()=>{ if(document.visibilityState==='
    optional paths.geojson override, service worker
    ===================================================================== */
 function refreshAll(){ buildSegments(); drawPaths(); render(); queueFog(); }
-function setStatusIfIdle(){ if(watchId===null) setStatus('', 'GPS off · '+SEGS.length.toLocaleString()+' path segments loaded'); }
+function setStatusIfIdle(){ if(watchId===null) setStatus('', 'Ready to explore · GPS off'); }
 if(!localStorage.getItem(LS_KEY)){
   idb('kv','readonly',st=>st.get('state')).then(v=>{ if(v&&v.claimed){ S=Object.assign(DEF(),v); normalize(); refreshAll(); } });
 }
