@@ -1,9 +1,9 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v20';
+const VERSION = 'rr-v21';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css', 'student-core.js', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson',
+  'app.css?v=21', 'student-core.js?v=21', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -58,6 +58,16 @@ self.addEventListener('fetch', e => {
   // App shell: serve cached copy right away, refresh it in the background
   // The page and config.js: network first, so updates show on the next load
   const isConfig = url.origin === location.origin && url.pathname.endsWith('/config.js');
+  // The page, config and the app's own scripts/styles: network first, so an update never mixes
+  // a new page with old code. The cached copy is only used offline.
+  const isCode = url.origin === location.origin && /\.(js|css)$/.test(url.pathname) && !url.pathname.endsWith('/sw.js');
+  if (isCode && !isConfig) {
+    e.respondWith(
+      fetch(req).then(res => { const copy = res.clone(); if (res.ok) caches.open(SHELL).then(c => c.put(req, copy)); return res; })
+        .catch(() => caches.open(SHELL).then(c => c.match(req, { ignoreSearch: true })))
+    );
+    return;
+  }
   if (req.mode === 'navigate' || isConfig) {
     const key = isConfig ? 'config.js' : 'index.html';
     e.respondWith(
