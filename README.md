@@ -98,3 +98,10 @@ toasts and nudges. Limit: 10 new names per student per day.
 The profanity/spam filter (`rr_name_problem` in the database) is the real gate; the app runs a copy
 for instant feedback. To remove a name: `delete from public.path_names where path_id = 'w123';`
 To ban a word, add it to the lists in both `rr_name_problem` (new migration) and `NF` in `index.html`.
+
+## Hazard follow-up
+
+Tap a ⚠️ pin. Reporters see **Delete my report**; other signed-in students see **Still there** and
+**Fixed** (one vote each, changeable). A report clears itself when, over the last 14 days, at least
+2 students said Fixed and Fixed outnumbers Still there. A Still-there vote keeps a pin visible for
+60 days from that confirmation. Voters and reporters are never shown to other students.

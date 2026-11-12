@@ -1,5 +1,5 @@
 /* Ralphie's Roam service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v9';
+const VERSION = 'rr-v10';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [

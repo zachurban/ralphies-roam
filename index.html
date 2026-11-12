@@ -175,6 +175,13 @@ textarea.field{min-height:70px;resize:vertical}
 .pmsg{font-size:12.5px;min-height:17px;margin:2px 0 0}
 .pmsg.bad{color:var(--red)} .pmsg.good{color:var(--green)}
 #modal .btn[disabled]{opacity:.45}
+.hzp{font-size:13.5px;line-height:1.35}
+.hzp div{margin:2px 0}
+.hzp small{display:block;color:#666;margin-top:3px}
+.hzr{display:flex;gap:6px;margin-top:8px}
+.hzb{flex:1;padding:7px 6px;border-radius:8px;border:1px solid #ccc;background:#f4f4f4;color:#222;font-size:12.5px;font-weight:700;white-space:nowrap}
+.hzb.on{background:#CFB87C;border-color:#b39b5c;color:#14110a}
+.hzb.danger{color:#c62828;border-color:#e3b4b4;background:#fff5f5}
 .hz{font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
 .leaflet-popup-content{font-size:13.5px}
 
@@ -1231,14 +1238,51 @@ $('tab-board').addEventListener('click',e=>{ if(e.target.id==='bSignIn') return 
 
 /* ---- hazard reports ---- */
 const hazardLayer=L.layerGroup().addTo(map);
-async function loadHazards(){
-  if(!cloud.user) { hazardLayer.clearLayers(); return; }
-  const {data,error}=await cloud.sb.rpc('get_open_hazards'); if(error||!data) return;
-  hazardLayer.clearLayers();
-  data.forEach(h=>L.marker([h.lat,h.lng],{icon:L.divIcon({className:'',html:'<div class="hz">⚠️</div>',iconSize:[24,24],iconAnchor:[12,12]})})
-    .bindPopup('<b>'+esc(HZ[h.category]||h.category)+'</b>'+(h.note?'<br>'+esc(h.note):'')+'<br><small>Reported '+new Date(h.created_at).toLocaleDateString()+'</small>')
-    .addTo(hazardLayer));
+let HAZ={}, hzOpen=null;
+function hazardHTML(h){
+  const when=d=>new Date(d).toLocaleDateString([], {month:'short', day:'numeric'});
+  let meta='Reported '+when(h.created_at);
+  if(h.last_confirmed_at) meta+=' · confirmed '+when(h.last_confirmed_at);
+  const tally=[]; if(h.still_there) tally.push(h.still_there+(h.still_there===1?' says':' say')+' still there'); if(h.fixed) tally.push(h.fixed+(h.fixed===1?' says':' say')+' fixed');
+  let btns;
+  if(h.is_mine) btns='<button class="hzb danger" data-hz="del" data-id="'+h.id+'">Delete my report</button>';
+  else btns='<button class="hzb'+(h.my_vote==='there'?' on':'')+'" data-hz="there" data-id="'+h.id+'">⚠️ Still there</button>'+
+            '<button class="hzb'+(h.my_vote==='fixed'?' on':'')+'" data-hz="fixed" data-id="'+h.id+'">✅ Fixed</button>';
+  return '<div class="hzp"><b>'+esc(HZ[h.category]||h.category)+'</b>'+(h.note?'<div>'+esc(h.note)+'</div>':'')+
+    '<small>'+meta+(tally.length?'<br>'+tally.join(' · '):'')+(h.is_mine?'<br>You reported this':'')+'</small>'+
+    '<div class="hzr">'+btns+'</div></div>';
 }
+async function loadHazards(){
+  if(!cloud.user) { hazardLayer.clearLayers(); HAZ={}; return; }
+  const {data,error}=await cloud.sb.rpc('get_open_hazards'); if(error||!data) return;
+  hazardLayer.clearLayers(); HAZ={};
+  data.forEach(h=>{
+    HAZ[h.id]=h;
+    const m=L.marker([h.lat,h.lng],{icon:L.divIcon({className:'',html:'<div class="hz">⚠️</div>',iconSize:[24,24],iconAnchor:[12,12]})})
+      .bindPopup(()=>hazardHTML(HAZ[h.id]||h),{maxWidth:260}).addTo(hazardLayer);
+    m.on('popupopen',()=>{ hzOpen=h.id; }); m.on('popupclose',()=>{ if(hzOpen===h.id) hzOpen=null; });
+    if(hzOpen===h.id) setTimeout(()=>m.openPopup(),0);
+  });
+}
+// capture phase: Leaflet stops clicks inside popups from bubbling
+document.addEventListener('click',async e=>{
+  const b=e.target.closest&&e.target.closest('[data-hz]'); if(!b) return;
+  e.stopPropagation();
+  const id=+b.dataset.id, act=b.dataset.hz;
+  if(act==='del'){
+    map.closePopup();
+    return modal('Delete your report?','<p>The pin disappears for everyone.</p>',[['Delete','pri',async()=>{
+      const {error}=await cloud.sb.rpc('delete_hazard',{p_id:id});
+      toast(error?'Couldn\'t delete: '+error.message:'Report deleted'); hzOpen=null; loadHazards();
+    }],['Cancel','',()=>{}]]);
+  }
+  b.disabled=true;
+  const {data,error}=await cloud.sb.rpc('vote_hazard',{p_id:id, p_vote:act});
+  if(error){ b.disabled=false; return toast('Couldn\'t vote: '+error.message); }
+  if(data==='resolved'){ map.closePopup(); hzOpen=null; toast('✅ Marked fixed — the pin is cleared. Thanks!'); }
+  else toast(act==='there'?'⚠️ Thanks — others will see it\'s still there':'✅ Thanks — it clears once another student confirms');
+  buzz(30); loadHazards();
+}, true);
 setInterval(loadHazards,5*60*1000);
 $('fabHazard').onclick=()=>{
   if(!cloud.sb) return modal('Hazard reports','<p>Hazard reporting turns on once cloud sync is set up.</p>',[['OK','',()=>{}]]);
