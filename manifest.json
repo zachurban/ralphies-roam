@@ -1,7 +1,7 @@
 {
-  "name": "BuffTracks",
-  "short_name": "BuffTracks",
-  "description": "Explore the CU Boulder campus on foot and clear the fog of war.",
+  "name": "BuffPrints",
+  "short_name": "BuffPrints",
+  "description": "Explore campus. Leave your mark.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

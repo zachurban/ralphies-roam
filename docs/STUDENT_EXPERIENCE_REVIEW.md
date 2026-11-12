@@ -1,10 +1,10 @@
-# BuffTracks: student experience review
+# BuffPrints: student experience review
 
 Reviewed November 11, 2026. Scope: repository UI, tracking, storage, map generation, and Supabase migrations; desktop and 390px mobile browser preview. Production database settings and authenticated workflows were not inspected or changed. Recommendations below are product hypotheses, not measured student demand.
 
 ## Product direction
 
-Make BuffTracks the app that makes the walk between classes more interesting and helps students improve the places they use. Borrow Strava's clear recording action, activity summaries, progressive disclosure, and small-group accountability. Keep CU identity through gold, campus geography, dorms, and student-named paths. Do not compete with CU's emergency-response system.
+Make BuffPrints the app that makes the walk between classes more interesting and helps students improve the places they use. Borrow Strava's clear recording action, activity summaries, progressive disclosure, and small-group accountability. Keep CU identity through gold, campus geography, dorms, and student-named paths. Do not compete with CU's emergency-response system.
 
 The strongest return loop is: useful campus trip → small discovery → satisfying summary → an achievable next outing. A feed alone will be empty at launch. Utility must work before friends join.
 

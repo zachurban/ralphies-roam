@@ -1,4 +1,6 @@
-# BuffTracks
+# BuffPrints
+
+*Explore campus. Leave your mark.*
 
 A fog-of-war walking game for the CU Boulder campus. Real GPS, Leaflet map, installable PWA. No build step, no server code.
 

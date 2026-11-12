@@ -1,4 +1,4 @@
-// Builds paths.geojson for BuffTracks from OpenStreetMap walkways.
+// Builds paths.geojson for BuffPrints from OpenStreetMap walkways.
 // Run by .github/workflows/update-paths.yml (or locally: node scripts/build-paths.mjs).
 // Data © OpenStreetMap contributors, ODbL.
 import fs from 'fs';
@@ -22,7 +22,7 @@ async function overpass(q) {
       try {
         const r = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'bufftracks/1.0 (github.com/zachurban/ralphies-roam)' },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'buffprints/1.0 (github.com/zachurban/ralphies-roam)' },
           body: 'data=' + encodeURIComponent(q),
           signal: AbortSignal.timeout(150000)
         });
