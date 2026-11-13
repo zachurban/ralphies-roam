@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=24">
+<link rel="stylesheet" href="app.css?v=28">
 </head>
 <body data-view="home">
 <div id="app">
@@ -58,9 +58,9 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="student-core.js?v=24"></script>
-<script src="username-core.js?v=24"></script>
-<script src="schedule-core.js?v=24"></script>
+<script src="student-core.js?v=28"></script>
+<script src="username-core.js?v=28"></script>
+<script src="schedule-core.js?v=28"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -169,7 +169,7 @@ function distToSeg(p,s){
 let SEGS=[], SEG_BY_ID={}, TOTAL_LEN=0;
 let PATH_BY_ID={};
 let SEG_META={}, PATH_SEGN={}, PATH_SEGS={}, PATH_LEN={};   // path indexes for goals (filled by indexPaths)
-let GRAPH=null, EDGE_SEGS=null, PLAN_CACHE={};               // walkway routing for the class commute (rebuilt with the paths)
+let GRAPH=null, EDGE_SEGS=null, PLAN_CACHE={}, DAYM={};               // walkway routing for the class commute (rebuilt with the paths)
 function buildSegments(){
   SEGS=[]; SEG_BY_ID={}; TOTAL_LEN=0; PATH_BY_ID={};
   PATHS.forEach(p=>{
@@ -187,7 +187,7 @@ function buildSegments(){
       }
     }
   });
-  indexPaths(); GRAPH=null; EDGE_SEGS=null; PLAN_CACHE={};
+  indexPaths(); GRAPH=null; EDGE_SEGS=null; PLAN_CACHE={}; DAYM={};
 }
 
 /* =====================================================================
@@ -289,8 +289,9 @@ const BADGES = [
   {id:'namer',   ic:'✏️', name:'Cartographer',      how:'Name a path you walked', test:()=>Object.keys(NAMES).some(k=>NAMES[k].mine)},
   {id:'flag',    ic:'🚩', name:'Flag Planter',      how:'Help your dorm own a zone for the week', test:()=>helpedOwnZone()},
   {id:'first2',  ic:'', name:'Second Look',        how:'Record two walks', test:()=>(S.sessions||[]).length>=2},
-  {id:'scenic1', ic:'', name:'Scenic Route',       how:'Walk a suggested scenic route to class', test:()=>S.scenic.done.length>=1},
-  {id:'scenic5', ic:'', name:'Road Less Traveled', how:'Walk 5 scenic routes to class', test:()=>S.scenic.done.length>=5},
+  {id:'scenic1', ic:'', name:'Scenic Route',       how:'Walk a suggested scenic route to class', test:()=>S.scenic.done.filter(d=>d.kind!=='gap').length>=1},
+  {id:'scenic5', ic:'', name:'Road Less Traveled', how:'Walk 5 scenic routes to class', test:()=>S.scenic.done.filter(d=>d.kind!=='gap').length>=5},
+  {id:'gap1',    ic:'', name:'Free Period Explorer', how:'Walk a gap loop between classes', test:()=>S.scenic.done.some(d=>d.kind==='gap')},
   {id:'knowway', ic:'', name:'Know Your Way',      how:'Walk every route of one class day', test:()=>!!S.scenic.knowWay}
 ].concat(ZONES.map(z=>({id:'zone-'+z.id, ic:z.icon, name:z.name+' Complete', how:'Claim every path in '+z.name,
   test:p=>p.z[z.id]&&p.z[z.id].n>0&&p.z[z.id].gotN===p.z[z.id].n})));
@@ -541,7 +542,7 @@ function resetAll(){
 function exportData(){
   idb('track','readonly',st=>st.getAll()).then(track=>{
     track=track||[];
-    const out={app:"BuffPrints", exported:new Date().toISOString(), state:S, schedule:SCHED,
+    const out={app:"BuffPrints", exported:new Date().toISOString(), state:S, schedule:SCHED, friends:FRIENDS, meetups:PLANS,
       track:{type:'Feature',properties:{points:track.length},geometry:{type:'LineString',coordinates:track.map(t=>[t.lng,t.lat])}},
       trackPoints:track};
     const a=document.createElement('a');
@@ -746,7 +747,8 @@ function privacyHTML(){
   '<li>Improvement requests you save on the Safety page, and the follow-up notes you add.</li>'+
   '<li>An unfinished walk, so you can resume or finish it after the app closes.</li>'+
   '<li><b>Your class schedule</b>, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.</li>'+
-  '<li><b>Find the Herd:</b> your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can’t be read without the herd’s invite key. When you tap Check in, your phone compares its own GPS with the checkpoint and keeps only “inside: yes” — the coordinates are not saved, even here.</li></ul>'+
+  '<li><b>Find the Herd:</b> your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can’t be read without the herd’s invite key. When you tap Check in, your phone compares its own GPS with the checkpoint and keeps only “inside: yes” — the coordinates are not saved, even here.</li>'+
+  '<li><b>Meet-ups:</b> if you share your free times, the link holds your class times, building codes and the name you choose (no course names or rooms); it goes through the app you share it with, not BuffPrints. Friends’ links you add are saved only on this phone and expire at the end of the term. A meet-up invite link holds the day, time, meeting spot and your name; a reply holds yes or no and the replier’s name. Planned meet-ups are saved only on this phone.</li></ul>'+
   '<h4>Find the Herd</h4><ul>'+
   '<li><b>Your location never leaves your phone.</b> The check-in is worked out on the phone. The most that is ever sent is “I’m inside this checkpoint: yes” — never coordinates, accuracy or a route.</li>'+
   '<li><b>Your herd syncs phone to phone.</b> Nicknames, avatars, progress, clue pieces, hints and answers are encrypted on your phone with a key that exists only in your invite link (the part after #, which browsers never send to servers). Our relay passes along scrambled messages it can’t read and doesn’t keep them.</li>'+
@@ -810,7 +812,7 @@ async function deleteAccount(){
 async function eraseDevice(msg){
   try{ if(watchId!==null) stopGPS(); }catch(e){}
   try{ if(cloud.sb) await cloud.sb.auth.signOut(); }catch(e){}
-  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0) localStorage.removeItem(k); }); }catch(e){}
+  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k===FRIENDS_KEY||k===PLANS_KEY||k===MYNAME_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0) localStorage.removeItem(k); }); }catch(e){}
   await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('bp-herd'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });   // Find the Herd keys
   try{ sessionStorage.clear(); }catch(e){}
   try{ if(db) db.close(); }catch(e){}
@@ -1308,6 +1310,7 @@ const ICONS = {
   ext:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/>',
   star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  food:'<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 1-3 3.5-3 7h3v11"/>',
   cal:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'
 };
 function icon(n,cls){ return '<svg class="i'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||'')+'</svg>'; }
@@ -1443,7 +1446,7 @@ function walkRowHTML(s,i){
 function badgeIconName(id){
   if(/^stairs/.test(id)) return 'stairs'; if(/^bridge/.test(id)) return 'bridge'; if(/^goat/.test(id)) return 'trail';
   if(/^mile/.test(id)) return 'route'; if(/^pct/.test(id)) return 'map'; if(/^streak/.test(id)) return 'flame';
-  if(id==='flag') return 'flag'; if(/^scenic/.test(id)) return 'trail'; if(id==='knowway') return 'cal'; if(id==='namer') return 'pen'; if(/^zone-/.test(id)) return 'pin'; if(id==='first') return 'walk'; return 'star';
+  if(id==='flag') return 'flag'; if(/^scenic/.test(id)||id==='gap1') return 'trail'; if(id==='knowway') return 'cal'; if(id==='namer') return 'pen'; if(/^zone-/.test(id)) return 'pin'; if(id==='first') return 'walk'; return 'star';
 }
 function badgeHTML(b){ return '<div class="badge'+(S.badges[b.id]?' got':'')+'"><div class="bi">'+icon(badgeIconName(b.id),'sm')+'</div><b>'+esc(b.name)+'</b><small>'+esc(b.how)+'</small></div>'; }
 function stat(v,l){ return '<div><b>'+v+'</b><span>'+l+'</span></div>'; }
@@ -1476,7 +1479,8 @@ const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 function nextHTML(n){ NEXT=n; return '<button class="next" data-act="next"><span class="ic">'+icon(n.ic,'sm')+'</span><span class="grow"><b>'+esc(n.title)+'</b><small>'+esc(n.sub||'')+'</small></span>'+(n.none?'':icon('chev','sm'))+'</button>'; }
 function doNext(n){
   if(!n||n.none) return;
-  if(n.leg!=null) return showRoute(planFor(n.ymd),n.leg,true);
+  if(n.plan) return planDetail(n.plan);
+  if(n.leg!=null) return showRoute(planFor(n.ymd),n.leg,S.quest&&S.quest.kind==='gap'&&S.quest.ymd===n.ymd&&S.quest.leg===n.leg?'gap':true);
   if(n.record) return startRecordingFlow();
   if(n.go) return go(n.go);
   if(n.target) flyTo(n.target);
@@ -1864,16 +1868,30 @@ async function shareWalk(s,withShape){
    Traveled, Know Your Way). Saved under its own key: Reset progress keeps it, Erase removes it.
    Only course, component, days, times and BUILDING codes are kept — never rooms or instructors.
    ===================================================================== */
-const SCHED_KEY='buffprints-schedule-v1', RS=RoamSchedule;
+const SCHED_KEY='buffprints-schedule-v1', FRIENDS_KEY='buffprints-friends-v1', RS=RoamSchedule;
+// Dining spots for the food stop (from CU Housing & Dining). Hours change, so the app links to CU instead of showing them.
+const FOOD=[{code:'C4C',name:'C4C Dining Center'},{code:'SWLL',name:'Sewall Dining Center'},{code:'UMC',name:'UMC (Alferd Packer Grill, market)'},
+  {code:'SEEC',name:'SEEC Café (East Campus)'},{code:'WVC',name:'Village Center Dining',note:'CU lists it as closed for a remodel; check before you go'}];
+const DINING_URL='https://www.colorado.edu/living/dining/explore-dining';
+let FRIENDS=[];   // friends' shared class patterns, on this phone only: [{n, d:{weekday:[[start,end,code]]}, exp, at}]
+try{ const f=JSON.parse(localStorage.getItem(FRIENDS_KEY)||'[]'); if(Array.isArray(f)) FRIENDS=f; }catch(e){}
+const PLANS_KEY='buffprints-meetups-v1', MYNAME_KEY='buffprints-meetname';
+let PLANS=[];      // planned meet-ups on this phone: {id, with, date, s, e, lat, lng, place, status, mine, at}
+try{ const x=JSON.parse(localStorage.getItem(PLANS_KEY)||'[]'); if(Array.isArray(x)) PLANS=x; }catch(e){}
+function savePlans(){ const old=RS.addDays(RS.denverToday().date,-1); PLANS=PLANS.filter(x=>x.date>=old).slice(-60);
+  try{ if(PLANS.length) localStorage.setItem(PLANS_KEY,JSON.stringify(PLANS)); else localStorage.removeItem(PLANS_KEY); }catch(e){} }
+function myName(){ try{ return localStorage.getItem(MYNAME_KEY)||''; }catch(e){ return ''; } }
+function setMyName(n){ try{ localStorage.setItem(MYNAME_KEY,n); }catch(e){} }
+function saveFriends(){ try{ if(FRIENDS.length) localStorage.setItem(FRIENDS_KEY,JSON.stringify(FRIENDS)); else localStorage.removeItem(FRIENDS_KEY); }catch(e){} }
 let SCHED=null, BLD=null, BLD_P=null, ROUTE_LAYER=null, ROUTE_VIEW=null, PLACING=null, CUR_PLAN=null;
 try{ const v=JSON.parse(localStorage.getItem(SCHED_KEY)||'null'); if(v&&Array.isArray(v.classes)) SCHED=Object.assign({pins:{},skipped:[],home:null},v); }catch(e){}
-function saveSched(){ PLAN_CACHE={}; try{ if(SCHED) localStorage.setItem(SCHED_KEY,JSON.stringify(SCHED)); else localStorage.removeItem(SCHED_KEY); }catch(e){} }
+function saveSched(){ PLAN_CACHE={}; DAYM={}; try{ if(SCHED) localStorage.setItem(SCHED_KEY,JSON.stringify(SCHED)); else localStorage.removeItem(SCHED_KEY); }catch(e){} }
 function loadBuildings(){
   if(BLD) return Promise.resolve(BLD);
   if(!BLD_P) BLD_P=fetch('buildings.json',{cache:'no-cache'}).then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status))).then(j=>{
     const by={}; (j.buildings||[]).forEach(b=>{ by[b.code]=b; });
     Object.keys(j.sameAs||{}).forEach(c=>{ if(by[j.sameAs[c]]&&!by[c]) by[c]=by[j.sameAs[c]]; });
-    BLD={by, places:j.places||[]}; PLAN_CACHE={}; return BLD;
+    BLD={by, places:j.places||[], list:(j.buildings||[]).slice().sort((a,b)=>a.name.localeCompare(b.name))}; PLAN_CACHE={}; DAYM={}; return BLD;
   }).catch(e=>{ BLD_P=null; throw e; });
   return BLD_P;
 }
@@ -1889,9 +1907,11 @@ function graph(){
 const unwalked=key=>(EDGE_SEGS[key]||[]).reduce((m,s)=>m+(S.claimed[s.id]?0:s.len),0);
 const segsOf=keys=>[].concat(...keys.map(k=>EDGE_SEGS[k]||[]));
 const newIds=keys=>segsOf(keys).filter(s=>!S.claimed[s.id]).map(s=>s.id);
+const isPin=code=>/^PIN-/.test(code||'');
+const dispCode=code=>isPin(code)?'Pinned spot':code;
 function placeFor(code){
   if(!code) return null;
-  if(SCHED&&SCHED.pins&&SCHED.pins[code]) return {code, name:code, lat:SCHED.pins[code].lat, lng:SCHED.pins[code].lng, outline:[]};
+  if(SCHED&&SCHED.pins&&SCHED.pins[code]) return {code, name:isPin(code)?'Pinned spot':code, lat:SCHED.pins[code].lat, lng:SCHED.pins[code].lng, outline:[]};
   return BLD&&BLD.by[code]||null;
 }
 function missingCodes(){ return !SCHED||!BLD?[]:[...new Set(SCHED.classes.filter(c=>c.code&&!placeFor(c.code)).map(c=>c.code))]; }
@@ -1899,7 +1919,7 @@ function t12(hhmm){ let [h,m]=hhmm.split(':').map(Number); const ap=h>=12?'PM':'
 const tMin=hhmm=>{ const [h,m]=hhmm.split(':').map(Number); return h*60+m; };
 function daysText(d){ return d.map(x=>RS.DAY_NAMES[x]).join(' '); }
 function stopCourses(st){ return st.classes.map(c=>c.course+(c.component&&c.component!=='Lecture'?' '+c.component.toLowerCase():'')).join(', '); }
-function bldName(code){ const b=placeFor(code); return b&&b.name&&b.name!==code?b.name:''; }
+function bldName(code){ const b=placeFor(code); return b&&b.name&&b.name!==code&&!isPin(code)?b.name:''; }
 
 /* One class day: legs between stops, each with a direct route and maybe a scenic one. */
 function dayPlan(ymd){
@@ -1919,7 +1939,7 @@ function dayPlan(ymd){
     else{
       const r=RS.commuteLeg(g,na.node,nb.node,unwalked);
       if(!r){ leg.off=true; leg.meters=crow*1.3; approx=true; }
-      else{ leg.direct=r.direct; leg.scenic=r.scenic; leg.meters=r.direct.meters+na.gap+nb.gap; leg.ends=[pa,pb];
+      else{ leg.direct=r.direct; leg.scenic=r.scenic; leg.meters=r.direct.meters+na.gap+nb.gap; leg.ends=[pa,pb]; leg.nodes=[na.node,nb.node];
         if(r.scenic){ leg.scenicNew=newIds(r.scenic.keys).length;
           // the unit students already know from the weekly goal: paths they've never been on
           const H=hist(); leg.scenicPaths=[...new Set(r.scenic.keys.map(k=>k.slice(0,k.lastIndexOf('.'))))].filter(pid=>!(H.paths[pid]&&H.paths[pid].visited)).length;
@@ -1927,11 +1947,38 @@ function dayPlan(ymd){
     }
     meters+=leg.meters||0;
   }
+  addFoodAndGaps(g, legs);
   return {ymd, stops, legs, meters, approx};
+}
+/* Between two classes: a food stop (one per day, in the longest lunchtime gap) and a gap loop for longer free time. */
+function addFoodAndGaps(g, legs){
+  const between=legs.filter(l=>l.nodes&&l.leave&&l.arrive);
+  const mode=SCHED.food||'off';
+  if(mode!=='off'){
+    const lunch=between.filter(l=>l.leave<'14:00'&&l.arrive>'10:30'&&tMin(l.arrive)-tMin(l.leave)>=35)
+      .sort((x,y)=>(tMin(y.arrive)-tMin(y.leave))-(tMin(x.arrive)-tMin(x.leave)))[0];
+    if(lunch){
+      const gap=tMin(lunch.arrive)-tMin(lunch.leave);
+      let best=null;
+      FOOD.filter(f=>(mode==='auto'||mode===f.code)&&BLD.by[f.code]).forEach(f=>{
+        const n=RS.placeNode(g,BLD.by[f.code]); if(!n||n.gap>RS.OFF_NET_M) return;
+        const r1=RS.shortest(g,lunch.nodes[0],n.node), r2=RS.shortest(g,n.node,lunch.nodes[1]); if(!r1||!r2) return;
+        const m=r1.meters+r2.meters+2*n.gap, eat=gap-RS.minutes(m);
+        if(eat>=15&&(!best||m<best.meters)) best={code:f.code, name:f.name, note:f.note, meters:m, extra:Math.max(0,m-lunch.meters), eat, line:r1.line.concat(r2.line.slice(1)), keys:r1.keys.concat(r2.keys)};
+      });
+      if(best) lunch.food=best;
+    }
+  }
+  between.forEach(l=>{
+    const gap=tMin(l.arrive)-tMin(l.leave); if(gap<45||l.food) return;
+    const budget=Math.min(25,Math.max(15,(gap-10)*0.5))*60*RS.WALK_MPS;   // about half the free time, 15–25 min of walking
+    const loop=RS.gapLoop(g,l.nodes[0],l.nodes[1],budget,unwalked);
+    if(loop){ const H=hist(); loop.newPaths=[...new Set(loop.keys.map(k=>k.slice(0,k.lastIndexOf('.'))))].filter(pid=>!(H.paths[pid]&&H.paths[pid].visited)).length; l.explore=loop; }
+  });
 }
 function planFor(ymd){
   const k=ymd+'|'+Object.keys(S.claimed).length;
-  if(!PLAN_CACHE[k]){ if(Object.keys(PLAN_CACHE).length>6) PLAN_CACHE={}; PLAN_CACHE[k]=dayPlan(ymd); }
+  if(!PLAN_CACHE[k]){ if(Object.keys(PLAN_CACHE).length>20) PLAN_CACHE={}; PLAN_CACHE[k]=dayPlan(ymd); }
   return PLAN_CACHE[k];
 }
 function legLine(l){
@@ -1949,46 +1996,307 @@ function extraMin(l){ return Math.max(1,RS.minutes(l.scenic.meters)-RS.minutes(l
 function scenicWhat(l){ return l.scenicPaths?pl(l.scenicPaths,'new path'):fmtD(l.scenicGain)+' you haven’t walked';
 }
 function dayTitle(ymd,today){
-  if(ymd===today) return 'Today'; if(ymd===RS.addDays(today,1)) return 'Tomorrow';
+  if(today){ if(ymd===today) return 'Today'; if(ymd===RS.addDays(today,1)) return 'Tomorrow'; }
   return new Date(ymd+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'});
 }
 
 /* ---------- Home: the next class day ---------- */
+let CLS_SEL=null;                       // the class day being viewed on Home (null = the default)
+/* Walking for one day, without scenic detours. Days with the same stops share one calculation. */
+function dayWalk(ymd){
+  const st=RS.dayStops(SCHED.classes,ymd,SCHED.home);
+  const sig=(SCHED.home?SCHED.home.lat+','+SCHED.home.lng:'-')+'|'+st.map(x=>x.key).join('>');
+  if(!(sig in DAYM)){ const p=dayPlan(ymd); DAYM[sig]=p?{m:p.meters, approx:p.approx||p.legs.some(l=>l.missing)}:{m:0}; }
+  return DAYM[sig];
+}
+function sumWalk(dates){ return dates.reduce((a,d)=>{ const w=dayWalk(d); a.m+=w.m; a.approx=a.approx||w.approx; return a; },{m:0,approx:false}); }
+function fmtMi(m){ const mi=m/1609.344; return (mi<10?mi.toFixed(1):Math.round(mi))+' mi'; }
+function fmtDur(min){ return min<60?min+' min':Math.floor(min/60)+' h'+(min%60?' '+min%60+' min':''); }
+function hhmm(min){ return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0'); }
+function foodRowHTML(l){
+  const f=l.food, walk=RS.minutes(f.meters), start=tMin(l.leave)+Math.round(RS.minutes(f.meters)/2);
+  return '<div class="cls extra"><div class="t">'+icon('food','sm')+'</div><div class="grow"><b>Food stop · '+esc(f.name)+'</b>'+
+    '<small>'+t12(l.leave)+'–'+t12(l.arrive)+' free · '+(f.eat>=60?'plenty of time to eat':'about '+f.eat+' min to eat')+' · '+(f.extra>40?'+'+Math.max(1,RS.minutes(f.extra))+' min of walking':'right on your way')+'</small>'+
+    (f.note?'<small class="tight">'+esc(f.note)+'</small>':'')+
+    '<span class="chiprow"><button class="chip" data-alt="food" data-leg="'+l.i+'">'+icon('map','sm')+'Route</button><a class="chip" href="'+DINING_URL+'" target="_blank" rel="noopener">'+icon('clock','sm')+'Hours</a></span></div></div>';
+}
+function gapRowHTML(l){
+  const x=l.explore, gap=tMin(l.arrive)-tMin(l.leave);
+  return '<div class="cls extra"><div class="t">'+icon('trail','sm')+'</div><div class="grow"><b>'+fmtDur(gap)+' free</b>'+
+    '<small>Explore loop on the way to '+esc(stopCourses(l.to))+': '+RS.minutes(x.meters)+' min walk, back with '+(gap-RS.minutes(x.meters))+' min to spare</small>'+
+    '<button class="chip" data-alt="gap" data-leg="'+l.i+'" aria-label="Gap loop, '+RS.minutes(x.meters)+' minutes, '+pl(x.newPaths,'new path')+'">'+icon('trail','sm')+'Gap loop · '+RS.minutes(x.meters)+' min · '+pl(x.newPaths,'new path')+'</button></div></div>';
+}
+/* ---------- meet-ups ---------- */
+let CUR_MEETS=[];
+function nearPlaceName(pt){
+  const xy=toXY(pt[0],pt[1]); let best=null, bd=Infinity;
+  SEGS.forEach(s=>{ const p=PATH_BY_ID[s.pid]; if(!p||!p.official) return; const d=distToSeg(xy,s); if(d<bd){ bd=d; best=p.name; } });
+  if(best&&bd<70) return 'on '+best;
+  const z=SEGS.reduce((a,s)=>{ const d=distToSeg(xy,s); return d<a.d?{d,z:s.zone}:a; },{d:Infinity,z:null}).z;
+  return z&&z!=='campus'?'near '+zoneName(z):'between your classes';
+}
+const PLAN_LABEL={invited:'Invite sent · waiting', confirmed:'Confirmed', accepted:'You accepted', declined:'Declined', planned:'On your calendar'};
+function planRowHTML(x){
+  return '<button class="row" data-plan="'+esc(x.id)+'"><span class="ic-lead'+(x.status==='confirmed'||x.status==='accepted'?' ok':x.status==='declined'?' no':'')+'">'+icon(x.status==='declined'?'x':x.status==='invited'?'clock':'check','sm')+'</span>'+
+    '<span class="grow"><b>Meet '+esc(x.with)+' · '+t12(x.s)+'–'+t12(x.e)+'</b><small>'+esc(PLAN_LABEL[x.status]||x.status)+' · '+esc(x.place)+'</small></span>'+icon('chev','sm')+'</button>';
+}
+function meetupsHTML(day, wd, list){
+  CUR_MEETS=[];
+  const plans=PLANS.filter(x=>x.date===day).sort((a,b)=>a.s.localeCompare(b.s));
+  const planned=plans.length?'<div class="label" style="margin-top:14px">Planned meet-ups</div><div class="list">'+plans.map(planRowHTML).join('')+'</div>':'';
+  const live=FRIENDS.filter(f=>!f.exp||f.exp>=RS.denverToday().date);
+  if(!live.length) return planned;
+  const mine=list.filter(c=>c.code).map(c=>({s:c.start,e:c.end,code:c.code})), g=graph();
+  let rows='';
+  live.forEach(f=>{
+    const theirs=((f.d&&f.d[wd])||[]).map(b=>({s:b[0],e:b[1],code:b[2]}));
+    RS.meetWindows(mine,theirs,20).forEach(w=>{
+      const a=placeFor(w.me.from), b=BLD.by[w.them.from]; if(!a||!b) return;
+      const na=RS.placeNode(g,a), nb=RS.placeNode(g,b); if(!na||!nb||na.gap>RS.OFF_NET_M||nb.gap>RS.OFF_NET_M) return;
+      const mp=RS.meetPoint(g,na.node,nb.node); if(!mp) return;
+      const you=RS.minutes(mp.mine+na.gap), them=RS.minutes(mp.theirs+nb.gap), len=tMin(w.e)-tMin(w.s);
+      if(you+them>=len-5) return;               // not worth it if walking eats the whole window
+      CUR_MEETS.push({f, w, mp, you, them, day});
+      rows+='<button class="row" data-meet="'+(CUR_MEETS.length-1)+'"><span class="ic-lead">'+icon('users','sm')+'</span><span class="grow"><b>Meet '+esc(f.n)+' · '+t12(w.s)+'–'+t12(w.e)+'</b>'+
+        '<small>'+esc(cap(nearPlaceName(mp.pt)))+' · '+you+' min walk for you, '+them+' for '+esc(f.n)+'</small></span>'+icon('chev','sm')+'</button>';
+    });
+  });
+  return planned+(rows?'<div class="label" style="margin-top:14px">Free together</div><div class="list">'+rows+'</div>':
+    '<p class="note">No free time between classes that lines up with '+esc(live.map(f=>f.n).join(', '))+' this day.</p>');
+}
+function showMeet(m){
+  if(!m) return; clearRoute(true);
+  ROUTE_LAYER=L.layerGroup().addTo(map);
+  const opt=o=>Object.assign({renderer:ROUTE_REN, interactive:false, lineCap:'round', lineJoin:'round'},o);
+  L.polyline(m.mp.line,opt({color:'#1E2022',weight:10,opacity:.5})).addTo(ROUTE_LAYER);
+  L.polyline(m.mp.line,opt({color:'#CFB87C',weight:6})).addTo(ROUTE_LAYER);
+  L.marker(m.mp.pt,{icon:L.divIcon({className:'',html:'<div class="stopmk">'+icon('users','sm')+'&nbsp;Meet</div>',iconSize:null}),interactive:false,keyboard:false,pane:'routePane'}).addTo(ROUTE_LAYER);
+  CUR_MEET=m;
+  ROUTE_VIEW={meet:true, title:'Meet '+m.f.n+' · '+t12(m.w.s)+'–'+t12(m.w.e), sub:cap(nearPlaceName(m.mp.pt))+' · your walk '+m.you+' min (gold), '+m.f.n+'’s about '+m.them+' min'};
+  if(VIEW!=='explore') go('explore');
+  follow=false; $('fabFollow').classList.remove('on'); setSheet(false);
+  setTimeout(()=>{ map.invalidateSize(); map.fitBounds(L.latLngBounds(m.mp.line.concat([m.mp.pt])).pad(0.3)); renderExplore(); },80);
+}
+function b64u(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64u(str){ return decodeURIComponent(escape(atob(str.replace(/-/g,'+').replace(/_/g,'/')))); }
+// Strict check of a shared link: name, weekdays 0-6, up to 20 blocks a day of [HH:MM, HH:MM, CODE].
+function readMeetShare(raw){
+  try{
+    const o=JSON.parse(unb64u(raw)); if(!o||o.v!==1) return null;
+    const n=String(o.n||'').replace(/[<>]/g,'').trim().slice(0,30); if(!n) return null;
+    const d={}, T=/^([01]\d|2[0-3]):[0-5]\d$/, C=/^[A-Z0-9-]{2,12}$/;
+    Object.keys(o.d||{}).forEach(k=>{ if(!/^[0-6]$/.test(k)||!Array.isArray(o.d[k])) return;
+      const xs=o.d[k].filter(b=>Array.isArray(b)&&T.test(b[0])&&T.test(b[1])&&C.test(b[2])&&b[0]<b[1]).slice(0,20).map(b=>[b[0],b[1],b[2]]);
+      if(xs.length) d[k]=xs; });
+    const exp=/^\d{4}-\d{2}-\d{2}$/.test(o.exp||'')?o.exp:null;
+    return Object.keys(d).length?{n,d,exp}:null;
+  }catch(e){ return null; }
+}
+function shareMeet(){
+  if(!SCHED) return;
+  const pat=RS.weekPattern(SCHED.classes);
+  if(!Object.keys(pat).length) return modal('Nothing to share yet','<p>Choose buildings for your classes first. Meet-ups use the buildings you’re in before and after your free time.</p>',[['OK','pri',()=>{}]]);
+  const nick=(cloud.profile&&(cloud.profile.username||cloud.profile.display_name))||'';
+  modal('Share your free times',
+    '<p>Your friend gets a link. When they open it in BuffPrints, their phone can show when you’re both free between classes and a fair place to meet.</p>'+
+    '<label class="f" for="meetName">Name your friend will see</label><input class="field" id="meetName" maxlength="30" value="'+esc(nick)+'" autocomplete="nickname">'+
+    '<p class="note">The link contains your class <b>times and building codes</b> for each weekday, and this name. No course names, rooms or location history. It’s sent by whatever app you share it with; BuffPrints doesn’t upload it. Anyone with the link can see those times.</p>',
+    [['Share link','pri',()=>{
+      const n=($('meetName')&&$('meetName').value||'').trim().slice(0,30); if(!n){ toast('Add a name first'); return setTimeout(shareMeet,50); }
+      const term=RS.termFor(RS.denverToday().date);
+      const url=location.origin+location.pathname+'#meet='+b64u(JSON.stringify({v:1,n,d:pat,exp:term?term.end:null}));
+      if(navigator.share) navigator.share({title:'My free times · BuffPrints', text:'Find a time to meet between classes', url}).catch(()=>{});
+      else if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>toast('Link copied'),()=>modal('Your link','<textarea class="field" readonly>'+esc(url)+'</textarea>',[['Done','pri',()=>{}]]));
+      else modal('Your link','<textarea class="field" readonly>'+esc(url)+'</textarea>',[['Done','pri',()=>{}]]);
+    }],['Cancel','',()=>{}]]);
+}
+let CUR_MEET=null;
+function newId(){ const a=new Uint8Array(8); (window.crypto||{getRandomValues:x=>x.map(()=>Math.random()*256|0)}).getRandomValues(a); return [...a].map(b=>(b%36).toString(36)).join('')+Date.now().toString(36).slice(-4); }
+function shareLink(url,title,text){
+  if(navigator.share) return navigator.share({title,text,url}).then(()=>true,()=>false);
+  // no share sheet or clipboard: show the link to copy, and continue only after Done
+  const show=()=>new Promise(res=>modal(title,'<p>'+esc(text)+'</p><textarea class="field" id="linkBox" readonly>'+esc(url)+'</textarea><p class="note">Copy this link and send it in a message.</p>',[['Done','pri',()=>res(true)]],()=>res(true)));
+  if(navigator.clipboard) return navigator.clipboard.writeText(url).then(()=>{ toast('Link copied — paste it in a message'); return true; },show);
+  return Promise.resolve(show());
+}
+function calTitle(x){ return 'Meet '+x.with+' (BuffPrints)'; }
+function calData(x){ return {uid:x.id, title:calTitle(x), date:x.date, start:x.s, end:x.e, place:x.place+', CU Boulder', lat:x.lat, lng:x.lng,
+  note:'Planned in BuffPrints. Meeting spot: https://www.openstreetmap.org/?mlat='+x.lat+'&mlon='+x.lng+'#map=19/'+x.lat+'/'+x.lng}; }
+function calModal(x){
+  modal('Add to your calendar','<p>'+esc(calTitle(x))+'<br>'+esc(dayTitle(x.date,RS.denverToday().date))+' · '+t12(x.s)+'–'+t12(x.e)+'<br>'+esc(x.place)+'</p>',
+    [['iPhone / Outlook calendar','pri',()=>{
+      const ics=RS.meetIcs(calData(x)), name='meetup-'+x.date+'.ics', blob=new Blob([ics],{type:'text/calendar'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+      if(x.status==='planned'||!x.status) x.status='planned'; savePlans(); toast('Calendar file ready — open it to add the event');
+    }],['Google Calendar','',()=>{ window.open(RS.meetGoogleUrl(calData(x)),'_blank','noopener'); }],['Not now','',()=>{}]]);
+}
+function planMeet(m){
+  if(!m) return;
+  const after=Math.max(m.you,m.them), slots=RS.meetSlots(m.w,Math.max(m.you,m.them),after,15);
+  if(!slots.length) return modal('Not enough time','<p>Walking there and on to your next classes would use up this free time.</p>',[['OK','pri',()=>{}]]);
+  const lens=[15,30,45,60], opt=(v,t,on)=>'<option value="'+v+'"'+(on?' selected':'')+'>'+esc(t)+'</option>';
+  modal('Plan a meet-up with '+m.f.n,
+    '<p class="small muted" style="margin-top:0">'+esc(dayTitle(m.day,RS.denverToday().date))+' · you’re both free '+t12(m.w.s)+'–'+t12(m.w.e)+'</p>'+
+    '<label class="f" for="mpStart">Start</label><select class="field" id="mpStart">'+slots.map((t,i)=>opt(t,t12(t),i===0)).join('')+'</select>'+
+    '<label class="f" for="mpLen">How long</label><select class="field" id="mpLen">'+lens.map(l=>opt(l,l+' min',l===30)).join('')+'</select>'+
+    '<label class="f" for="mpPlace">Where</label><input class="field" id="mpPlace" maxlength="60" value="'+esc(cap(nearPlaceName(m.mp.pt)))+'">'+
+    '<label class="f" for="mpName">Your name on the invite</label><input class="field" id="mpName" maxlength="30" value="'+esc(myName())+'" autocomplete="nickname">'+
+    '<p class="note">The invite link holds the day, time, this spot on the map and your name. '+esc(m.f.n)+' opens it in BuffPrints to accept or decline, and their reply link updates this plan.</p>',
+    [['Send invite','pri',()=>commitPlan(m,true)],['Just add to my calendar','',()=>commitPlan(m,false)],['Cancel','',()=>{}]]);
+}
+function commitPlan(m,invite){
+  const s0=$('mpStart').value, len=+$('mpLen').value, end=hhmm(Math.min(tMin(s0)+len,tMin(m.w.e)-Math.max(m.you,m.them)));
+  const place=($('mpPlace').value||'').replace(/[<>]/g,'').trim().slice(0,60)||cap(nearPlaceName(m.mp.pt)), name=($('mpName').value||'').replace(/[<>]/g,'').trim().slice(0,30);
+  if(end<=s0){ toast('Pick an earlier start or a shorter meet-up'); return setTimeout(()=>planMeet(m),60); }
+  if(invite&&!name){ toast('Add your name for the invite'); return setTimeout(()=>planMeet(m),60); }
+  if(name) setMyName(name);
+  const x={id:newId(), with:m.f.n, date:m.day, s:s0, e:end, lat:+m.mp.pt[0].toFixed(6), lng:+m.mp.pt[1].toFixed(6), place, status:invite?'invited':'planned', mine:true, at:Date.now()};
+  PLANS.push(x); savePlans(); render(); if(VIEW==='explore') renderExplore();
+  if(!invite) return calModal(x);
+  const url=location.origin+location.pathname+'#invite='+b64u(JSON.stringify({v:1,id:x.id,from:name,to:x.with,date:x.date,s:x.s,e:x.e,lat:x.lat,lng:x.lng,place:x.place}));
+  shareLink(url,'Meet up? · BuffPrints',name+' wants to meet '+dayTitle(x.date,'').toLowerCase()+' at '+t12(x.s)+', '+x.place+'. Tap to accept or decline.')
+    .then(()=>toast('Invite ready — it’s confirmed when '+x.with+' replies'));
+}
+const T5=/^([01]\d|2[0-3]):[0-5]\d$/, YMD=/^\d{4}-\d{2}-\d{2}$/;
+function readInvite(raw){
+  try{ const o=JSON.parse(unb64u(raw)); if(!o||o.v!==1||!/^[a-z0-9]{6,30}$/.test(o.id)) return null;
+    const from=String(o.from||'').replace(/[<>]/g,'').trim().slice(0,30), place=String(o.place||'').replace(/[<>]/g,'').trim().slice(0,60);
+    if(!from||!place||!YMD.test(o.date)||!T5.test(o.s)||!T5.test(o.e)||o.s>=o.e) return null;
+    const lat=+o.lat, lng=+o.lng; if(!(lat>39.95&&lat<40.06&&lng>-105.33&&lng<-105.18)) return null;
+    return {id:o.id, from, to:String(o.to||'').slice(0,30), date:o.date, s:o.s, e:o.e, lat, lng, place};
+  }catch(e){ return null; } }
+function readReply(raw){
+  try{ const o=JSON.parse(unb64u(raw)); if(!o||o.v!==1||!/^[a-z0-9]{6,30}$/.test(o.id)||typeof o.ok!=='boolean') return null;
+    return {id:o.id, from:String(o.from||'').replace(/[<>]/g,'').trim().slice(0,30)||'Your friend', ok:o.ok}; }catch(e){ return null; } }
+function offerInvite(v){
+  if(v.date<RS.denverToday().date) return modal('This invite has passed','<p>'+esc(v.from)+'’s meet-up was planned for '+esc(dayTitle(v.date,''))+'.</p>',[['OK','pri',()=>{}]]);
+  const existing=PLANS.find(x=>x.id===v.id);
+  const reply=(ok,me)=>{ const url=location.origin+location.pathname+'#reply='+b64u(JSON.stringify({v:1,id:v.id,from:me,ok}));
+    return shareLink(url,ok?'See you there · BuffPrints':'Can’t make it · BuffPrints',ok?me+' is in for '+t12(v.s)+', '+v.place+'. Tap to confirm in BuffPrints.':me+' can’t make the '+t12(v.s)+' meet-up.'); };
+  modal(v.from+' wants to meet',
+    '<p><b>'+esc(dayTitle(v.date,RS.denverToday().date))+' · '+t12(v.s)+'–'+t12(v.e)+'</b><br>'+esc(v.place)+'</p>'+
+    (existing?'<p class="note">You already answered this invite ('+esc(PLAN_LABEL[existing.status]||existing.status)+'). Answering again sends a new reply.</p>':'')+
+    '<label class="f" for="rpName">Your name on the reply</label><input class="field" id="rpName" maxlength="30" value="'+esc(myName()||v.to||'')+'">'+
+    '<p class="note">Your reply is a link you send back to '+esc(v.from)+'. It says yes or no and your name; nothing else.</p>',
+    [['Accept','pri',()=>{ const me=(($('rpName')||{}).value||'').replace(/[<>]/g,'').trim().slice(0,30)||'Your friend'; setMyName(me);
+        PLANS=PLANS.filter(x=>x.id!==v.id); const x={id:v.id, with:v.from, date:v.date, s:v.s, e:v.e, lat:v.lat, lng:v.lng, place:v.place, status:'accepted', mine:false, at:Date.now()};
+        PLANS.push(x); savePlans(); render(); reply(true,me).then(()=>calModal(x)); }],
+     ['Can’t make it','',()=>{ const me=(($('rpName')||{}).value||'').replace(/[<>]/g,'').trim().slice(0,30)||'Your friend';
+        PLANS=PLANS.filter(x=>x.id!==v.id); savePlans(); render(); reply(false,me); }],
+     ['Decide later','',()=>{}]]);
+}
+function takeReply(r){
+  const x=PLANS.find(p=>p.id===r.id&&p.mine);
+  if(!x) return modal('Reply from '+r.from,'<p>'+esc(r.from)+(r.ok?' accepted':' declined')+' a meet-up this phone doesn’t have. It may have been planned on another device or already removed.</p>',[['OK','pri',()=>{}]]);
+  x.status=r.ok?'confirmed':'declined'; x.replyAt=Date.now(); savePlans(); render();
+  if(r.ok) modal(x.with+' is in','<p>Meet-up confirmed: '+esc(dayTitle(x.date,RS.denverToday().date))+' · '+t12(x.s)+'–'+t12(x.e)+', '+esc(x.place)+'.</p>',[['Add to calendar','pri',()=>calModal(x)],['Done','',()=>{}]]);
+  else modal(x.with+' can’t make it','<p>The '+t12(x.s)+' meet-up on '+esc(dayTitle(x.date,''))+' is marked declined.</p>',[['OK','pri',()=>{}]]);
+}
+function planDetail(id){
+  const x=PLANS.find(p=>p.id===id); if(!x) return;
+  const btns=[['Add to calendar','pri',()=>calModal(x)],['Show on map','',()=>showPlan(x)]];
+  if(x.mine&&x.status==='invited') btns.push(['Send invite again','',()=>{ const url=location.origin+location.pathname+'#invite='+b64u(JSON.stringify({v:1,id:x.id,from:myName()||'A friend',to:x.with,date:x.date,s:x.s,e:x.e,lat:x.lat,lng:x.lng,place:x.place}));
+    shareLink(url,'Meet up? · BuffPrints',(myName()||'A friend')+' wants to meet at '+t12(x.s)+', '+x.place+'. Tap to accept or decline.'); }]);
+  btns.push(['Remove','danger',()=>{ PLANS=PLANS.filter(p=>p.id!==id); savePlans(); render(); if(VIEW==='explore') renderExplore(); toast('Meet-up removed'+(x.status==='confirmed'||x.status==='accepted'?' — let '+x.with+' know':'')); }]);
+  modal('Meet '+x.with,'<p><b>'+esc(dayTitle(x.date,RS.denverToday().date))+' · '+t12(x.s)+'–'+t12(x.e)+'</b><br>'+esc(x.place)+'</p><p class="note">'+esc(PLAN_LABEL[x.status]||x.status)+(x.status==='invited'?'. It’s confirmed when '+esc(x.with)+' sends their reply link and you open it.':'')+'</p>',btns);
+}
+function showPlan(x){
+  clearRoute(true); ROUTE_LAYER=L.layerGroup().addTo(map);
+  L.marker([x.lat,x.lng],{icon:L.divIcon({className:'',html:'<div class="stopmk">'+icon('users','sm')+'&nbsp;Meet</div>',iconSize:null}),interactive:false,keyboard:false,pane:'routePane'}).addTo(ROUTE_LAYER);
+  CUR_MEET=null; ROUTE_VIEW={meet:true, plan:x.id, title:'Meet '+x.with+' · '+t12(x.s)+'–'+t12(x.e), sub:x.place+' · '+(PLAN_LABEL[x.status]||x.status)};
+  if(VIEW!=='explore') go('explore');
+  follow=false; $('fabFollow').classList.remove('on'); setSheet(false);
+  setTimeout(()=>{ map.invalidateSize(); map.setView([x.lat,x.lng],18); renderExplore(); },80);
+}
+function offerFriend(f){
+  modal('Add '+f.n+'’s free times?',
+    '<p>BuffPrints will show when you’re both free between classes and a fair place to meet.</p>'+
+    '<p class="note">'+esc(f.n)+'’s link has their class times and building codes, no course names. It’s saved only on this phone'+(f.exp?' until '+esc(new Date(f.exp+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'})):'')+'. You can remove it any time from your schedule screen.</p>'+
+    (SCHED?'':'<p class="note">Add your own class schedule too, so there’s something to compare.</p>'),
+    [['Add','pri',()=>{ FRIENDS=FRIENDS.filter(x=>x.n!==f.n); FRIENDS.push(Object.assign({at:Date.now()},f)); saveFriends(); render(); toast(f.n+' added'); }],['Not now','',()=>{}]]);
+}
+function defaultClassDay(now){
+  let day=RS.nextClassDay(SCHED.classes,now.date);
+  if(day===now.date){ const last=RS.classesOn(SCHED.classes,day).filter(c=>c.code).pop(); if(last&&tMin(last.end)<tMin(now.time)) day=RS.nextClassDay(SCHED.classes,RS.addDays(now.date,1)); }
+  return day;
+}
+/* ---------- Home: class days ---------- */
 function classesHTML(){
   if(!SCHED) return '<div class="label">Classes</div><button class="row" data-act="sched"><span class="ic-lead">'+icon('cal','sm')+'</span><span class="grow"><b>Add your class schedule</b><small>See your walks between classes and pick up scenic routes that uncover new paths</small></span>'+icon('chev','sm')+'</button>';
   const head='<div class="label">Classes <button class="more" data-act="sched">Schedule</button></div>';
   if(!BLD){ loadBuildings().then(()=>{ if(VIEW==='home') renderHome(); }).catch(()=>{}); return head+'<p class="empty">Loading campus buildings…</p>'; }
-  const now=RS.denverToday(); let day=RS.nextClassDay(SCHED.classes,now.date);
-  // after today's last class, look ahead to the next class day
-  if(day===now.date){ const last=RS.classesOn(SCHED.classes,day).filter(c=>c.code).pop(); if(last&&tMin(last.end)<tMin(now.time)) day=RS.nextClassDay(SCHED.classes,RS.addDays(now.date,1)); }
-  if(!day) return head+'<p class="empty">No in-person classes in the next two weeks'+(SCHED.classes.every(c=>c.online)?' — all of your classes are online.':'.')+'</p>';
-  const plan=planFor(day); CUR_PLAN=plan;
-  const cd=RS.campusDay(day), nCls=plan.stops.filter(s=>s.kind==='class').reduce((m,s)=>m+s.classes.length,0);
-  let h=head+'<div class="cday"><div class="ctop"><b>'+esc(dayTitle(day,now.date))+'</b><span>'+pl(nCls,'class','classes')+(plan.meters?' · '+(plan.approx?'about ':'')+fmtD(plan.meters)+' walking':'')+'</span></div>'+
-    (cd.asMonday?'<p class="note" style="margin:2px 0 6px">Campus follows a Monday schedule today.</p>':'');
-  plan.stops.forEach((st,i)=>{
-    if(st.kind!=='class') return;
-    const leg=plan.legs.find(l=>l.to===st), nm=bldName(st.code);
-    h+='<div class="cls"><div class="t">'+t12(st.start).replace(' ','<small>')+'</small></div><div class="grow"><b>'+esc(stopCourses(st))+'</b>'+
-      '<small>'+esc(st.code+(nm?' · '+nm:''))+(leg?' · '+esc(legLine(leg)):'')+'</small>'+(leg?scenicChip(leg):'')+'</div></div>';
-  });
-  const back=plan.legs.find(l=>l.to.kind==='home');
-  if(back) h+='<div class="cls back"><div class="t">'+icon('home','sm')+'</div><div class="grow"><b>Back to '+esc(SCHED.home.name)+'</b><small>'+esc(legLine(back))+'</small>'+scenicChip(back)+'</div></div>';
-  h+='</div>';
+  const now=RS.denverToday(), unset=SCHED.classes.filter(c=>!c.online&&!c.code).length;
+  if(SCHED.classes.every(c=>c.online)) return head+'<p class="empty">All of your classes are online, so there are no walks to plan.</p>';
+  const day=CLS_SEL||defaultClassDay(now)||now.date, mon=RS.mondayOf(day);
+  const week=[0,1,2,3,4,5,6].map(i=>RS.addDays(mon,i)).filter((d,i)=>i<5||RS.classesOn(SCHED.classes,d).length);
+  const SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let h=head+'<div class="weeknav"><button class="mbtn" data-act="clsWeek" data-n="-7" aria-label="Previous week">'+icon('chev','sm')+'</button>'+
+    '<span>Week of '+esc(new Date(mon+'T12:00:00').toLocaleDateString([], {month:'short',day:'numeric'}))+'</span>'+
+    '<button class="mbtn" data-act="clsWeek" data-n="7" aria-label="Next week">'+icon('chev','sm')+'</button></div>'+
+    '<div class="daypick" role="group" aria-label="Choose a day" style="--n:'+week.length+'">'+week.map(d=>{
+      const n=RS.classesOn(SCHED.classes,d).length, cd=RS.campusDay(d), wd=RS.weekday(d);
+      return '<button data-act="clsDay" data-ymd="'+d+'" class="'+(d===day?'on ':'')+(n?'':'none ')+(d===now.date?'today':'')+'" aria-pressed="'+(d===day)+'" aria-label="'+esc(SHORT[wd]+' '+d.slice(8).replace(/^0/,'')+': '+(cd.off?cd.reason:pl(n,'class','classes'))+(d===now.date?', today':''))+'">'+
+        '<b>'+SHORT[wd]+'</b><span>'+d.slice(8).replace(/^0/,'')+'</span><i>'+(cd.off?'off':n||'–')+'</i></button>';
+    }).join('')+'</div>';
+  const cd=RS.campusDay(day), list=RS.classesOn(SCHED.classes,day);
+  if(cd.off) h+='<p class="empty">No classes '+esc(dayTitle(day,now.date).replace(/^(Today|Tomorrow)$/,s=>s.toLowerCase()))+' — '+esc(cd.reason)+'.</p>';
+  else if(!list.length) h+='<p class="empty">No in-person classes '+esc(dayTitle(day,now.date).replace(/^(Today|Tomorrow)$/,s=>s.toLowerCase()))+'.</p>';
+  else{
+    const plan=planFor(day); CUR_PLAN=plan;
+    const nCls=plan.stops.filter(s=>s.kind==='class').reduce((m,s)=>m+s.classes.length,0);
+    h+='<div class="cday"><div class="ctop"><b>'+esc(dayTitle(day,now.date))+'</b><span>'+pl(nCls,'class','classes')+(plan.meters?' · '+(plan.approx?'about ':'')+fmtD(plan.meters)+' · '+fmtDur(RS.minutes(plan.meters)):'')+'</span></div>'+
+      (cd.asMonday?'<p class="note" style="margin:2px 0 6px">Campus follows a Monday schedule this day.</p>':'');
+    plan.stops.forEach(st=>{
+      if(st.kind!=='class') return;
+      const leg=plan.legs.find(l=>l.to===st), nm=bldName(st.code);
+      let warn='';
+      if(leg&&leg.meters&&!leg.missing){
+        const walk=RS.minutes(leg.meters);
+        if(leg.leave){ const gap=tMin(leg.arrive)-tMin(leg.leave);
+          if(walk>gap) warn='<small class="tight">'+icon('alert','sm')+'Tight: '+gap+' min between classes, '+walk+' min walk</small>'; }
+        else if(leg.from.kind==='home'){ const by=tMin(st.start)-walk-3;
+          warn='<small class="leave">Leave '+esc(SCHED.home.name)+' by '+t12(String(Math.floor(by/60)).padStart(2,'0')+':'+String(by%60).padStart(2,'0'))+'</small>'; }
+      }
+      if(leg&&leg.food) h+=foodRowHTML(leg);
+      if(leg&&leg.explore) h+=gapRowHTML(leg);
+      h+='<div class="cls"><div class="t">'+t12(st.start).replace(' ','<small>')+'</small></div><div class="grow"><b>'+esc(stopCourses(st))+'</b>'+
+        '<small>'+esc(dispCode(st.code)+(nm?' · '+nm:''))+(leg?' · '+esc(legLine(leg)):'')+'</small>'+warn+(leg?scenicChip(leg):'')+'</div></div>';
+    });
+    list.filter(c=>!c.code).forEach(c=>{ h+='<div class="cls"><div class="t">'+t12(c.start).replace(' ','<small>')+'</small></div><div class="grow"><b>'+esc(c.course)+'</b><small class="tight">Building not set</small></div></div>'; });
+    const back=plan.legs.find(l=>l.to.kind==='home');
+    if(back) h+='<div class="cls back"><div class="t">'+icon('home','sm')+'</div><div class="grow"><b>Back to '+esc(SCHED.home.name)+'</b><small>'+esc(legLine(back))+'</small>'+scenicChip(back)+'</div></div>';
+    h+='</div>';
+    if(plan.legs.some(l=>l.direct)) h+='<div class="btns"><button class="btn" data-act="commuteMap">'+icon('map','sm')+'Show this day on the map</button></div>';
+    h+=meetupsHTML(day, cd.wd, list);
+  }
+  // totals: this week, and the rest of the term
+  const wk=sumWalk(RS.classDates(SCHED.classes,mon,RS.addDays(mon,6)));
+  const term=RS.termFor(day)||RS.termFor(now.date);
+  if(wk.m||term){
+    const from=term&&now.date>term.start?now.date:term&&term.start, left=term?sumWalk(RS.classDates(SCHED.classes,from,term.end)):null;
+    const all=term?sumWalk(RS.classDates(SCHED.classes,term.start,term.end)):null;
+    const about=x=>x&&x.approx?'about ':'';
+    h+='<div class="week wtot"><div><b>'+(wk.m?fmtMi(wk.m):'0 mi')+'</b><span>'+(wk.m?about(wk)+'this week · '+fmtDur(RS.minutes(wk.m)):'no classes this week')+'</span></div>'+
+      (left?'<div><b>'+fmtMi(left.m)+'</b><span>'+about(left)+'left in '+esc(term.name)+'</span></div><div><b>'+fmtMi(all.m)+'</b><span>'+about(all)+'whole term</span></div>':'')+'</div>'+
+      '<p class="note">Direct routes'+(SCHED.home?' from '+esc(SCHED.home.name)+' and back':' between classes only — set where you start to include the walk there and back')+', staying on campus between classes. Breaks and holidays are skipped.</p>';
+  }
   const miss=missingCodes();
+  if(unset) h+='<button class="row" data-act="sched"><span class="grow"><b>Choose buildings for '+pl(unset,'class','classes')+'</b><small>Your schedule file didn’t list where '+(unset===1?'it meets':'they meet')+'</small></span>'+icon('chev','sm')+'</button>';
   if(!SCHED.home) h+='<button class="row" data-act="sched"><span class="grow"><b>Set where you start your day</b><small>Adds the walk from your dorm, a parking garage or a spot you pick</small></span>'+icon('chev','sm')+'</button>';
-  if(miss.length) h+='<button class="row" data-act="sched"><span class="grow"><b>Place '+pl(miss.length,'building')+' on the map</b><small>'+esc(miss.join(', '))+' isn’t in the campus building list yet</small></span>'+icon('chev','sm')+'</button>';
-  if(plan.legs.some(l=>l.direct)) h+='<div class="btns"><button class="btn" data-act="commuteMap">'+icon('map','sm')+'Show this day on the map</button></div>';
+  if(miss.length) h+='<button class="row" data-act="sched"><span class="grow"><b>Place '+pl(miss.length,'building')+' on the map</b><small>'+esc(miss.map(dispCode).join(', '))+' isn’t in the campus building list yet</small></span>'+icon('chev','sm')+'</button>';
   return h;
 }
 
 /* ---------- the Next card: a scenic route to an upcoming class ---------- */
 function commuteNext(){
-  if(!SCHED||!BLD||S.rec) return null;
+  if(S.rec) return null;
   const now=RS.denverToday();
+  const soon=PLANS.filter(x=>x.date===now.date&&x.status!=='declined'&&tMin(x.s)>=tMin(now.time)-5&&tMin(x.s)-tMin(now.time)<=120).sort((a,b)=>a.s.localeCompare(b.s))[0];
+  if(soon) return {ic:'users', title:'Meet '+soon.with+' at '+t12(soon.s), sub:soon.place+' · '+(PLAN_LABEL[soon.status]||soon.status), plan:soon.id};
+  if(!SCHED||!BLD) return null;
   if(S.quest&&S.quest.ymd===now.date){
     const q=S.quest, got=q.segs.filter(id=>S.claimed[id]&&S.claimed[id]>=q.at).length;
-    return {ic:'trail', title:'Finish the scenic route to '+q.to, sub:Math.round(got/q.segs.length*100)+'% walked · 80% completes it', leg:q.leg, ymd:q.ymd};
+    return {ic:'trail', title:'Finish the '+(q.kind==='gap'?'gap loop':'scenic route')+' to '+q.to, sub:Math.round(got/q.segs.length*100)+'% walked · 80% completes it', leg:q.leg, ymd:q.ymd};
   }
   const plan=planFor(now.date); if(!plan) return null;
   const m=tMin(now.time), leg=plan.legs.find(l=>l.arrive&&tMin(l.arrive)>m&&tMin(l.arrive)-m<=180&&l.scenic);
@@ -2004,7 +2312,8 @@ function clearRoute(keepQuest){
   ROUTE_VIEW=null; if(!keepQuest&&S.quest){ S.quest=null; saveSoon(); }
   if(VIEW==='explore') renderExplore();
 }
-function showRoute(plan, legIdx, scenic){
+function showRoute(plan, legIdx, mode){
+  const scenic=mode===true||mode==='scenic', alt=l=>mode==='gap'?l.explore:mode==='food'?l.food:scenic?l.scenic:null;
   if(!plan) return;
   clearRoute(true);
   const legs=(legIdx==null?plan.legs:[plan.legs[legIdx]]).filter(l=>l&&l.direct);
@@ -2015,22 +2324,29 @@ function showRoute(plan, legIdx, scenic){
     const line=l.direct.line.slice(); if(l.ends){ line.unshift([l.ends[0].lat,l.ends[0].lng]); line.push([l.ends[1].lat,l.ends[1].lng]); }
     L.polyline(line,opt({color:'#fff',weight:7,opacity:.85})).addTo(ROUTE_LAYER);
     L.polyline(line,opt({color:'#1E2022',weight:3,dashArray:'2 9'})).addTo(ROUTE_LAYER);
-    if(scenic&&l.scenic){
-      L.polyline(l.scenic.line,opt({color:'#1E2022',weight:10,opacity:.5})).addTo(ROUTE_LAYER);
-      L.polyline(l.scenic.line,opt({color:'#CFB87C',weight:6})).addTo(ROUTE_LAYER);
+    const a=alt(l);
+    if(a){
+      L.polyline(a.line,opt({color:'#1E2022',weight:10,opacity:.5})).addTo(ROUTE_LAYER);
+      L.polyline(a.line,opt({color:'#CFB87C',weight:6})).addTo(ROUTE_LAYER);
+      a.line.forEach(p=>pts.push(p));
+      if(mode==='food'){ const fb=BLD.by[l.food.code]; if(fb) L.marker([fb.lat,fb.lng],{icon:L.divIcon({className:'',html:'<div class="stopmk">'+icon('food','sm')+'&nbsp;Food</div>',iconSize:null}),interactive:false,keyboard:false,pane:'routePane'}).addTo(ROUTE_LAYER); }
     }
     line.forEach(p=>pts.push(p));
     [[l.from,l.ends&&l.ends[0]],[l.to,l.ends&&l.ends[1]]].forEach(([st,pl2])=>{ if(!pl2) return;
-      L.marker([pl2.lat,pl2.lng],{icon:L.divIcon({className:'',html:'<div class="stopmk">'+(st.kind==='home'?icon('home','sm'):esc(st.code))+'</div>',iconSize:null}),interactive:false,keyboard:false,pane:'routePane'}).addTo(ROUTE_LAYER); });
+      L.marker([pl2.lat,pl2.lng],{icon:L.divIcon({className:'',html:'<div class="stopmk">'+(st.kind==='home'?icon('home','sm'):esc(isPin(st.code)?'Class':st.code))+'</div>',iconSize:null}),interactive:false,keyboard:false,pane:'routePane'}).addTo(ROUTE_LAYER); });
   });
-  const l=legs[0];
-  ROUTE_VIEW={ymd:plan.ymd, leg:legIdx, scenic:!!scenic,
-    title: legIdx==null?dayTitle(plan.ymd,RS.denverToday().date)+'’s walks':(scenic&&l.scenic?'Scenic route to ':'Route to ')+(l.to.kind==='home'?SCHED.home.name:stopCourses(l.to)),
+  const l=legs[0], a=legIdx==null?null:alt(l), dest=l.to.kind==='home'?SCHED.home.name:stopCourses(l.to);
+  const kind=mode==='gap'?'gap':scenic?'scenic':mode==='food'?'food':null;
+  ROUTE_VIEW={ymd:plan.ymd, leg:legIdx, scenic:!!(a&&(kind==='scenic'||kind==='gap')), kind, altLabel:kind==='gap'?'Gap loop':kind==='food'?'Via food stop':'Scenic',
+    title: legIdx==null?dayTitle(plan.ymd,RS.denverToday().date)+'’s walks':(a?(kind==='gap'?'Gap loop to ':kind==='food'?'Food stop on the way to ':'Scenic route to '):'Route to ')+dest,
     sub: legIdx==null?pl(legs.length,'walk')+' · '+fmtD(plan.meters):
-      (scenic&&l.scenic?RS.minutes(l.scenic.meters)+' min instead of '+RS.minutes(l.direct.meters)+' · '+scenicWhat(l):fmtD(l.meters)+' · '+RS.minutes(l.meters)+' min')};
-  if(scenic&&l.scenic){
-    const ids=newIds(l.scenic.keys);
-    if(!S.quest||S.quest.id!==plan.ymd+':'+legIdx) S.quest={id:plan.ymd+':'+legIdx, ymd:plan.ymd, leg:legIdx, to:l.to.kind==='home'?SCHED.home.name:stopCourses(l.to), segs:ids, at:Date.now()};
+      !a?fmtD(l.meters)+' · '+RS.minutes(l.meters)+' min':
+      kind==='gap'?RS.minutes(a.meters)+' min walk · '+pl(a.newPaths,'new path')+' · direct: '+RS.minutes(l.direct.meters)+' min':
+      kind==='food'?l.food.name+' · '+RS.minutes(l.food.meters)+' min of walking · '+(l.food.eat>=60?'plenty of time to eat':'about '+l.food.eat+' min to eat'):
+      RS.minutes(l.scenic.meters)+' min instead of '+RS.minutes(l.direct.meters)+' · '+scenicWhat(l)};
+  if(a&&(kind==='scenic'||kind==='gap')){
+    const id=plan.ymd+':'+legIdx+':'+kind;
+    if(!S.quest||S.quest.id!==id) S.quest={id, kind, ymd:plan.ymd, leg:legIdx, to:dest, segs:newIds(a.keys), at:Date.now()};
     saveSoon();
   }
   if(VIEW!=='explore') go('explore');
@@ -2039,12 +2355,14 @@ function showRoute(plan, legIdx, scenic){
 }
 function routeBoxHTML(){
   if(!ROUTE_VIEW) return '';
-  const q=S.quest, active=q&&ROUTE_VIEW.scenic&&q.id===ROUTE_VIEW.ymd+':'+ROUTE_VIEW.leg;
+  const q=S.quest, active=q&&ROUTE_VIEW.scenic&&q.id===ROUTE_VIEW.ymd+':'+ROUTE_VIEW.leg+':'+ROUTE_VIEW.kind;
   const got=active?q.segs.filter(id=>S.claimed[id]&&S.claimed[id]>=q.at).length:0;
   return '<div class="routebox"><div class="grow"><b>'+esc(ROUTE_VIEW.title)+'</b><small>'+esc(ROUTE_VIEW.sub)+'</small>'+
-    '<div class="legend" style="margin:6px 0 0">'+(ROUTE_VIEW.scenic?'<span><i style="background:#CFB87C;height:6px"></i>Scenic</span>':'')+'<span><i class="open"></i>Direct</span></div>'+
+    (ROUTE_VIEW.meet?'':'<div class="legend" style="margin:6px 0 0">'+(ROUTE_VIEW.altLabel&&ROUTE_VIEW.kind?'<span><i style="background:#CFB87C;height:6px"></i>'+esc(ROUTE_VIEW.altLabel)+'</span>':'')+'<span><i class="open"></i>Direct</span></div>')+
     (active?'<div class="bar" style="margin-top:8px" role="progressbar" aria-label="Scenic route walked" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(got/q.segs.length*100)+'"><i style="width:'+Math.round(got/q.segs.length*100)+'%"></i></div>'+
-      '<small style="margin-top:4px">Record while you walk it. Covering 80% of the new ground completes the route.</small>':'')+
+      '<small style="margin-top:4px">Record while you walk it. Covering 80% of the new ground completes the '+(ROUTE_VIEW.kind==='gap'?'loop':'route')+'.</small>':'')+
+    (ROUTE_VIEW.meet&&CUR_MEET?'<div class="btns" style="margin-top:8px"><button class="btn pri" data-act="planMeet">'+icon('cal','sm')+'Plan this meet-up</button></div>':'')+
+    (ROUTE_VIEW.plan?'<div class="btns" style="margin-top:8px"><button class="btn" data-plan="'+esc(ROUTE_VIEW.plan)+'">Details</button></div>':'')+
     '</div><button class="mbtn" style="box-shadow:none;width:40px;height:40px" data-act="clearRoute" aria-label="Clear route">'+icon('x','sm')+'</button></div>';
 }
 
@@ -2054,8 +2372,8 @@ function checkQuest(){
   if(q.ymd<RS.denverToday().date){ S.quest=null; return; }          // a quest lasts for its class day
   const got=q.segs.filter(id=>S.claimed[id]&&S.claimed[id]>=q.at).length;
   if(q.segs.length&&got>=Math.ceil(q.segs.length*0.8)){
-    S.scenic.done.push({at:Date.now(), ymd:q.ymd, n:q.segs.length}); S.scenic.done=S.scenic.done.slice(-200);
-    S.quest=null; toast('Scenic route complete'); buzz([40,30,40,30,120]);
+    S.scenic.done.push({at:Date.now(), ymd:q.ymd, n:q.segs.length, kind:q.kind||'scenic'}); S.scenic.done=S.scenic.done.slice(-200);
+    S.quest=null; toast(q.kind==='gap'?'Gap loop complete':'Scenic route complete'); buzz([40,30,40,30,120]);
     if(ROUTE_VIEW&&ROUTE_VIEW.scenic) setTimeout(()=>clearRoute(true),0);
   }
 }
@@ -2076,6 +2394,13 @@ function homeOptions(){
   return opt('',sel?'':'Choose…',!sel)+grp('Residence halls and courts','home')+grp('Parking garages','parking')+
     '<optgroup label="Somewhere else">'+(sel&&sel.kind==='pin'?opt('__mine','My spot on the map',true):'')+opt('__pin','Tap a spot on the map…',false)+'</optgroup>';
 }
+function buildingOptions(c){
+  const opt=(v,t,on)=>'<option value="'+esc(v)+'"'+(on?' selected':'')+'>'+esc(t)+'</option>';
+  let h=opt('',c.code||c.online?'Change building…':'Choose building…',false);
+  if(c.code&&!BLD.by[c.code]) h+=opt(c.code,dispCode(c.code),true);
+  h+='<optgroup label="Campus buildings">'+BLD.list.map(b=>opt(b.code,b.name+' ('+b.code+')',c.code===b.code&&!c.online)).join('')+'</optgroup>';
+  return h+'<optgroup label="Other">'+opt('__map','Not listed: tap it on the map',false)+opt('__online','This class is online',c.online)+'</optgroup>';
+}
 function schedModal(){
   if(!SCHED){
     modal('Add your class schedule',
@@ -2087,13 +2412,21 @@ function schedModal(){
   }
   const miss=new Set(missingCodes());
   const rows=SCHED.classes.slice().sort((a,b)=>a.course.localeCompare(b.course)||a.start.localeCompare(b.start)).map(c=>{
-    const where=c.online?'Online / no room':c.code+(bldName(c.code)?' · '+bldName(c.code):'');
-    const right=c.online?'<span class="pill">Online</span>':miss.has(c.code)?'<button class="btn" data-act="placeBldg" data-code="'+esc(c.code)+'">Place</button>':(SCHED.pins[c.code]?'<button class="link" data-act="placeBldg" data-code="'+esc(c.code)+'">Move</button>':'');
-    return '<div class="row"><span class="grow"><b>'+esc(c.course)+(c.component?' · '+esc(c.component):'')+'</b><small>'+esc(daysText(c.days))+' · '+t12(c.start)+'–'+t12(c.end)+' · '+esc(where)+'</small></span>'+right+'</div>';
+    const unset=!c.online&&!c.code;
+    const where=c.online?'Online':unset?'Building not set':dispCode(c.code)+(bldName(c.code)?' · '+bldName(c.code):'');
+    const right=c.online?'<span class="pill">Online</span>':(c.code&&miss.has(c.code)&&!isPin(c.code))?'<button class="btn" data-act="placeBldg" data-code="'+esc(c.code)+'">Place</button>':(c.code&&SCHED.pins[c.code])?'<button class="link" data-act="placeBldg" data-code="'+esc(c.code)+'">Move</button>':'';
+    return '<div class="row clsrow'+(unset?' unset':'')+'"><span class="grow"><b>'+esc(c.course)+(c.component?' · '+esc(c.component):'')+'</b><small>'+esc(daysText(c.days))+' · '+t12(c.start)+'–'+t12(c.end)+' · '+esc(where)+'</small>'+
+      '<label class="sr" for="bld-'+c.id+'">Building for '+esc(c.course+(c.component?' '+c.component:''))+'</label><select class="field bldpick" id="bld-'+c.id+'" data-cls="'+c.id+'">'+buildingOptions(c)+'</select></span>'+right+'</div>';
   }).join('');
   const terms=[...new Set(SCHED.classes.map(c=>(RS.TERMS.find(t=>c.first>=t.start&&c.first<=t.end)||{}).name).filter(Boolean))];
   modal('Class schedule',
     '<label class="f" for="homePick">Where you start your day</label><select class="field" id="homePick">'+homeOptions()+'</select>'+
+    '<label class="f" for="foodPick">Food stop between classes</label><select class="field" id="foodPick">'+
+      [['off','Off'],['auto','Nearest dining on my way']].concat(FOOD.map(f=>[f.code,f.name])).map(([v,t])=>'<option value="'+v+'"'+((SCHED.food||'off')===v?' selected':'')+'>'+esc(t)+'</option>').join('')+'</select>'+
+    '<p class="note" style="margin-top:-4px">Added to your longest lunchtime gap (10:30–2:00) when there’s at least 15 minutes to eat. <a href="'+DINING_URL+'" target="_blank" rel="noopener">Dining hours</a></p>'+
+    '<div class="label" style="margin-top:6px">Meet-ups <button class="more" data-act="shareMeet">Share my free times</button></div>'+
+    (FRIENDS.length?'<div class="list">'+FRIENDS.map((f,i)=>'<div class="row"><span class="grow"><b>'+esc(f.n)+'</b><small>'+(f.exp&&f.exp<RS.denverToday().date?'Expired':'Shared '+esc(new Date(f.at).toLocaleDateString([], {month:'short',day:'numeric'})))+'</small></span><button class="link" data-act="rmFriend" data-i="'+i+'">Remove</button></div>').join('')+'</div>'
+      :'<p class="note">Send friends a link with your class times. When they share theirs, Home shows when you’re both free and a fair place to meet.</p>')+
     '<div class="label" style="margin-top:6px">'+pl(SCHED.classes.length,'class','classes')+'</div><div class="list">'+rows+'</div>'+
     (SCHED.skipped.length?'<p class="note">Not included: '+esc(SCHED.skipped.map(s=>s.course+' ('+s.reason+')').join('; '))+'</p>':'')+
     '<p class="note">'+(terms.length?'Holidays and breaks follow CU’s '+esc(terms.join(' and '))+' calendar. ':'')+'Routes assume you stay on campus between classes. Saved only on this phone; rooms and instructors were not kept.</p>',
@@ -2109,10 +2442,22 @@ function importICS(text){
   let r; try{ r=RS.parseICS(text,{known:Object.keys(BLD.by)}); }
   catch(e){ return modal('Couldn’t read that file','<p>'+esc(e.message)+'</p><p class="note">Choose the calendar (.ics) file of your class schedule.</p>',[['Try another file','pri',()=>$('icsFile').click()],['Cancel','',()=>{}]]); }
   if(!r.classes.length) return modal('No classes to add','<p>The file had no weekly classes BuffPrints can use'+(r.skipped.length?' ('+esc(r.skipped.map(s=>s.course+': '+s.reason).join('; '))+')':'')+'.</p>',[['OK','pri',()=>{}]]);
-  SCHED={v:1, imported:Date.now(), classes:r.classes, skipped:r.skipped.slice(0,20), home:SCHED?SCHED.home:null, pins:SCHED?SCHED.pins:{}};
+  SCHED={v:1, imported:Date.now(), classes:r.classes, skipped:r.skipped.slice(0,20), home:SCHED?SCHED.home:null, pins:SCHED?SCHED.pins:{}, food:SCHED?SCHED.food:'off'};
   saveSched(); render(); toast('Added '+pl(r.classes.length,'class','classes'));
   schedModal();
 }
+document.addEventListener('change',e=>{
+  if(e.target.id!=='foodPick'||!SCHED) return;
+  SCHED.food=e.target.value; saveSched(); render(); toast(SCHED.food==='off'?'Food stop off':'Food stop on');
+});
+document.addEventListener('change',e=>{
+  if(!SCHED||!e.target.classList.contains('bldpick')) return;
+  const c=SCHED.classes.find(x=>x.id===e.target.dataset.cls), v=e.target.value; if(!c||!v) return;
+  if(v==='__map'){ const code='PIN-'+c.id; c.code=code; c.online=false; saveSched(); return startPlacing(code,'where '+c.course+' meets'); }
+  if(v==='__online'){ c.online=true; c.code=null; }
+  else{ c.code=v; c.online=false; c.unknownPlace=null; }
+  saveSched(); render(); schedModal();
+});
 document.addEventListener('change',e=>{
   if(e.target.id!=='homePick'||!SCHED) return;
   const v=e.target.value;
@@ -2139,9 +2484,11 @@ function placeAt(ll){
 
 /* ---------- one click handler for the whole app ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-go],[data-act],[data-walk],[data-zone],[data-nudge],[data-pin],[data-req],[data-leg]'); if(!t) return;
+  const t=e.target.closest('[data-go],[data-act],[data-walk],[data-zone],[data-nudge],[data-pin],[data-req],[data-leg],[data-meet],[data-plan]'); if(!t) return;
   if(t.dataset.go){ go(t.dataset.go); return; }
-  if(t.dataset.leg!=null){ showRoute(CUR_PLAN,+t.dataset.leg,true); return; }
+  if(t.dataset.leg!=null){ showRoute(CUR_PLAN,+t.dataset.leg,t.dataset.alt||true); return; }
+  if(t.dataset.meet!=null){ showMeet(CUR_MEETS[+t.dataset.meet]); return; }
+  if(t.dataset.plan){ planDetail(t.dataset.plan); return; }
   if(t.dataset.walk!=null){ const s=(S.sessions||[])[+t.dataset.walk]; if(s) showFinish(s,false); return; }
   if(t.dataset.nudge!=null){ goNudge(NUDGES[+t.dataset.nudge]); return; }
   if(t.dataset.pin){ const h=HAZ[t.dataset.pin]; if(h){ flyTo([h.lat,h.lng]); setTimeout(()=>L.popup().setLatLng([h.lat,h.lng]).setContent(hazardHTML(h)).openOn(map),900); } return; }
@@ -2170,11 +2517,19 @@ document.addEventListener('click',e=>{
   else if(a==='share'){ const box=$('shareShape'); shareWalk(FIN,!!(box&&box.checked)); }
   else if(a==='closeFinish') closeFinish();
   else if(a==='sched') openSchedule();
+  else if(a==='planMeet') planMeet(CUR_MEET);
+  else if(a==='shareMeet'){ $('modal').classList.remove('show'); modalClose=null; shareMeet(); }
+  else if(a==='rmFriend'){ const f=FRIENDS[+t.dataset.i]; if(f){ FRIENDS.splice(+t.dataset.i,1); saveFriends(); render(); toast(f.n+' removed'); schedModal(); } }
+  else if(a==='clsDay'){ CLS_SEL=t.dataset.ymd; renderHome(); }
+  else if(a==='clsWeek'){ const now=RS.denverToday(), cur=CLS_SEL||defaultClassDay(now)||now.date; CLS_SEL=RS.addDays(RS.mondayOf(cur),+t.dataset.n>0?7:-7);
+    const firstClass=RS.classDates(SCHED.classes,CLS_SEL,RS.addDays(CLS_SEL,6))[0]; if(firstClass) CLS_SEL=firstClass; renderHome(); }
   else if(a==='pickIcs') $('icsFile').click();
   else if(a==='commuteMap') showRoute(CUR_PLAN,null,false);
   else if(a==='clearRoute') clearRoute();
   else if(a==='placeBldg') startPlacing(t.dataset.code,'the building for '+t.dataset.code);
-  else if(a==='cancelPlace'){ endPlacing(); openSchedule(); }
+  else if(a==='cancelPlace'){ const w=PLACING&&PLACING.what;
+    if(isPin(w)&&!SCHED.pins[w]) SCHED.classes.forEach(c=>{ if(c.code===w) c.code=null; }), saveSched();
+    endPlacing(); openSchedule(); }
 });
 document.addEventListener('change',e=>{ if(e.target.id==='teamPick') $('teamOther').hidden=e.target.value!=='__other'; });
 function goSignIn(){ go('progress'); setTimeout(()=>{ const b=$('cloudBox'); if(b) b.scrollIntoView({block:'start',behavior:REDUCED.matches?'auto':'smooth'}); const f=$('cEmail'); if(f) f.focus({preventScroll:true}); },120); }
@@ -2216,7 +2571,21 @@ if(cloud.sb){
 }
 buildCloudBox();
 setupZoomCtl(); syncFogBtn();
+/* Links friends send each other: #meet= (free times), #invite= (a meet-up), #reply= (yes/no). Read once, then cleared. */
+const LINK_RE=/^#(meet|invite|reply)=/;
+function handleLink(h){
+  const kind=h.slice(1,h.indexOf('=')), raw=h.slice(h.indexOf('=')+1);
+  const v=kind==='meet'?readMeetShare(raw):kind==='invite'?readInvite(raw):readReply(raw);
+  if(!v) return toast('That BuffPrints link couldn’t be read');
+  setTimeout(()=>kind==='meet'?offerFriend(v):kind==='invite'?offerInvite(v):takeReply(v),400);
+}
+const LINK_IN=location.hash||'';
+if(LINK_RE.test(LINK_IN)) try{ history.replaceState(null,'',location.pathname+'#home'); }catch(e){}
 go((location.hash||'').replace('#','')||'home',{keepScroll:true});
+if(LINK_RE.test(LINK_IN)) handleLink(LINK_IN);
+// A link opened while the app is already open only changes the #part, so listen for it too.
+window.addEventListener('hashchange',()=>{ const h=location.hash||''; if(!LINK_RE.test(h)) return;
+  try{ history.replaceState(null,'',location.pathname+'#home'); }catch(e){} go('home'); handleLink(h); });
 drawNameLabels(); drawZoneLabels(); drawHoofs();
 if(S.rec&&S.rec.at){
   modal('Unfinished walk','<p>You started a walk on '+esc(dayLabel(new Date(S.rec.at).toISOString(),true))+' that wasn’t finished. Recording stops when the app closes.</p>',

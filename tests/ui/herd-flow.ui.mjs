@@ -55,7 +55,16 @@ async function shot(page, name) {
   if (full) await page.addStyleTag({content: '.htop,.practice-bar{position:static!important}'}).then(t => page.screenshot({path: path.join(SHOTS, 'herd-' + name + '.png'), fullPage: true}).then(() => t.evaluate(n => n.remove())));
   else await page.screenshot({path: path.join(SHOTS, 'herd-' + name + '.png')});
 }
-async function openCp(page, no) { if (await page.getAttribute(`${cp(no)} .hd`, 'aria-expanded') !== 'true') await page.click(`${cp(no)} .hd`); }
+// The app opens the next checkpoint by itself after a solve, on its next frame. Let that settle,
+// then tap only if the card is still closed, and confirm it ended up open.
+async function openCp(page, no) {
+  for (let i = 0; i < 4; i++) {
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    if (await page.getAttribute(`${cp(no)} .hd`, 'aria-expanded') === 'true') return;
+    await page.click(`${cp(no)} .hd`);
+  }
+  await page.waitForSelector(`${cp(no)} .body`);
+}
 async function checkIn(p, no) { await openCp(p.page, no); await p.ctx.setGeolocation(gps(no)); await p.page.click(`[data-act=checkin][data-no="${no}"]`); await p.page.waitForSelector(`${cp(no)}.here, ${cp(no)}.done, ${cp(no)}.crediting`); }
 async function answer(page, no, text) { await page.fill(`#ans${no}`, text); await page.click(`[data-act=answer][data-no="${no}"]`); }
 async function start(page, edition, mode, nick, name) {
@@ -82,7 +91,7 @@ step('1. Solo, Friends Mode, simulated GPS');
   ok(/Exact coordinates are never sent and never stored/.test(priv) && /nickname, avatar and progress/.test(priv) && /saves nothing about you/.test(priv), 'one-screen privacy summary appears before starting');
   await shot(page, '03-privacy-summary');
   await page.click('[data-act=privacyOk]');
-  await page.fill('#fNick', 'Sam Solo'); await page.fill('#fName', 'Quad Squad'); await page.check('input[name=myAv][value=owl]', {force: true});
+  await page.fill('#fNick', 'Sam Solonickname'); await page.fill('#fName', 'Quad Squad'); await page.check('input[name=myAv][value=owl]', {force: true});
   await shot(page, '04-setup'); await page.click('[data-act=start]'); await page.waitForSelector(cp(1));
   ok(await page.locator('[data-act=sim]').count() === 0, 'no "Simulate arriving" button outside Demo Practice');
 
@@ -115,7 +124,7 @@ step('1. Solo, Friends Mode, simulated GPS');
 
   const s = await store(page), blobs = Object.keys(s.local).filter(k => k.startsWith('bp-herd:'));
   ok(!s.url.includes('#') && !s.url.includes('key='), 'address bar carries no key');
-  ok(blobs.length === 1 && /^v1\./.test(s.local[blobs[0]]) && !s.local[blobs[0]].includes('Sam') && !JSON.stringify(s.local).includes('Quad Squad'), 'this phone stores the herd as ciphertext only');
+  ok(blobs.length === 1 && /^v1\./.test(s.local[blobs[0]]) && !s.local[blobs[0]].includes('Solonickname') && !JSON.stringify(s.local).includes('Quad Squad'), 'this phone stores the herd as ciphertext only');
   const raw = Object.entries(s.session).find(([k]) => k.startsWith('bp-herd-raw:'))[1];
   ok(!JSON.stringify(s.local).includes(raw) && !JSON.stringify(h.log.requests).includes(raw) && !JSON.stringify(h.log.frames).includes(raw), 'the herd key never reaches localStorage, a request or the relay');
   ok(JSON.stringify(h.playerRows()) === JSON.stringify({teams: 0, members: 0, checkins: 0, puzzles: 0, tokens: 0}), 'Friends Mode wrote zero rows about anyone');

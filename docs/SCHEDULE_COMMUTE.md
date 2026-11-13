@@ -8,6 +8,28 @@ paths the student hasn't walked.
 
 ## What the student sees
 
+- **Day picker and weeks.** Mon–Fri chips (weekend days appear if a class meets then) with the class count, "off" for
+  breaks; arrows move a week at a time. Tapping a day shows its walks.
+- **Food stop** (Schedule → Food stop): off, nearest dining on the way, or a chosen dining center. Placed in the longest
+  10:30–2:00 gap with at least 15 minutes to eat. Hours aren't shown (they change); a link goes to CU Dining.
+  Village Center is flagged: CU lists it as closed for a remodel.
+- **Gap loop:** in free time of 45+ minutes, a loop from one class to the next through unwalked paths, using about half
+  the gap (15–25 minutes). Walking it while recording completes it (badge: Free Period Explorer).
+- **Meet-ups:** "Share my free times" sends a link with your weekly class times, building codes and a chosen name (no
+  course names or rooms). A friend who opens it in BuffPrints sees when you're both free between classes and a fair
+  meeting point (the walkway spot that keeps the longer walk shortest). Links are validated, stored only on the
+  phone, expire at term end, and can be removed. Nothing goes through Supabase; the data travels in the link's
+  #fragment, which browsers don't send to the web server.
+- **Planning a meet-up:** from a "Free together" match, **Plan this meet-up** picks a start (only times both can
+  reach), length and spot, then **Send invite** shares a link (#invite=: day, time, spot, your name). The friend taps
+  **Accept** or **Can't make it**, which shares a reply link back (#reply=: yes/no and their name). Opening it marks the
+  plan Confirmed or Declined. Both sides get **Add to calendar**: an .ics file (iPhone/Outlook) or a Google Calendar
+  link. Plans are stored only on each phone, show on Home with their status, and a confirmed meet-up within 2 hours
+  becomes the Next card. Links are validated (format, Boulder-area spot, future date); a reply for an unknown plan is
+  reported, not applied.
+- **Walking totals.** This week, left in the term, and the whole term (direct routes; breaks and holidays skipped).
+- **Leave-by time** for the first class, and a **tight connection** warning when the walk is longer than the gap between classes.
+
 - **Home → Classes.** The next class day (today until the last class ends, then the next one): each class with its building,
   walk time and distance, the walk back, and a **Scenic route** chip where one is worth it.
 - **Next card.** Within 3 hours of a class with a scenic option, the Next card suggests it. While a scenic route is
@@ -17,7 +39,7 @@ paths the student hasn't walked.
 - **Completing it.** Recording while walking the scenic route and covering 80% of its new ground completes it (toast +
   vibration). A scenic route stays active for its class day.
 - **Badges.** Scenic Route (1), Road Less Traveled (5), Know Your Way (every route of one class day walked).
-- **Schedule screen** (Home → Schedule, or Progress → Class schedule): where you start (residence halls and courts, campus
+- **Schedule screen** (Home → Schedule, or Progress → Class schedule): a building picker on every class (fix TBA rooms, room changes, or a class wrongly marked online), where you start (residence halls and courts, campus
   parking garages, or a spot you tap), the class list, buildings to place, replace file, remove schedule.
 
 ## Privacy
@@ -38,7 +60,8 @@ Handles the RFC 5545 and CU quirks listed for Buff Portal exports:
 | Line folding (CRLF + space or tab) | Unfolded before any field is read |
 | Escapes `\,` `\;` `\n` `\\` | Unescaped in SUMMARY, LOCATION, DESCRIPTION |
 | Lecture + recitation as separate VEVENTs | Kept as separate classes; same building back to back becomes one stop |
-| `TBA`, `REMOTE`, `ONLINE`, blank, arranged | Marked online; no walk |
+| `ONLINE`, `REMOTE`, `ZOOM`, async | Marked online; no walk |
+| `TBA`, blank, arranged | In person, **building not set**: the student picks it from the campus building list (or taps the map) |
 | `ECCR 265`, `Engineering Center, ECCR 265`, `HUMN 1B50` | Building code kept, room dropped |
 | `EXDATE` (one per line or comma lists, TZID or UTC) | Skipped dates |
 | `TZID=America/Denver`, floating, or UTC `Z` times; UTC `UNTIL` | Converted to Boulder wall-clock time |

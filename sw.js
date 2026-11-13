@@ -1,11 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v24';
+const VERSION = 'rr-v28';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=24', 'student-core.js?v=24', 'username-core.js?v=24', 'schedule-core.js?v=24', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=28', 'student-core.js?v=28', 'username-core.js?v=28', 'schedule-core.js?v=28', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
   // Find the Herd
-  'herd.html', 'herd.css?v=24', 'herd-core.js?v=24', 'herd-editions.js?v=24', 'herd-app.js?v=24', 'vendor/qrcode.min.js?v=24', 'vendor/jsqr.min.js?v=24',
+  'herd.html', 'herd.css?v=28', 'herd-core.js?v=28', 'herd-editions.js?v=28', 'herd-app.js?v=28', 'vendor/qrcode.min.js?v=28', 'vendor/jsqr.min.js?v=28',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',

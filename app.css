@@ -356,3 +356,34 @@ body.rec #sheetBody{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec
 .reasons{border:0;margin:6px 0 4px;padding:0}
 .reasons .opt{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;border-bottom:1px solid var(--line)}
 .reasons .opt input{width:20px;height:20px;flex:none;accent-color:var(--ink)}
+.clsrow{flex-wrap:wrap}
+.clsrow .bldpick{margin:6px 0 0;min-height:40px;padding:6px 10px;font-size:15px}
+.clsrow.unset small{color:var(--warn)}
+
+/* ---------- class days: week nav, day picker, totals ---------- */
+.weeknav{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
+.weeknav span{font-weight:600;font-size:14px;color:var(--ink-2)}
+.weeknav .mbtn{width:40px;height:40px;box-shadow:none;border:1px solid var(--line)}
+.weeknav .mbtn:first-child svg{transform:rotate(180deg)}
+.daypick{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:6px;margin-bottom:10px}
+.daypick button{display:flex;flex-direction:column;align-items:center;gap:1px;min-height:62px;padding:6px 0;border-radius:12px;border:1px solid var(--line);background:#fff;font-variant-numeric:tabular-nums}
+.daypick b{font-size:12px;font-weight:600;color:var(--muted)}
+.daypick span{font-size:17px;font-weight:700}
+.daypick i{font-style:normal;font-size:11px;color:var(--gold-text);font-weight:700}
+.daypick .none i{color:var(--muted);font-weight:500}
+.daypick .today{border-color:var(--gold)}
+.daypick .on{background:var(--ink);border-color:var(--ink);color:#fff}
+.daypick .on b,.daypick .on i{color:var(--gold)}
+.cls small.tight,.cls small.leave{display:flex;align-items:center;gap:5px;margin-top:3px;font-weight:600}
+.cls small.tight{color:var(--warn)}
+.cls small.leave{color:var(--ink-2)}
+.cls small.tight svg{width:15px;height:15px}
+.wtot{margin-top:12px}
+
+/* ---------- food stop, gap loop, meet-ups ---------- */
+.cls.extra{background:var(--surface);margin:0 -12px;padding:9px 12px;border-top:1px dashed var(--line)}
+.cls.extra .t{color:var(--gold-text);display:flex;justify-content:flex-start;padding-top:2px}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap}
+a.chip{text-decoration:none}
+.ic-lead.ok{background:#E6F0E8;color:#2E6B3F}
+.ic-lead.no{background:var(--warn-soft);color:var(--warn)}

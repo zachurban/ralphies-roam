@@ -56,11 +56,17 @@ test('quirks file: escapes, 3- and 4-letter subjects, lettered sections, online/
   assert.equal(by['ASTR 1000 Lecture'].start, '10:00');
   // COUNT=3 on Tue/Thu starting Tue Aug 25 -> Tue 25, Thu 27, Tue Sep 1
   assert.equal(by['ASTR 1000 Lecture'].last, '2026-09-01');
-  // no-place locations
-  for (const k of ['WRTG 1150 Seminar', 'CSCI 2270 Lecture', 'ECON 2010 Lecture', 'PSYC 1001 Lecture']) {
+  // explicitly online -> online; TBA or blank -> in person, building not set yet (the student picks it)
+  for (const k of ['CSCI 2270 Lecture', 'ECON 2010 Lecture']) {
     assert.ok(by[k], 'missing ' + k);
     assert.equal(by[k].online, true, k);
     assert.equal(by[k].code, null, k);
+  }
+  for (const k of ['WRTG 1150 Seminar', 'PSYC 1001 Lecture']) {
+    assert.ok(by[k], 'missing ' + k);
+    assert.equal(by[k].online, false, k + ' is not online');
+    assert.equal(by[k].code, null, k);
+    assert.equal(by[k].unknownPlace, 'TBA', k);
   }
   // building not in the list is kept as a code so the student can place it once
   assert.equal(by['GEOL 1010 Lecture'].code, 'ZZZZ');
@@ -156,4 +162,64 @@ test('real campus data: East Campus buildings sit on the walkways and connect to
   const r = R.shortest(g, R.placeNode(g, by.ECCR).node, R.placeNode(g, by.AERO).node);
   const crow = R.hav([by.ECCR.lat, by.ECCR.lng], [by.AERO.lat, by.AERO.lng]);
   assert.ok(r && r.meters < crow * 1.8, 'Engineering -> Aerospace routes on walkways (' + Math.round(r && r.meters) + ' m)');
+});
+
+test('calendar helpers: break names, Monday of a week, class dates in a range', () => {
+  assert.equal(R.campusDay('2026-11-24').reason, 'Fall break');
+  assert.equal(R.campusDay('2026-11-26').reason, 'Thanksgiving');
+  assert.equal(R.campusDay('2026-11-30').reason, null);
+  assert.equal(R.mondayOf('2026-11-12'), '2026-11-09');
+  assert.equal(R.mondayOf('2026-11-15'), '2026-11-09', 'Sunday belongs to the week that started Monday');
+  const mwf = { days: [1, 3, 5], first: '2026-08-24', last: '2026-12-10', exdates: [], interval: 1, online: false, code: 'ECCR' };
+  assert.deepEqual(R.classDates([mwf], '2026-11-16', '2026-12-11'), ['2026-11-16', '2026-11-18', '2026-11-20', '2026-11-30', '2026-12-02', '2026-12-04']);
+});
+
+test('gap explorer: a loop that fits the free time and covers new ground; none when time is short', () => {
+  const geo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'paths.geojson'), 'utf8'));
+  const B = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'buildings.json'), 'utf8'));
+  const g = R.buildGraph(geo.features.map(f => ({ id: f.properties.id, pts: f.geometry.coordinates.map(c => [c[1], c[0]]) })));
+  const by = Object.fromEntries(B.buildings.map(b => [b.code, b]));
+  const a = R.placeNode(g, by.CHEM).node, b = R.placeNode(g, by.HUMN).node;
+  const lenOf = {}; g.adj.forEach(es => es.forEach(([, len, key]) => { lenOf[key] = len; }));
+  const allNew = k => lenOf[k] || 0;
+  const loop = R.gapLoop(g, a, b, 1800, allNew);
+  assert.ok(loop, 'a loop is offered with 1.8 km of time');
+  assert.ok(loop.meters <= 1800, 'fits the budget');
+  assert.ok(loop.fresh >= loop.direct.fresh + 100, 'covers more new ground than going straight');
+  assert.equal(loop.line[0][0], g.pts[a][0]); assert.equal(loop.line[loop.line.length - 1][0], g.pts[b][0]);
+  assert.equal(R.gapLoop(g, a, b, 200, allNew), null, 'no loop when there is barely time to walk there');
+  assert.equal(R.gapLoop(g, a, b, 1800, () => 0), null, 'no loop when everything nearby is already walked');
+});
+
+test('meet-ups: overlapping free time between classes, and a fair meeting point', () => {
+  const me = [{ s: '08:00', e: '08:50', code: 'CHEM' }, { s: '11:15', e: '12:05', code: 'HUMN' }, { s: '14:30', e: '15:20', code: 'MATH' }];
+  const them = [{ s: '09:05', e: '09:55', code: 'ECCR' }, { s: '12:20', e: '13:10', code: 'ECCR' }];
+  const w = R.meetWindows(me, them, 20);
+  assert.deepEqual(w.map(x => x.s + '-' + x.e), ['09:55-11:15', '12:05-12:20'].filter(x => x !== '12:05-12:20'));
+  assert.deepEqual(w[0].me, { from: 'CHEM', to: 'HUMN' });
+  assert.deepEqual(w[0].them, { from: 'ECCR', to: 'ECCR' });
+  assert.deepEqual(R.meetWindows(me, [{ s: '09:00', e: '10:00', code: 'X' }], 20), [], 'one class only: never on campus between classes');
+  assert.deepEqual(R.weekPattern([{ code: 'CHEM', online: false, days: [1, 3], start: '08:00', end: '08:50', course: 'CHEM 1113' }, { code: null, online: true, days: [1], start: '09:00', end: '10:00' }]),
+    { 1: [['08:00', '08:50', 'CHEM']], 3: [['08:00', '08:50', 'CHEM']] }, 'share pattern holds times and buildings only');
+  const geo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'paths.geojson'), 'utf8'));
+  const B = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'buildings.json'), 'utf8'));
+  const g = R.buildGraph(geo.features.map(f => ({ id: f.properties.id, pts: f.geometry.coordinates.map(c => [c[1], c[0]]) })));
+  const by = Object.fromEntries(B.buildings.map(b => [b.code, b]));
+  const mp = R.meetPoint(g, R.placeNode(g, by.CHEM).node, R.placeNode(g, by.ECCR).node);
+  assert.ok(mp && Math.abs(mp.mine - mp.theirs) < 250, 'roughly halfway (' + Math.round(mp.mine) + ' / ' + Math.round(mp.theirs) + ' m)');
+});
+
+test('meet-up planning: start-time choices and calendar files that parse back correctly', () => {
+  const w = { s: '09:55', e: '11:15' };
+  const slots = R.meetSlots(w, 6, 7, 15);
+  assert.equal(slots[0], '10:05', 'first start once both can walk there, on a 5-minute mark');
+  assert.equal(slots[slots.length - 1], '10:50', 'leaves the meeting length and the walk to the next class');
+  assert.deepEqual(R.meetSlots({ s: '12:05', e: '12:20' }, 6, 6, 15), [], 'too short to meet');
+  const ics = R.meetIcs({ uid: 'm1', title: 'Meet Alex, BuffPrints', date: '2026-11-16', start: '10:05', end: '10:35', place: 'Near Farrand Field; CU Boulder', lat: 40.0061, lng: -105.2662, note: 'Line one\nline two' });
+  assert.ok(/\r\n/.test(ics) && ics.split('\r\n').every(l => l.length <= 75), 'CRLF lines, folded at 75');
+  assert.ok(ics.includes('SUMMARY:Meet Alex\\, BuffPrints') && ics.includes('LOCATION:Near Farrand Field\; CU Boulder'), 'escaped');
+  const back = R.parseICS(ics).classes[0];      // our own reader agrees on time and day
+  assert.deepEqual([back.start, back.end, back.first], ['10:05', '10:35', '2026-11-16']);
+  const g = R.meetGoogleUrl({ title: 'Meet Alex', date: '2026-11-16', start: '10:05', end: '10:35', place: 'Near Farrand Field' });
+  assert.ok(g.includes('dates=20261116T100500/20261116T103500') && g.includes('ctz=America/Denver'));
 });

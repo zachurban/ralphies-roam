@@ -18,9 +18,9 @@ const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
    Midsemester reading days are treated as no-class days. Update each year. */
 const TERMS = [
   {name:'Fall 2026',   start:'2026-08-20', end:'2026-12-04',
-   off:[['2026-09-07','2026-09-07'],['2026-10-08','2026-10-08'],['2026-11-23','2026-11-27']], asMonday:['2026-12-04']},
+   off:[['2026-09-07','2026-09-07','Labor Day'],['2026-10-08','2026-10-08','Midsemester reading day'],['2026-11-23','2026-11-25','Fall break'],['2026-11-26','2026-11-27','Thanksgiving']], asMonday:['2026-12-04']},
   {name:'Spring 2027', start:'2027-01-07', end:'2027-04-23',
-   off:[['2027-01-18','2027-01-18'],['2027-02-25','2027-02-25'],['2027-03-15','2027-03-19']], asMonday:['2027-04-23']}
+   off:[['2027-01-18','2027-01-18','Martin Luther King Jr. Day'],['2027-02-25','2027-02-25','Midsemester reading day'],['2027-03-15','2027-03-19','Spring break']], asMonday:['2027-04-23']}
 ];
 
 const COMPONENTS = [
@@ -28,7 +28,9 @@ const COMPONENTS = [
   [/\bSEM\b|SEMINAR/i,'Seminar'], [/\bSTU\b|STUDIO/i,'Studio'], [/\bDIS\b|DISCUSSION/i,'Discussion'],
   [/\bPRA\b|PRACTICUM/i,'Practicum'], [/\bIND\b|INDEPENDENT/i,'Independent study'], [/\bCLN\b|CLINICAL/i,'Clinical']
 ];
-const NO_PLACE = /^\s*$|\b(TBA|TBD|REMOTE|ONLINE|ARRANGED|ARR|ZOOM|ASYNC\w*|SYNCHRONOUS|WEB|NO ROOM|OFF[- ]?CAMPUS|HYBRID ONLINE)\b/i;
+// Explicitly online -> no walk. Unknown (TBA, blank, arranged) is NOT online: the student picks the building.
+const ONLINE = /\b(REMOTE|ONLINE|ZOOM|ASYNC\w*|SYNCHRONOUS|WEB[- ]?BASED|DISTANCE)\b/i;
+const NO_ROOM = /^\s*$|^\s*(TBA|TBD|ARR|ARRANGED|NO ROOM|NOT ASSIGNED|STAFF)\b|\b(TBA|TBD)\s*$/i;
 
 /* ---------- iCalendar (RFC 5545) reading ---------- */
 
@@ -86,11 +88,12 @@ function componentFrom(desc){
   for(const [re,n] of COMPONENTS) if(re.test(first)) return n;
   return null;
 }
-/* LOCATION -> {code} | {online:true} | {unknown:'raw building text'}. The room never leaves this function.
-   Handles "ECCR 265", "Engineering Center, ECCR 265", "HUMN 1B50", "ONLINE", "TBA", "". */
+/* LOCATION -> {code} | {online:true} | {unknown:'raw building text'|'TBA'}. The room never leaves this function.
+   Handles "ECCR 265", "Engineering Center, ECCR 265", "HUMN 1B50", "ONLINE", "REMOTE", "TBA", "". */
 function parseLocation(loc, known){
   const raw=String(loc||'').trim();
-  if(NO_PLACE.test(raw)) return {online:true};
+  if(ONLINE.test(raw)) return {online:true};
+  if(NO_ROOM.test(raw)) return {unknown:'TBA'};
   const tail=raw.split(',').pop().trim().toUpperCase();
   const isKnown=c=>!known||known.has(c);
   const cands=[];
@@ -167,8 +170,8 @@ function termFor(ymd){ return TERMS.find(t=>ymd>=t.start&&ymd<=t.end)||null; }
 function campusDay(ymd){
   const t=termFor(ymd);
   if(!t) return {term:null, off:false, wd:weekday(ymd)};
-  const off=t.off.some(r=>ymd>=r[0]&&ymd<=r[1]);
-  return {term:t.name, off, wd:t.asMonday.includes(ymd)?1:weekday(ymd), asMonday:t.asMonday.includes(ymd)};
+  const hit=t.off.find(r=>ymd>=r[0]&&ymd<=r[1]);
+  return {term:t.name, off:!!hit, reason:hit?hit[2]||'No classes':null, wd:t.asMonday.includes(ymd)?1:weekday(ymd), asMonday:t.asMonday.includes(ymd)};
 }
 function meetsOn(c, ymd){
   if(c.online||ymd<c.first||ymd>c.last||c.exdates.includes(ymd)) return false;
@@ -187,6 +190,9 @@ function nextClassDay(classes, ymd){
   for(let i=0;i<14;i++){ const d=addDays(ymd,i); if(classesOn(classes,d).length) return d; }
   return null;
 }
+function mondayOf(ymd){ const w=weekday(ymd); return addDays(ymd, w===0?-6:1-w); }
+// Dates from..to (inclusive) with at least one in-person class.
+function classDates(classes, from, to){ const out=[]; for(let d=from; d<=to; d=addDays(d,1)) if(classesOn(classes,d).length) out.push(d); return out; }
 function denverToday(ms){ return denverParts(ms==null?Date.now():ms); }
 
 /* Stops for a day: start place -> each class building in time order -> start place.
@@ -270,8 +276,107 @@ function commuteLeg(g, a, b, newLen){
 }
 const minutes=m=>Math.max(1,Math.round(m/WALK_MPS/60));
 
+/* Single-source Dijkstra over the whole network (no target). meters[] are real distances; dist[] is the weighted cost. */
+function tree(g, src, cost){
+  const N=g.pts.length, dist=new Float64Array(N).fill(Infinity), meters=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1), via=new Array(N);
+  const heap=[]; const push=(d,i)=>{ heap.push([d,i]); let k=heap.length-1; while(k>0){ const p=(k-1)>>1; if(heap[p][0]<=heap[k][0]) break; [heap[p],heap[k]]=[heap[k],heap[p]]; k=p; } };
+  const pop=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let k=0; for(;;){ const l=2*k+1, r=l+1; let m=k;
+    if(l<heap.length&&heap[l][0]<heap[m][0]) m=l; if(r<heap.length&&heap[r][0]<heap[m][0]) m=r; if(m===k) break; [heap[m],heap[k]]=[heap[k],heap[m]]; k=m; } } return top; };
+  dist[src]=0; meters[src]=0; push(0,src);
+  while(heap.length){ const [d,u]=pop(); if(d>dist[u]) continue;
+    for(const [v,len,key] of g.adj[u]){ const nd=d+(cost?cost(len,key):len); if(nd<dist[v]){ dist[v]=nd; meters[v]=meters[u]+len; prev[v]=u; via[v]=key; push(nd,v); } } }
+  return {dist, meters, prev, via};
+}
+// path src -> v from a tree: {keys, nodes}
+function treePath(t, v){ const keys=[], nodes=[v]; for(let x=v; t.prev[x]>=0; x=t.prev[x]){ keys.push(t.via[x]); nodes.push(t.prev[x]); } return {keys:keys.reverse(), nodes:nodes.reverse()}; }
+function lenIndex(g){ const L={}; g.adj.forEach(es=>es.forEach(([,len,key])=>{ L[key]=len; })); return L; }
+
+/* Gap explorer: a walk from class A to class B that fits in budgetM meters and covers as much unwalked ground as it can.
+   It goes out through a turnaround point and on to B; pieces walked twice count once. Offered only when it covers at
+   least 100 m more new ground than the direct route. */
+function gapLoop(g, a, b, budgetM, newLen){
+  const L=lenIndex(g), nl=k=>Math.max(0,Math.min(L[k]||0,newLen(k)));
+  const direct=shortest(g,a,b); if(!direct) return null;
+  direct.fresh=direct.keys.reduce((s,k)=>s+nl(k),0);
+  if(budgetM<direct.meters+150) return null;
+  const F=0.6, cost=(len,key)=>len-nl(key)*F;
+  const A=tree(g,a,cost), B=tree(g,b,cost), cand=[];
+  for(let v=0; v<g.pts.length; v++){
+    if(!isFinite(A.meters[v])||!isFinite(B.meters[v])) continue;
+    const tot=A.meters[v]+B.meters[v]; if(tot>budgetM) continue;
+    const fr=(A.meters[v]-A.dist[v]+B.meters[v]-B.dist[v])/F;   // new meters along both halves (double-counts overlap)
+    cand.push([fr,v]);
+  }
+  cand.sort((x,y)=>y[0]-x[0]);
+  let best=null;
+  for(const [,v] of cand.slice(0,40)){
+    const pa=treePath(A,v), pb=treePath(B,v), keys=pa.keys.concat(pb.keys.slice().reverse());
+    const uniq=new Set(keys), fresh=[...uniq].reduce((s,k)=>s+nl(k),0), meters=A.meters[v]+B.meters[v];
+    if(!best||fresh>best.fresh) best={keys, fresh, meters, via:v, nodes:pa.nodes.concat(pb.nodes.slice().reverse().slice(1))};
+  }
+  if(!best||best.fresh<direct.fresh+100) return null;
+  best.line=best.nodes.map(i=>g.pts[i]); best.direct=direct;
+  return best;
+}
+
+/* Meet-ups. blocks = one person's in-person classes on a weekday: [{s:'HH:MM', e:'HH:MM', code}], any order.
+   A free window is the time between two classes on the same day (so both people are on campus).
+   Returns overlapping windows of at least minMin minutes with where each person comes from and goes to. */
+function freeWindows(blocks){
+  const b=blocks.slice().sort((x,y)=>x.s.localeCompare(y.s)), out=[];
+  for(let i=0;i<b.length-1;i++) if(b[i+1].s>b[i].e) out.push({s:b[i].e, e:b[i+1].s, from:b[i].code, to:b[i+1].code});
+  return out;
+}
+function meetWindows(mine, theirs, minMin){
+  const out=[], A=freeWindows(mine), B=freeWindows(theirs);
+  A.forEach(x=>B.forEach(y=>{ const s=x.s>y.s?x.s:y.s, e=x.e<y.e?x.e:y.e;
+    if(toMin(e)-toMin(s)>=(minMin||20)) out.push({s, e, me:{from:x.from,to:x.to}, them:{from:y.from,to:y.to}}); }));
+  return out;
+}
+/* The fairest meeting point: the walkway point that minimizes the longer of the two walks (ties: shorter total). */
+function meetPoint(g, a, b){
+  const A=tree(g,a), B=tree(g,b); let best=-1, bs=Infinity;
+  for(let v=0; v<g.pts.length; v++){ const x=A.meters[v], y=B.meters[v]; if(!isFinite(x)||!isFinite(y)) continue;
+    const sc=Math.max(x,y)+0.1*(x+y); if(sc<bs){ bs=sc; best=v; } }
+  if(best<0) return null;
+  return {node:best, pt:g.pts[best], mine:A.meters[best], theirs:B.meters[best], line:treePath(A,best).nodes.map(i=>g.pts[i])};
+}
+/* Start times for a meet-up inside a free window: from the moment both can arrive, every 5 minutes,
+   leaving room for the meeting itself (minLen) and the walk on to the next class (after). */
+function meetSlots(w, arriveMin, afterMin, minLen){
+  const first=Math.ceil((toMin(w.s)+arriveMin)/5)*5, last=toMin(w.e)-afterMin-(minLen||15), out=[];
+  for(let t=first; t<=last; t+=5) out.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'));
+  return out;
+}
+const icsEsc=v=>String(v).replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function icsFold(line){ const out=[]; while(line.length>73){ out.push(line.slice(0,73)); line=' '+line.slice(73); } out.push(line); return out.join('\r\n'); }
+/* One meet-up as a calendar file (Boulder time zone). p = {uid, title, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM', place, lat, lng, note} */
+function meetIcs(p){
+  const d=p.date.replace(/-/g,''), t=x=>x.replace(':','')+'00', now=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//BuffPrints//Meet-up//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VTIMEZONE','TZID:America/Denver','BEGIN:DAYLIGHT','TZOFFSETFROM:-0700','TZOFFSETTO:-0600','TZNAME:MDT','DTSTART:19700308T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU','END:DAYLIGHT',
+    'BEGIN:STANDARD','TZOFFSETFROM:-0600','TZOFFSETTO:-0700','TZNAME:MST','DTSTART:19701101T020000','RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU','END:STANDARD','END:VTIMEZONE',
+    'BEGIN:VEVENT','UID:'+p.uid+'@buffprints','DTSTAMP:'+now,'DTSTART;TZID=America/Denver:'+d+'T'+t(p.start),'DTEND;TZID=America/Denver:'+d+'T'+t(p.end),
+    'SUMMARY:'+icsEsc(p.title),'LOCATION:'+icsEsc(p.place)];
+  if(p.lat!=null) L.push('GEO:'+(+p.lat).toFixed(6)+';'+(+p.lng).toFixed(6));
+  if(p.note) L.push('DESCRIPTION:'+icsEsc(p.note));
+  L.push('END:VEVENT','END:VCALENDAR');
+  return L.map(icsFold).join('\r\n')+'\r\n';
+}
+/* Google Calendar "add event" link for the same meet-up. */
+function meetGoogleUrl(p){
+  const d=p.date.replace(/-/g,''), t=x=>x.replace(':','')+'00';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(p.title)+'&dates='+d+'T'+t(p.start)+'/'+d+'T'+t(p.end)+
+    '&ctz=America/Denver&location='+encodeURIComponent(p.place)+(p.note?'&details='+encodeURIComponent(p.note):'');
+}
+/* Weekly pattern of in-person classes with a building, for sharing: {1:[[s,e,code],...], ...}. No course names. */
+function weekPattern(classes){
+  const d={}; classes.filter(c=>c.code&&!c.online).forEach(c=>c.days.forEach(w=>{ (d[w]=d[w]||[]).push([c.start,c.end,c.code]); }));
+  Object.keys(d).forEach(w=>d[w].sort((x,y)=>x[0].localeCompare(y[0]))); return d;
+}
+
 root.RoamSchedule={TZ, TERMS, WALK_MPS, OFF_NET_M, DAY_NAMES,
   unfold, contentLine, unescapeText, icalTime, parseSummary, parseLocation, parseICS,
-  campusDay, meetsOn, classesOn, nextClassDay, dayStops, denverToday, addDays, weekday,
-  buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav};
+  campusDay, meetsOn, classesOn, nextClassDay, dayStops, denverToday, addDays, weekday, mondayOf, classDates, termFor,
+  buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav, tree, gapLoop, freeWindows, meetWindows, meetPoint, weekPattern, toMin, meetSlots, meetIcs, meetGoogleUrl};
 })(typeof window!=='undefined'?window:globalThis);
