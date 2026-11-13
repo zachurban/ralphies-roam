@@ -1,12 +1,12 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v29';
+const VERSION = 'rr-v30';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=29', 'student-core.js?v=29', 'username-core.js?v=29', 'schedule-core.js?v=29', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=30', 'student-core.js?v=30', 'username-core.js?v=30', 'schedule-core.js?v=30', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
   // Herd and Seek
-  'herd.html', 'herd.css?v=29', 'herd-core.js?v=29', 'herd-editions.js?v=29', 'herd-app.js?v=29', 'vendor/qrcode.min.js?v=29', 'vendor/jsqr.min.js?v=29',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'herd.html', 'herd.css?v=30', 'herd-core.js?v=30', 'herd-editions.js?v=30', 'herd-app.js?v=30', 'vendor/qrcode.min.js?v=30', 'vendor/jsqr.min.js?v=30',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg', 'icons/favicon-32.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'

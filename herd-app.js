@@ -411,7 +411,7 @@ async function openScanner(ctx){
     scan.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     const v=$('scanVideo'); if(!v){ stopScan(); return; }
     v.srcObject=scan.stream; await v.play();
-    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=29');
+    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=30');
     say('Point the camera at the QR code on your teammate’s screen.');
     const canvas=document.createElement('canvas'), g=canvas.getContext('2d',{willReadFrequently:true}); let last=0;
     const loop=ts=>{
