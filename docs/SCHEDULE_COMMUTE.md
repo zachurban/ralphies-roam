@@ -10,6 +10,16 @@ paths the student hasn't walked.
 
 - **Day picker and weeks.** Mon–Fri chips (weekend days appear if a class meets then) with the class count, "off" for
   breaks; arrows move a week at a time. Tapping a day shows its walks.
+- **Food stop** (Schedule → Food stop): off, nearest dining on the way, or a chosen dining center. Placed in the longest
+  10:30–2:00 gap with at least 15 minutes to eat. Hours aren't shown (they change); a link goes to CU Dining.
+  Village Center is flagged: CU lists it as closed for a remodel.
+- **Gap loop:** in free time of 45+ minutes, a loop from one class to the next through unwalked paths, using about half
+  the gap (15–25 minutes). Walking it while recording completes it (badge: Free Period Explorer).
+- **Meet-ups:** "Share my free times" sends a link with your weekly class times, building codes and a chosen name (no
+  course names or rooms). A friend who opens it in BuffPrints sees when you're both free between classes and a fair
+  meeting point (the walkway spot that keeps the longer walk shortest). Links are validated, stored only on the
+  phone, expire at term end, and can be removed. Nothing goes through Supabase; the data travels in the link's
+  #fragment, which browsers don't send to the web server.
 - **Walking totals.** This week, left in the term, and the whole term (direct routes; breaks and holidays skipped).
 - **Leave-by time** for the first class, and a **tight connection** warning when the walk is longer than the gap between classes.
 

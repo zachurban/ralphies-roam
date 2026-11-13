@@ -379,3 +379,9 @@ body.rec #sheetBody{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec
 .cls small.leave{color:var(--ink-2)}
 .cls small.tight svg{width:15px;height:15px}
 .wtot{margin-top:12px}
+
+/* ---------- food stop, gap loop, meet-ups ---------- */
+.cls.extra{background:var(--surface);margin:0 -12px;padding:9px 12px;border-top:1px dashed var(--line)}
+.cls.extra .t{color:var(--gold-text);display:flex;justify-content:flex-start;padding-top:2px}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap}
+a.chip{text-decoration:none}

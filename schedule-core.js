@@ -276,8 +276,79 @@ function commuteLeg(g, a, b, newLen){
 }
 const minutes=m=>Math.max(1,Math.round(m/WALK_MPS/60));
 
+/* Single-source Dijkstra over the whole network (no target). meters[] are real distances; dist[] is the weighted cost. */
+function tree(g, src, cost){
+  const N=g.pts.length, dist=new Float64Array(N).fill(Infinity), meters=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1), via=new Array(N);
+  const heap=[]; const push=(d,i)=>{ heap.push([d,i]); let k=heap.length-1; while(k>0){ const p=(k-1)>>1; if(heap[p][0]<=heap[k][0]) break; [heap[p],heap[k]]=[heap[k],heap[p]]; k=p; } };
+  const pop=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let k=0; for(;;){ const l=2*k+1, r=l+1; let m=k;
+    if(l<heap.length&&heap[l][0]<heap[m][0]) m=l; if(r<heap.length&&heap[r][0]<heap[m][0]) m=r; if(m===k) break; [heap[m],heap[k]]=[heap[k],heap[m]]; k=m; } } return top; };
+  dist[src]=0; meters[src]=0; push(0,src);
+  while(heap.length){ const [d,u]=pop(); if(d>dist[u]) continue;
+    for(const [v,len,key] of g.adj[u]){ const nd=d+(cost?cost(len,key):len); if(nd<dist[v]){ dist[v]=nd; meters[v]=meters[u]+len; prev[v]=u; via[v]=key; push(nd,v); } } }
+  return {dist, meters, prev, via};
+}
+// path src -> v from a tree: {keys, nodes}
+function treePath(t, v){ const keys=[], nodes=[v]; for(let x=v; t.prev[x]>=0; x=t.prev[x]){ keys.push(t.via[x]); nodes.push(t.prev[x]); } return {keys:keys.reverse(), nodes:nodes.reverse()}; }
+function lenIndex(g){ const L={}; g.adj.forEach(es=>es.forEach(([,len,key])=>{ L[key]=len; })); return L; }
+
+/* Gap explorer: a walk from class A to class B that fits in budgetM meters and covers as much unwalked ground as it can.
+   It goes out through a turnaround point and on to B; pieces walked twice count once. Offered only when it covers at
+   least 100 m more new ground than the direct route. */
+function gapLoop(g, a, b, budgetM, newLen){
+  const L=lenIndex(g), nl=k=>Math.max(0,Math.min(L[k]||0,newLen(k)));
+  const direct=shortest(g,a,b); if(!direct) return null;
+  direct.fresh=direct.keys.reduce((s,k)=>s+nl(k),0);
+  if(budgetM<direct.meters+150) return null;
+  const F=0.6, cost=(len,key)=>len-nl(key)*F;
+  const A=tree(g,a,cost), B=tree(g,b,cost), cand=[];
+  for(let v=0; v<g.pts.length; v++){
+    if(!isFinite(A.meters[v])||!isFinite(B.meters[v])) continue;
+    const tot=A.meters[v]+B.meters[v]; if(tot>budgetM) continue;
+    const fr=(A.meters[v]-A.dist[v]+B.meters[v]-B.dist[v])/F;   // new meters along both halves (double-counts overlap)
+    cand.push([fr,v]);
+  }
+  cand.sort((x,y)=>y[0]-x[0]);
+  let best=null;
+  for(const [,v] of cand.slice(0,40)){
+    const pa=treePath(A,v), pb=treePath(B,v), keys=pa.keys.concat(pb.keys.slice().reverse());
+    const uniq=new Set(keys), fresh=[...uniq].reduce((s,k)=>s+nl(k),0), meters=A.meters[v]+B.meters[v];
+    if(!best||fresh>best.fresh) best={keys, fresh, meters, via:v, nodes:pa.nodes.concat(pb.nodes.slice().reverse().slice(1))};
+  }
+  if(!best||best.fresh<direct.fresh+100) return null;
+  best.line=best.nodes.map(i=>g.pts[i]); best.direct=direct;
+  return best;
+}
+
+/* Meet-ups. blocks = one person's in-person classes on a weekday: [{s:'HH:MM', e:'HH:MM', code}], any order.
+   A free window is the time between two classes on the same day (so both people are on campus).
+   Returns overlapping windows of at least minMin minutes with where each person comes from and goes to. */
+function freeWindows(blocks){
+  const b=blocks.slice().sort((x,y)=>x.s.localeCompare(y.s)), out=[];
+  for(let i=0;i<b.length-1;i++) if(b[i+1].s>b[i].e) out.push({s:b[i].e, e:b[i+1].s, from:b[i].code, to:b[i+1].code});
+  return out;
+}
+function meetWindows(mine, theirs, minMin){
+  const out=[], A=freeWindows(mine), B=freeWindows(theirs);
+  A.forEach(x=>B.forEach(y=>{ const s=x.s>y.s?x.s:y.s, e=x.e<y.e?x.e:y.e;
+    if(toMin(e)-toMin(s)>=(minMin||20)) out.push({s, e, me:{from:x.from,to:x.to}, them:{from:y.from,to:y.to}}); }));
+  return out;
+}
+/* The fairest meeting point: the walkway point that minimizes the longer of the two walks (ties: shorter total). */
+function meetPoint(g, a, b){
+  const A=tree(g,a), B=tree(g,b); let best=-1, bs=Infinity;
+  for(let v=0; v<g.pts.length; v++){ const x=A.meters[v], y=B.meters[v]; if(!isFinite(x)||!isFinite(y)) continue;
+    const sc=Math.max(x,y)+0.1*(x+y); if(sc<bs){ bs=sc; best=v; } }
+  if(best<0) return null;
+  return {node:best, pt:g.pts[best], mine:A.meters[best], theirs:B.meters[best], line:treePath(A,best).nodes.map(i=>g.pts[i])};
+}
+/* Weekly pattern of in-person classes with a building, for sharing: {1:[[s,e,code],...], ...}. No course names. */
+function weekPattern(classes){
+  const d={}; classes.filter(c=>c.code&&!c.online).forEach(c=>c.days.forEach(w=>{ (d[w]=d[w]||[]).push([c.start,c.end,c.code]); }));
+  Object.keys(d).forEach(w=>d[w].sort((x,y)=>x[0].localeCompare(y[0]))); return d;
+}
+
 root.RoamSchedule={TZ, TERMS, WALK_MPS, OFF_NET_M, DAY_NAMES,
   unfold, contentLine, unescapeText, icalTime, parseSummary, parseLocation, parseICS,
   campusDay, meetsOn, classesOn, nextClassDay, dayStops, denverToday, addDays, weekday, mondayOf, classDates, termFor,
-  buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav};
+  buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav, tree, gapLoop, freeWindows, meetWindows, meetPoint, weekPattern, toMin};
 })(typeof window!=='undefined'?window:globalThis);

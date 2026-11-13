@@ -173,3 +173,38 @@ test('calendar helpers: break names, Monday of a week, class dates in a range', 
   const mwf = { days: [1, 3, 5], first: '2026-08-24', last: '2026-12-10', exdates: [], interval: 1, online: false, code: 'ECCR' };
   assert.deepEqual(R.classDates([mwf], '2026-11-16', '2026-12-11'), ['2026-11-16', '2026-11-18', '2026-11-20', '2026-11-30', '2026-12-02', '2026-12-04']);
 });
+
+test('gap explorer: a loop that fits the free time and covers new ground; none when time is short', () => {
+  const geo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'paths.geojson'), 'utf8'));
+  const B = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'buildings.json'), 'utf8'));
+  const g = R.buildGraph(geo.features.map(f => ({ id: f.properties.id, pts: f.geometry.coordinates.map(c => [c[1], c[0]]) })));
+  const by = Object.fromEntries(B.buildings.map(b => [b.code, b]));
+  const a = R.placeNode(g, by.CHEM).node, b = R.placeNode(g, by.HUMN).node;
+  const lenOf = {}; g.adj.forEach(es => es.forEach(([, len, key]) => { lenOf[key] = len; }));
+  const allNew = k => lenOf[k] || 0;
+  const loop = R.gapLoop(g, a, b, 1800, allNew);
+  assert.ok(loop, 'a loop is offered with 1.8 km of time');
+  assert.ok(loop.meters <= 1800, 'fits the budget');
+  assert.ok(loop.fresh >= loop.direct.fresh + 100, 'covers more new ground than going straight');
+  assert.equal(loop.line[0][0], g.pts[a][0]); assert.equal(loop.line[loop.line.length - 1][0], g.pts[b][0]);
+  assert.equal(R.gapLoop(g, a, b, 200, allNew), null, 'no loop when there is barely time to walk there');
+  assert.equal(R.gapLoop(g, a, b, 1800, () => 0), null, 'no loop when everything nearby is already walked');
+});
+
+test('meet-ups: overlapping free time between classes, and a fair meeting point', () => {
+  const me = [{ s: '08:00', e: '08:50', code: 'CHEM' }, { s: '11:15', e: '12:05', code: 'HUMN' }, { s: '14:30', e: '15:20', code: 'MATH' }];
+  const them = [{ s: '09:05', e: '09:55', code: 'ECCR' }, { s: '12:20', e: '13:10', code: 'ECCR' }];
+  const w = R.meetWindows(me, them, 20);
+  assert.deepEqual(w.map(x => x.s + '-' + x.e), ['09:55-11:15', '12:05-12:20'].filter(x => x !== '12:05-12:20'));
+  assert.deepEqual(w[0].me, { from: 'CHEM', to: 'HUMN' });
+  assert.deepEqual(w[0].them, { from: 'ECCR', to: 'ECCR' });
+  assert.deepEqual(R.meetWindows(me, [{ s: '09:00', e: '10:00', code: 'X' }], 20), [], 'one class only: never on campus between classes');
+  assert.deepEqual(R.weekPattern([{ code: 'CHEM', online: false, days: [1, 3], start: '08:00', end: '08:50', course: 'CHEM 1113' }, { code: null, online: true, days: [1], start: '09:00', end: '10:00' }]),
+    { 1: [['08:00', '08:50', 'CHEM']], 3: [['08:00', '08:50', 'CHEM']] }, 'share pattern holds times and buildings only');
+  const geo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'paths.geojson'), 'utf8'));
+  const B = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'buildings.json'), 'utf8'));
+  const g = R.buildGraph(geo.features.map(f => ({ id: f.properties.id, pts: f.geometry.coordinates.map(c => [c[1], c[0]]) })));
+  const by = Object.fromEntries(B.buildings.map(b => [b.code, b]));
+  const mp = R.meetPoint(g, R.placeNode(g, by.CHEM).node, R.placeNode(g, by.ECCR).node);
+  assert.ok(mp && Math.abs(mp.mine - mp.theirs) < 250, 'roughly halfway (' + Math.round(mp.mine) + ' / ' + Math.round(mp.theirs) + ' m)');
+});
