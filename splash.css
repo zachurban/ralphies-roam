@@ -1,0 +1,61 @@
+/* BuffPrints — launch splash and welcome screen (splash.js). Dark #1D2122, gold #C9B476. */
+.bp-boot,.bp-welcome{--bp-bg:#1D2122;--bp-gold:#C9B476;--bp-card:#262B2C;--bp-line:#353B3C;--bp-text:#F3F0E9;--bp-muted:#B9B6AE;
+  position:fixed;inset:0;z-index:5000;background:var(--bp-bg);color:var(--bp-text);font:15px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif}
+
+/* Returning users: a 1.1 s overlay that never blocks taps */
+.bp-boot{display:grid;place-items:center;pointer-events:none;animation:bpBootOut .35s ease-in .75s forwards}
+.bp-boot .in{text-align:center}
+.bp-boot img{width:72px;height:72px;display:block;margin:0 auto 12px;animation:bpStamp .45s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 14px rgba(201,180,118,.45))}
+.bp-boot b{display:block;font-size:24px;letter-spacing:-.4px;animation:bpRise .4s ease-out .1s both}
+.bp-boot span{display:block;color:var(--bp-gold);font-size:14px;margin-top:2px;animation:bpRise .4s ease-out .18s both}
+
+/* Welcome screen */
+.bp-welcome{display:flex;flex-direction:column;animation:bpFadeIn .2s ease-out}
+.bp-welcome.out{animation:bpFadeOut .2s ease-in forwards}
+.bp-welcome .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:calc(20px + env(safe-area-inset-top,0px)) 18px 16px}
+.bp-welcome .wrap{max-width:520px;margin:0 auto}
+.bp-welcome .x{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));right:8px;width:44px;height:44px;border-radius:22px;color:var(--bp-muted);display:grid;place-items:center;background:none;border:0}
+.bp-welcome .x svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.bp-hero{text-align:center;padding:6px 0 14px}
+.bp-hero img{width:64px;height:64px;display:block;margin:0 auto 8px;animation:bpStamp .5s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 12px rgba(201,180,118,.35))}
+.bp-hero h1{font-size:28px;font-weight:700;letter-spacing:-.6px;margin:0;color:#fff;line-height:1.15}
+.bp-hero .tag{color:var(--bp-gold);font-weight:600;margin:4px 0 0}
+.bp-hero .sub{color:var(--bp-muted);font-size:14px;margin:4px 0 0}
+.bp-card{background:var(--bp-card);border:1px solid var(--bp-line);border-radius:14px;padding:14px;margin-bottom:12px}
+.bp-card h2,.bp-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--bp-gold);margin:0 0 6px}
+.bp-card p{margin:0;font-size:14.5px}
+.bp-label{margin:4px 0 8px}
+.bp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px;padding:0;list-style:none}
+.bp-grid li{background:var(--bp-card);border:1px solid var(--bp-line);border-radius:12px;padding:11px 12px;font-size:13px;color:var(--bp-muted);line-height:1.38}
+.bp-grid li b{display:flex;align-items:center;gap:7px;color:var(--bp-text);font-size:14px;margin-bottom:3px}
+.bp-grid li:last-child:nth-child(odd){grid-column:1/-1}
+.bp-ico{width:20px;height:20px;flex:none;fill:none;stroke:var(--bp-gold);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bp-privacy{display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(201,180,118,.45);background:rgba(201,180,118,.08);border-radius:14px;padding:13px 14px;margin-bottom:12px;font-size:14px}
+.bp-privacy .bp-ico{width:26px;height:26px;margin-top:1px}
+.bp-privacy b{color:#fff}
+.bp-privacy a{color:var(--bp-gold)}
+.bp-install{font-size:13px;color:var(--bp-muted);border:1px dashed var(--bp-line);border-radius:12px;padding:10px 12px;margin-bottom:6px}
+.bp-install b{color:var(--bp-text)}
+.bp-foot{flex:none;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--bp-line);background:var(--bp-bg)}
+.bp-foot .wrap{max-width:520px;margin:0 auto}
+.bp-cta{display:block;width:100%;min-height:52px;border-radius:12px;border:0;background:var(--bp-gold);color:#1D2122;font:700 17px "Helvetica Neue",Helvetica,Arial,sans-serif;cursor:pointer}
+.bp-cta:active{transform:translateY(1px)}
+.bp-foot small{display:block;text-align:center;color:var(--bp-muted);font-size:11.5px;margin-top:8px}
+.bp-welcome:focus{outline:none}
+.bp-welcome :focus-visible{outline:3px solid var(--bp-gold);outline-offset:2px}
+@media (min-width:900px){ .bp-welcome .scroll{padding-top:40px} }
+@media (max-width:340px){ .bp-grid{grid-template-columns:1fr} }
+
+/* Header re-entry button */
+.bp-info{width:36px;height:36px;border-radius:18px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);flex:none}
+.bp-info svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
+
+@keyframes bpStamp{0%{opacity:0;transform:scale(1.35)}60%{opacity:1;transform:scale(.94)}100%{opacity:1;transform:scale(1)}}
+@keyframes bpRise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes bpBootOut{to{opacity:0;visibility:hidden}}
+@keyframes bpFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes bpFadeOut{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .bp-boot,.bp-boot *,.bp-welcome,.bp-welcome *{animation:none!important}
+  .bp-boot{transition:opacity .2s linear}
+}

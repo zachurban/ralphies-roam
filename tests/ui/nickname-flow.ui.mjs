@@ -108,7 +108,7 @@ const results = [];
 const check = (label, ok, detail = '') => { results.push({label, ok, detail}); console.log((ok ? 'PASS ' : 'FAIL ') + label + (detail ? ' — ' + detail : '')); };
 async function newPage(uid, email, width = 390, height = 844) {
   const ctx = await browser.newContext({viewport: {width, height}, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block'});
-  await ctx.addInitScript(([k, v]) => { localStorage.setItem(k, v); localStorage.setItem('rr-privacy-seen', '1'); }, ['sb-ykuxgfrmkixownnzutno-auth-token', session(uid, email)]);
+  await ctx.addInitScript(([k, v]) => { localStorage.setItem(k, v); localStorage.setItem('rr-privacy-seen', '1'); localStorage.setItem('buffprints_onboarded_v1', 'true'); }, ['sb-ykuxgfrmkixownnzutno-auth-token', session(uid, email)]);
   await ctx.route('https://cdn.jsdelivr.net/**', r => r.fulfill({path: process.env.SUPABASE_JS, contentType: 'text/javascript'}));
   await ctx.route('https://unpkg.com/**', r => { const f = path.basename(new URL(r.request().url()).pathname); r.fulfill({path: path.join(process.env.LEAFLET_DIR, f), contentType: f.endsWith('.css') ? 'text/css' : 'text/javascript'}); });
   await ctx.route(/arcgisonline|tile/, r => r.fulfill({status: 204}));
