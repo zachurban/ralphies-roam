@@ -20,6 +20,13 @@ paths the student hasn't walked.
   meeting point (the walkway spot that keeps the longer walk shortest). Links are validated, stored only on the
   phone, expire at term end, and can be removed. Nothing goes through Supabase; the data travels in the link's
   #fragment, which browsers don't send to the web server.
+- **Planning a meet-up:** from a "Free together" match, **Plan this meet-up** picks a start (only times both can
+  reach), length and spot, then **Send invite** shares a link (#invite=: day, time, spot, your name). The friend taps
+  **Accept** or **Can't make it**, which shares a reply link back (#reply=: yes/no and their name). Opening it marks the
+  plan Confirmed or Declined. Both sides get **Add to calendar**: an .ics file (iPhone/Outlook) or a Google Calendar
+  link. Plans are stored only on each phone, show on Home with their status, and a confirmed meet-up within 2 hours
+  becomes the Next card. Links are validated (format, Boulder-area spot, future date); a reply for an unknown plan is
+  reported, not applied.
 - **Walking totals.** This week, left in the term, and the whole term (direct routes; breaks and holidays skipped).
 - **Leave-by time** for the first class, and a **tight connection** warning when the walk is longer than the gap between classes.
 

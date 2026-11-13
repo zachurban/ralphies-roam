@@ -385,3 +385,5 @@ body.rec #sheetBody{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec
 .cls.extra .t{color:var(--gold-text);display:flex;justify-content:flex-start;padding-top:2px}
 .chiprow{display:flex;gap:8px;flex-wrap:wrap}
 a.chip{text-decoration:none}
+.ic-lead.ok{background:#E6F0E8;color:#2E6B3F}
+.ic-lead.no{background:var(--warn-soft);color:var(--warn)}

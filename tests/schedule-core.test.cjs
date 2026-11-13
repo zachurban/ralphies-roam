@@ -208,3 +208,18 @@ test('meet-ups: overlapping free time between classes, and a fair meeting point'
   const mp = R.meetPoint(g, R.placeNode(g, by.CHEM).node, R.placeNode(g, by.ECCR).node);
   assert.ok(mp && Math.abs(mp.mine - mp.theirs) < 250, 'roughly halfway (' + Math.round(mp.mine) + ' / ' + Math.round(mp.theirs) + ' m)');
 });
+
+test('meet-up planning: start-time choices and calendar files that parse back correctly', () => {
+  const w = { s: '09:55', e: '11:15' };
+  const slots = R.meetSlots(w, 6, 7, 15);
+  assert.equal(slots[0], '10:05', 'first start once both can walk there, on a 5-minute mark');
+  assert.equal(slots[slots.length - 1], '10:50', 'leaves the meeting length and the walk to the next class');
+  assert.deepEqual(R.meetSlots({ s: '12:05', e: '12:20' }, 6, 6, 15), [], 'too short to meet');
+  const ics = R.meetIcs({ uid: 'm1', title: 'Meet Alex, BuffPrints', date: '2026-11-16', start: '10:05', end: '10:35', place: 'Near Farrand Field; CU Boulder', lat: 40.0061, lng: -105.2662, note: 'Line one\nline two' });
+  assert.ok(/\r\n/.test(ics) && ics.split('\r\n').every(l => l.length <= 75), 'CRLF lines, folded at 75');
+  assert.ok(ics.includes('SUMMARY:Meet Alex\\, BuffPrints') && ics.includes('LOCATION:Near Farrand Field\; CU Boulder'), 'escaped');
+  const back = R.parseICS(ics).classes[0];      // our own reader agrees on time and day
+  assert.deepEqual([back.start, back.end, back.first], ['10:05', '10:35', '2026-11-16']);
+  const g = R.meetGoogleUrl({ title: 'Meet Alex', date: '2026-11-16', start: '10:05', end: '10:35', place: 'Near Farrand Field' });
+  assert.ok(g.includes('dates=20261116T100500/20261116T103500') && g.includes('ctz=America/Denver'));
+});

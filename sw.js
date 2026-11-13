@@ -1,9 +1,9 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v26';
+const VERSION = 'rr-v27';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=26', 'student-core.js?v=26', 'username-core.js?v=26', 'schedule-core.js?v=26', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=27', 'student-core.js?v=27', 'username-core.js?v=27', 'schedule-core.js?v=27', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',

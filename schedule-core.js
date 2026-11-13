@@ -341,6 +341,34 @@ function meetPoint(g, a, b){
   if(best<0) return null;
   return {node:best, pt:g.pts[best], mine:A.meters[best], theirs:B.meters[best], line:treePath(A,best).nodes.map(i=>g.pts[i])};
 }
+/* Start times for a meet-up inside a free window: from the moment both can arrive, every 5 minutes,
+   leaving room for the meeting itself (minLen) and the walk on to the next class (after). */
+function meetSlots(w, arriveMin, afterMin, minLen){
+  const first=Math.ceil((toMin(w.s)+arriveMin)/5)*5, last=toMin(w.e)-afterMin-(minLen||15), out=[];
+  for(let t=first; t<=last; t+=5) out.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'));
+  return out;
+}
+const icsEsc=v=>String(v).replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function icsFold(line){ const out=[]; while(line.length>73){ out.push(line.slice(0,73)); line=' '+line.slice(73); } out.push(line); return out.join('\r\n'); }
+/* One meet-up as a calendar file (Boulder time zone). p = {uid, title, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM', place, lat, lng, note} */
+function meetIcs(p){
+  const d=p.date.replace(/-/g,''), t=x=>x.replace(':','')+'00', now=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//BuffPrints//Meet-up//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VTIMEZONE','TZID:America/Denver','BEGIN:DAYLIGHT','TZOFFSETFROM:-0700','TZOFFSETTO:-0600','TZNAME:MDT','DTSTART:19700308T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU','END:DAYLIGHT',
+    'BEGIN:STANDARD','TZOFFSETFROM:-0600','TZOFFSETTO:-0700','TZNAME:MST','DTSTART:19701101T020000','RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU','END:STANDARD','END:VTIMEZONE',
+    'BEGIN:VEVENT','UID:'+p.uid+'@buffprints','DTSTAMP:'+now,'DTSTART;TZID=America/Denver:'+d+'T'+t(p.start),'DTEND;TZID=America/Denver:'+d+'T'+t(p.end),
+    'SUMMARY:'+icsEsc(p.title),'LOCATION:'+icsEsc(p.place)];
+  if(p.lat!=null) L.push('GEO:'+(+p.lat).toFixed(6)+';'+(+p.lng).toFixed(6));
+  if(p.note) L.push('DESCRIPTION:'+icsEsc(p.note));
+  L.push('END:VEVENT','END:VCALENDAR');
+  return L.map(icsFold).join('\r\n')+'\r\n';
+}
+/* Google Calendar "add event" link for the same meet-up. */
+function meetGoogleUrl(p){
+  const d=p.date.replace(/-/g,''), t=x=>x.replace(':','')+'00';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(p.title)+'&dates='+d+'T'+t(p.start)+'/'+d+'T'+t(p.end)+
+    '&ctz=America/Denver&location='+encodeURIComponent(p.place)+(p.note?'&details='+encodeURIComponent(p.note):'');
+}
 /* Weekly pattern of in-person classes with a building, for sharing: {1:[[s,e,code],...], ...}. No course names. */
 function weekPattern(classes){
   const d={}; classes.filter(c=>c.code&&!c.online).forEach(c=>c.days.forEach(w=>{ (d[w]=d[w]||[]).push([c.start,c.end,c.code]); }));
@@ -350,5 +378,5 @@ function weekPattern(classes){
 root.RoamSchedule={TZ, TERMS, WALK_MPS, OFF_NET_M, DAY_NAMES,
   unfold, contentLine, unescapeText, icalTime, parseSummary, parseLocation, parseICS,
   campusDay, meetsOn, classesOn, nextClassDay, dayStops, denverToday, addDays, weekday, mondayOf, classDates, termFor,
-  buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav, tree, gapLoop, freeWindows, meetWindows, meetPoint, weekPattern, toMin};
+  buildGraph, nearestNode, placeNode, shortest, commuteLeg, minutes, hav, tree, gapLoop, freeWindows, meetWindows, meetPoint, weekPattern, toMin, meetSlots, meetIcs, meetGoogleUrl};
 })(typeof window!=='undefined'?window:globalThis);

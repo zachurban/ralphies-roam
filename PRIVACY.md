@@ -12,7 +12,7 @@ BuffPrints is an independent student project. It is not an official University o
 - Improvement requests you save on the Safety page, and the follow-up notes you add.
 - An unfinished walk, so you can resume or finish it after the app closes.
 - **Your class schedule**, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.
-- **Meet-ups:** if you share your free times, the link holds your class times, building codes and the name you choose (no course names or rooms). It goes through whatever app you share it with, not BuffPrints. Friends' links you add are saved only on this phone and expire at the end of the term.
+- **Meet-ups:** if you share your free times, the link holds your class times, building codes and the name you choose (no course names or rooms). It goes through whatever app you share it with, not BuffPrints. Friends' links you add are saved only on this phone and expire at the end of the term. A meet-up invite link holds the day, time, meeting spot and your name; a reply holds yes or no and the replier's name. Planned meet-ups are saved only on this phone.
 
 ## What is saved to your account (only if you sign in)
 
