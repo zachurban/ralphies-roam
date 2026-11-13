@@ -10,7 +10,7 @@ Branch `design/student-app-v2`. Builds on the merged student-experience redesign
 | `app.css` | All styles (replaces the old inline styles and `student.css`). |
 | `student-core.js` | Pure, tested logic: goal definitions, path history, walk summaries, route trimming, share-card text, request statuses. |
 | `tests/student-core.test.cjs` | 12 regression tests (`node --test tests/student-core.test.cjs`). |
-| `icons/` | Regenerated with the hoofprint mark. |
+| `public/` | App icons and hoof print logo. |
 
 ## Design decisions
 

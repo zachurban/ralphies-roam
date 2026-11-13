@@ -13,7 +13,7 @@ A fog-of-war walking game for the CU Boulder campus. Real GPS, Leaflet map, inst
 Phone GPS only works on an `https://` page, so the files need a host.
 
 1. On github.com: **New repository** → name it `ralphies-roam` → Public → Create.
-2. **Add file → Upload files** → drag in everything from this folder (keep the `icons` folder) → Commit.
+2. **Add file → Upload files** → drag in everything from this folder (keep the `public` folder) → Commit.
 3. **Settings → Pages** → Source: *Deploy from a branch* → Branch: `main`, folder `/ (root)` → Save.
 4. After a minute the app is live at `https://<your-username>.github.io/ralphies-roam/`.
 
@@ -39,7 +39,7 @@ Phone GPS only works on an `https://` page, so the files need a host.
 | `vendor/` | QR code libraries, kept local (see `vendor/README.md`). |
 | `buildings.json` | CU building codes → location and outline, built from OpenStreetMap by `scripts/build-buildings.mjs`. |
 | `data/building-aliases.json` | Hand-kept fixes for building codes OpenStreetMap lists differently. |
-| `manifest.json`, `icons/` | Home-screen install. |
+| `public/` | App icons, favicons, `site.webmanifest` (home-screen install) and the hoof print logo (`hoofprint-logo.svg`). |
 | `sw.js` | Offline app shell and map-tile cache. |
 | `paths.geojson` (optional) | Your own walkways; replaces the built-in set. |
 
