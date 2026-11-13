@@ -4,7 +4,7 @@
 
 Privacy: see [PRIVACY.md](PRIVACY.md) — the same notice is in the app under Progress → Privacy & delete my data.
 
-Design and goal definitions: [docs/STUDENT_APP_V2.md](docs/STUDENT_APP_V2.md). Find the Herd (scavenger hunt): [docs/FIND_THE_HERD.md](docs/FIND_THE_HERD.md). Nicknames and moderation: [docs/USERNAMES.md](docs/USERNAMES.md). Tests: `node --test tests/*.test.cjs` (database tests need a local PostgreSQL; they skip without one).
+Design and goal definitions: [docs/STUDENT_APP_V2.md](docs/STUDENT_APP_V2.md). Herd and Seek (scavenger hunt): [docs/HERD_AND_SEEK.md](docs/HERD_AND_SEEK.md). Nicknames and moderation: [docs/USERNAMES.md](docs/USERNAMES.md). Tests: `node --test tests/*.test.cjs` (database tests need a local PostgreSQL; they skip without one).
 
 A fog-of-war walking game for the CU Boulder campus. Real GPS, Leaflet map, installable PWA. No build step, no server code.
 
@@ -32,8 +32,8 @@ Phone GPS only works on an `https://` page, so the files need a host.
 | `schedule-core.js` | Class schedule (.ics) reading, CU term calendar and walkway routing, shared with the tests. |
 | `username-core.js` | Nickname format rules and messages (moderation itself runs only on the server). |
 | `admin.html` | Nickname moderation queue for moderators (server-checked; see docs/USERNAMES.md). |
-| `herd.html`, `herd.css`, `herd-app.js` | Find the Herd, the scavenger hunt (see docs/FIND_THE_HERD.md). |
-| `herd-core.js` | Find the Herd rules shared with the tests: geofence, scoring, encryption, sync. |
+| `herd.html`, `herd.css`, `herd-app.js` | Herd and Seek, the scavenger hunt (see docs/HERD_AND_SEEK.md). |
+| `herd-core.js` | Herd and Seek rules shared with the tests: geofence, scoring, encryption, sync. |
 | `herd-editions.js` | Generated copy of the demo hunt routes (answer hashes only), built by `scripts/build-hunt.mjs`. |
 | `herd-admin.html` | Hunt admin: checkpoints, routes, flags and anonymous counters (allowlisted). |
 | `vendor/` | QR code libraries, kept local (see `vendor/README.md`). |
@@ -145,8 +145,8 @@ Students can import their Buff Portal class schedule (an `.ics` calendar file). 
 
 Each year, update `TERMS` in `schedule-core.js` from the CU academic calendar (first and last day of classes, holidays, breaks, reading days, Monday-schedule days).
 
-## Find the Herd
+## Herd and Seek
 
 A scavenger hunt at `herd.html`: five outdoor checkpoints, five puzzles, 20–40 minutes, solo or as a herd. **Friends Mode** needs no sign-in and writes nothing to the database; teammates sync phone to phone through an encrypted relay whose key lives only in the invite link's `#fragment`. **Competition Mode** (signed in) stores which checkpoints a player completed and a team's name, avatar and score, and feeds weekly herd and dorm standings plus a demo reward token (*Demo reward — not redeemable. No purchase benefit is available.*). **Demo Practice** simulates check-ins for trying it anywhere. The phone compares GPS with the checkpoint itself; coordinates are never sent or stored.
 
-Three demo routes ship with every coordinate and on-site detail flagged `needs_onsite_check` until someone walks them. Add a hunt admin: `insert into public.admin_allowlist (email) values ('you@colorado.edu');` then open `herd-admin.html`. Setup, rules, known limits and the on-campus test checklist: [docs/FIND_THE_HERD.md](docs/FIND_THE_HERD.md).
+Three demo routes ship with every coordinate and on-site detail flagged `needs_onsite_check` until someone walks them. Add a hunt admin: `insert into public.admin_allowlist (email) values ('you@colorado.edu');` then open `herd-admin.html`. Setup, rules, known limits and the on-campus test checklist: [docs/HERD_AND_SEEK.md](docs/HERD_AND_SEEK.md).

@@ -1,5 +1,5 @@
 {
-  "_readme": "Source for the Find the Herd demo routes. Answers are NOT in this file or anywhere in the repository — only salted SHA-256 hashes (answer_hashes). Run `node scripts/build-hunt.mjs` after editing; see docs/FIND_THE_HERD.md. Every coordinate, access note and on-site detail is unverified and flagged needs_onsite_check until someone walks the route.",
+  "_readme": "Source for the Herd and Seek demo routes. Answers are NOT in this file or anywhere in the repository — only salted SHA-256 hashes (answer_hashes). Run `node scripts/build-hunt.mjs` after editing; see docs/HERD_AND_SEEK.md. Every coordinate, access note and on-site detail is unverified and flagged needs_onsite_check until someone walks the route.",
   "checkpoints": [
     {
       "id": "norlin-quad",

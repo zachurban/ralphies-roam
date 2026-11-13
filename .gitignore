@@ -1,4 +1,4 @@
-# Private files that must never be committed (see docs/FIND_THE_HERD.md)
+# Private files that must never be committed (see docs/HERD_AND_SEEK.md)
 hunt-answers*.json
 *.local.json
 node_modules/

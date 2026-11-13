@@ -1,4 +1,4 @@
-// End-to-end check of Find the Herd on phone-sized screens with SIMULATED GPS, against the
+// End-to-end check of Herd and Seek on phone-sized screens with SIMULATED GPS, against the
 // real migrations in a local PostgreSQL database (see herd-harness.mjs for the stand-ins).
 // Covers: solo flow, encrypted team sync, reload persistence, duplicate-submission
 // idempotency, Demo Practice vs Competition isolation, the wallet, standings and the admin view.

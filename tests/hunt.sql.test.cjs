@@ -1,4 +1,4 @@
-// Database tests for Find the Herd: Competition Mode check-ins and scoring, the
+// Database tests for Herd and Seek: Competition Mode check-ins and scoring, the
 // zero-storage guarantees of Friends Mode, anonymous counters, the admin editor,
 // standings, the demo wallet and account deletion.
 // Runs every migration against a real PostgreSQL server (with the small Supabase

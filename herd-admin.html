@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>BuffPrints · Find the Herd admin</title>
+<title>BuffPrints · Herd and Seek admin</title>
 <link rel="icon" href="icons/icon-192.png">
 <style>
   :root{--ink:#1E2022;--muted:#565A5C;--line:#E7E3DA;--surface:#F7F5F0;--gold:#CFB87C;--gold-soft:#F3F0E9;--danger:#B3261E;--warn:#B7410E;--ok:#2E6B3F;--link:#096FAE}
@@ -35,7 +35,7 @@
 </style>
 </head>
 <body>
-<header><span><b>BuffPrints</b> · Find the Herd admin</span><a href="herd.html">Back to Find the Herd</a></header>
+<header><span><b>BuffPrints</b> · Herd and Seek admin</span><a href="herd.html">Back to Herd and Seek</a></header>
 <main>
   <div id="msg" role="status" aria-live="polite"></div>
   <div id="gate" class="card">Checking access…</div>
@@ -132,7 +132,7 @@ $('newGo').addEventListener('click',async()=>{ const id=$('newId').value.trim();
 (async function(){
   $('newDoc').value=JSON.stringify(TEMPLATE,null,2);
   const {data}=await sb.auth.getSession();
-  if(!data||!data.session){ $('gate').textContent='Sign in to BuffPrints first (Find the Herd → Competition), then reload this page.'; return; }
+  if(!data||!data.session){ $('gate').textContent='Sign in to BuffPrints first (Herd and Seek → Competition), then reload this page.'; return; }
   let ok=false; try{ ok=(await sb.rpc('hunt_am_i_admin')).data===true; }catch(e){}
   if(!ok){ $('gate').textContent='This account isn’t a hunt administrator. Access is granted by adding a confirmed email address to the admin_allowlist table.'; return; }
   $('gate').classList.add('hidden'); $('ui').classList.remove('hidden');

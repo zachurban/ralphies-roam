@@ -1,4 +1,4 @@
-/* BuffPrints — Find the Herd: the player screens (herd.html).
+/* BuffPrints — Herd and Seek: the player screens (herd.html).
    The rules live in herd-core.js (shared with the tests). This file is screens, the relay
    connection, the camera, and the one place GPS is read.
 
@@ -192,7 +192,7 @@ function gpsHTML(g,cp,canVouch,practice){
   if(g.state==='near'){ t='Almost — your GPS isn’t sure yet'; b='You look about '+f.distance+' m from the checkpoint, but your phone is only accurate to ±'+f.accuracy+' m right now. Step into the open, give it a few seconds, and try again.'; }
   else if(g.state==='outside'){ t='You’re not at this checkpoint yet'; b='It’s about '+(f.distance>=1000?(f.distance/1000).toFixed(1)+' km':f.distance+' m')+' to the '+f.toward+'. Try again when you get to '+esc(cp.name)+'.'; }
   else if(g.state==='weak'){ t='Your phone can’t pin down where you are'; b='The best it could do was ±'+(f.accuracy==null?'?':f.accuracy)+' m, which isn’t enough to tell. Move away from tall buildings and trees, wait a few seconds, and try again.'; }
-  else if(g.state==='denied'){ t='Location is turned off for this site'; b='Find the Herd reads your location only when you tap Check in, compares it with the checkpoint on this phone, and never sends it anywhere. To allow it, turn on Location for this site in your browser or phone settings, then try again.'; }
+  else if(g.state==='denied'){ t='Location is turned off for this site'; b='Herd and Seek reads your location only when you tap Check in, compares it with the checkpoint on this phone, and never sends it anywhere. To allow it, turn on Location for this site in your browser or phone settings, then try again.'; }
   else if(g.state==='timeout'||g.state==='unavailable'){ t='No GPS signal yet'; b='Your phone didn’t report a location in time. Make sure Location is on, step outside, and try again.'; }
   else if(g.state==='insecure'||g.state==='unsupported'){ t='This browser can’t share location here'; b='Open BuffPrints from its https:// address in Safari or Chrome.'; }
   return '<div class="statusbox warn" role="status"><b>'+t+'</b>'+b+alt+'</div>';
@@ -379,7 +379,7 @@ function showInvite(){
   modal('Invite teammates',(locked?'<p class="msg warn">Your roster is locked for scoring because you’ve completed a checkpoint. New players can’t join this competitive run.</p>':'')+
     '<p>Have a teammate scan this with their phone camera. Share it in person: anyone with this code can join your herd and see what you share.</p>'+qrSvg(url)+
     '<label class="f" for="invUrl">Or send the link</label><input class="field" id="invUrl" readonly value="'+esc(url)+'">',
-    [['Copy link','pri',()=>copyText(url),null,'stay']].concat(navigator.share?[['Share…','',()=>{ navigator.share({title:'Find the Herd',text:'Join my herd on BuffPrints',url}).catch(()=>{}); },null,'stay']]:[]).concat([['Done','',()=>{}]]));
+    [['Copy link','pri',()=>copyText(url),null,'stay']].concat(navigator.share?[['Share…','',()=>{ navigator.share({title:'Herd and Seek',text:'Join my herd on BuffPrints',url}).catch(()=>{}); },null,'stay']]:[]).concat([['Done','',()=>{}]]));
 }
 async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('Link copied'); }catch(e){ const i=$('invUrl'); if(i){ i.focus(); i.select(); toast('Select and copy the link'); } } }
 function showCode(no){
@@ -411,7 +411,7 @@ async function openScanner(ctx){
     scan.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     const v=$('scanVideo'); if(!v){ stopScan(); return; }
     v.srcObject=scan.stream; await v.play();
-    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=28');
+    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=29');
     say('Point the camera at the QR code on your teammate’s screen.');
     const canvas=document.createElement('canvas'), g=canvas.getContext('2d',{willReadFrequently:true}); let last=0;
     const loop=ts=>{
@@ -442,7 +442,7 @@ async function handleScan(text){
     const v=await H.verifyPresence(s.keys,kind==='digits'?digits:text,Date.now(),{self:s.self,cp:ctx.cp||undefined,peers});
     if(!v.ok){
       say({stale:'That code has expired. Ask them to hold up the live code and scan again.',self:'That’s your own code.',other_checkpoint:'That code is for a different checkpoint.',
-           wrong:kind==='digits'?'Those digits don’t match a teammate who’s checked in here. Codes change every few seconds — try the current one.':'That code isn’t from your herd.'}[v.reason]||'That isn’t a Find the Herd code.');
+           wrong:kind==='digits'?'Those digits don’t match a teammate who’s checked in here. Codes change every few seconds — try the current one.':'That code isn’t from your herd.'}[v.reason]||'That isn’t a Herd and Seek code.');
       return false;
     }
     const peer=st.members[v.peerId];
@@ -454,7 +454,7 @@ async function handleScan(text){
     if(had) toast('Together with '+peer.nick+' at '+cpOf(v.cp).name);
     return true;
   }
-  say('That isn’t a Find the Herd code.'); return false;
+  say('That isn’t a Herd and Seek code.'); return false;
 }
 async function askJoin(raw){
   const s=A.session;
@@ -534,12 +534,12 @@ function privacyHTML(mode){
   return '<ul class="summary-list">'+items.map(k=>'<li><b>'+PRIVACY_POINTS[k][0]+'</b>'+PRIVACY_POINTS[k][1]+'</li>').join('')+'</ul>';
 }
 function fullPrivacy(){
-  modal('Find the Herd and your privacy','<div class="privacy">'+['herd','gps','friends','competition','practice','counts'].map(k=>'<h4>'+PRIVACY_POINTS[k][0]+'</h4><p>'+PRIVACY_POINTS[k][1]+'</p>').join('')+
+  modal('Herd and Seek and your privacy','<div class="privacy">'+['herd','gps','friends','competition','practice','counts'].map(k=>'<h4>'+PRIVACY_POINTS[k][0]+'</h4><p>'+PRIVACY_POINTS[k][1]+'</p>').join('')+
     '<h4>Deleting it</h4><p>Leave a herd to remove it from this phone. Deleting your BuffPrints account (Progress → Privacy &amp; delete my data) also deletes every check-in, team membership and reward token.</p>'+
     '<p>The full notice is in BuffPrints under Progress → Privacy &amp; delete my data.</p></div>',[['Close','pri',()=>{}]]);
 }
 function lobbyHTML(){
-  let h='<h1 class="title" tabindex="-1">Find the Herd</h1><p class="lead">Five outdoor checkpoints, five puzzles, about 20 to 40 minutes. Go solo or bring friends.</p>';
+  let h='<h1 class="title" tabindex="-1">Herd and Seek</h1><p class="lead">Five outdoor checkpoints, five puzzles, about 20 to 40 minutes. Go solo or bring friends.</p>';
   h+='<div class="label">Pick a route</div>';
   h+=A.editions.length?A.editions.map(e=>{ const c=e.content; return '<button class="card" data-act="pick" data-id="'+esc(c.id)+'">'+(c.demo?'<span class="pill gold">Demo route</span> ':'')+
       '<h3 style="margin-top:6px">'+esc(c.title)+'</h3><div class="sub">'+esc(c.theme)+' · '+esc(c.style)+'</div><p>'+esc(c.intro)+'</p></button>'; }).join('')
@@ -584,7 +584,7 @@ function setupHTML(){
 }
 function joiningHTML(){
   return '<h1 class="title" tabindex="-1">Looking for your herd…</h1><p class="lead">Your phone is asking a teammate’s phone for the herd.</p>'+
-    (A.joinSlow?'<div class="statusbox warn" role="status"><b>No teammate’s phone has answered yet</b>The herd lives on your teammates’ phones, not on a server, so at least one of them needs Find the Herd open and online. Ask them to open it, then try again.</div><div class="rowbtns"><button class="btn pri" data-act="retryJoin">Try again</button><button class="btn" data-act="cancelJoin">Cancel</button></div>'
+    (A.joinSlow?'<div class="statusbox warn" role="status"><b>No teammate’s phone has answered yet</b>The herd lives on your teammates’ phones, not on a server, so at least one of them needs Herd and Seek open and online. Ask them to open it, then try again.</div><div class="rowbtns"><button class="btn pri" data-act="retryJoin">Try again</button><button class="btn" data-act="cancelJoin">Cancel</button></div>'
                :'<p class="empty">Connecting…</p><button class="btn" data-act="cancelJoin">Cancel</button>');
 }
 function joinFormHTML(){
@@ -817,7 +817,7 @@ setInterval(()=>{ const s=A.session; if(document.hidden||!s||!s.state||!s.state.
 
 /* ---------- boot ---------- */
 (async function boot(){
-  if(!window.crypto||!crypto.subtle){ $('hv').innerHTML='<h1 class="title">Find the Herd</h1><p class="empty">This browser can’t run Find the Herd here. Open BuffPrints from its https:// address in a current version of Safari or Chrome.</p>'; return; }
+  if(!window.crypto||!crypto.subtle){ $('hv').innerHTML='<h1 class="title">Herd and Seek</h1><p class="empty">This browser can’t run Herd and Seek here. Open BuffPrints from its https:// address in a current version of Safari or Chrome.</p>'; return; }
   if(sb){
     try{ const {data}=await sb.auth.getSession(); me.user=data&&data.session?data.session.user:null; }catch(e){}
     sb.auth.onAuthStateChange((ev,session)=>{ const u=session?session.user:null, changed=(u&&u.id)!==(me.user&&me.user.id); me.user=u;
