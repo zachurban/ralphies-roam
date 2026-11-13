@@ -8,6 +8,6 @@ window.RR_CONFIG = {
   contactEmail: '',
   // Show Find the Herd on Home and Community. Leave false until the demo route has been walked
   // and fixed in herd-admin.html; until then the hunt opens only from a direct link to herd.html.
-  findTheHerdLinks: false,
+  findTheHerdLinks: true,
   supabaseKey: 'sb_publishable_N5vfwZIazOl7VibaYDbFMQ_ZpVjTeW4'
 };
