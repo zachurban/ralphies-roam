@@ -1,4 +1,4 @@
-// Find the Herd — engine tests with simulated GPS, a simulated relay and simulated phone storage.
+// Herd and Seek — engine tests with simulated GPS, a simulated relay and simulated phone storage.
 // No browser, network or database needed:   node --test tests/herd-core.test.cjs
 const {test} = require('node:test');
 const assert = require('node:assert/strict');

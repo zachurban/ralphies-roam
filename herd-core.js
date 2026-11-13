@@ -1,4 +1,4 @@
-/* BuffPrints — Find the Herd: logic shared by herd.html, herd-admin.html and the tests.
+/* BuffPrints — Herd and Seek: logic shared by herd.html, herd-admin.html and the tests.
    No DOM. Crypto is the Web Crypto API (every current iPhone/Android browser, and Node 20+).
    Network (the relay) and storage are passed in, so the whole thing runs under `node --test`.
 
@@ -129,7 +129,7 @@ function herdScore(state){
 }
 
 /* ---------- keys ---------- */
-const KDF_SALT = enc.encode('BuffPrints Find the Herd v1');
+const KDF_SALT = enc.encode('BuffPrints Find the Herd v1');   // part of the key math: keep the original name so existing herds still open
 function newHerdKey(){ return b64u(randomBytes(32)); }
 function validKey(k){ return typeof k==='string' && /^[A-Za-z0-9_-]{43}$/.test(k); }
 /* From the 32 random bytes in the invite: an encryption key, a signing key and the relay channel

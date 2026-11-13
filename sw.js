@@ -1,11 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v28';
+const VERSION = 'rr-v29';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=28', 'student-core.js?v=28', 'username-core.js?v=28', 'schedule-core.js?v=28', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
-  // Find the Herd
-  'herd.html', 'herd.css?v=28', 'herd-core.js?v=28', 'herd-editions.js?v=28', 'herd-app.js?v=28', 'vendor/qrcode.min.js?v=28', 'vendor/jsqr.min.js?v=28',
+  'app.css?v=29', 'student-core.js?v=29', 'username-core.js?v=29', 'schedule-core.js?v=29', './', 'index.html', 'manifest.json', 'config.js', 'paths.geojson', 'buildings.json',
+  // Herd and Seek
+  'herd.html', 'herd.css?v=29', 'herd-core.js?v=29', 'herd-editions.js?v=29', 'herd-app.js?v=29', 'vendor/qrcode.min.js?v=29', 'vendor/jsqr.min.js?v=29',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -73,7 +73,7 @@ self.addEventListener('fetch', e => {
   // The admin pages are never cached (and must not replace the cached app page)
   if (url.origin === location.origin && (url.pathname.endsWith('/admin.html') || url.pathname.endsWith('/herd-admin.html'))) return;
   if (req.mode === 'navigate' || isConfig) {
-    // Find the Herd is its own page. It is stored under a fixed name, so an invite link's
+    // Herd and Seek is its own page. It is stored under a fixed name, so an invite link's
     // #key (which never leaves the phone anyway) can't end up in the cache either.
     const isHerd = url.origin === location.origin && url.pathname.endsWith('/herd.html');
     const key = isConfig ? 'config.js' : isHerd ? 'herd.html' : 'index.html';

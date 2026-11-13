@@ -1,4 +1,4 @@
-# Find the Herd (Phase 1)
+# Herd and Seek (Phase 1)
 
 A campus scavenger hunt inside BuffPrints: five outdoor checkpoints, five puzzles, 20–40 minutes, solo or with friends. It is built to collect as little as possible. No volunteers, no signs or stickers on campus, no native app, no Web Bluetooth or Web NFC.
 

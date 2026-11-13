@@ -1,4 +1,4 @@
-// Test harness for the Find the Herd screens: a throwaway PostgreSQL database with the real
+// Test harness for the Herd and Seek screens: a throwaway PostgreSQL database with the real
 // migrations, a static file server for the app, and a small stand-in for the three pieces of
 // Supabase the page uses:
 //   * rpc()            → runs the real database function as that signed-in user (or anon)

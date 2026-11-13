@@ -12,12 +12,12 @@ BuffPrints is an independent student project. It is not an official University o
 - Improvement requests you save on the Safety page, and the follow-up notes you add.
 - An unfinished walk, so you can resume or finish it after the app closes.
 - **Your class schedule**, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.
-- **Find the Herd:** your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can't be read without the herd's invite key. When you tap Check in, your phone compares its own GPS with the checkpoint and keeps only "inside: yes" — the coordinates are not saved, even here.
+- **Herd and Seek:** your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can't be read without the herd's invite key. When you tap Check in, your phone compares its own GPS with the checkpoint and keeps only "inside: yes" — the coordinates are not saved, even here.
 - **Meet-ups:** if you share your free times, the link holds your class times, building codes and the name you choose (no course names or rooms). It goes through whatever app you share it with, not BuffPrints. Friends' links you add are saved only on this phone and expire at the end of the term. A meet-up invite link holds the day, time, meeting spot and your name; a reply holds yes or no and the replier's name. Planned meet-ups are saved only on this phone.
 
-## Find the Herd
+## Herd and Seek
 
-Find the Herd is the scavenger hunt inside BuffPrints. It was built to work on as little data as possible.
+Herd and Seek is the scavenger hunt inside BuffPrints. It was built to work on as little data as possible.
 
 - **Your location never leaves your phone.** When you tap **Check in here**, the phone reads its GPS once, works out on the phone whether you are inside the checkpoint (distance plus the accuracy the phone reports), and throws the reading away. The most that is ever sent is "I'm inside this checkpoint: yes" — never coordinates, accuracy or a route. The server has nowhere to store a coordinate even if one were sent.
 - **Your herd syncs phone to phone.** Nicknames, avatars, progress, clue pieces, hints and answers are encrypted on your phone with a key that exists only in your invite link (the part after `#`, which browsers never send to servers) and in the QR code on a teammate's screen. Our relay passes along scrambled messages it can't read and doesn't keep them. "We're together" codes and clue pieces go straight from one screen to another phone's camera.
@@ -37,8 +37,8 @@ Find the Herd is the scavenger hunt inside BuffPrints. It was built to work on a
 ## Who can see what
 
 - **Anyone, even signed out:** path names and the nickname of the student who named them.
-- **Anyone, even signed out:** Find the Herd weekly standings, which show team names, team avatars, dorm or team names and scores only — never who is on a team, and never times or places.
-- **Your herd:** the nickname, avatar and checkpoint progress you share in Find the Herd, for as long as you are in that herd.
+- **Anyone, even signed out:** Herd and Seek weekly standings, which show team names, team avatars, dorm or team names and scores only — never who is on a team, and never times or places.
+- **Your herd:** the nickname, avatar and checkpoint progress you share in Herd and Seek, for as long as you are in that herd.
 - **Signed-in students:** leaderboards (nickname, dorm or team, totals, streak) and hazard pins. Pins never show who reported or voted. Your nickname is public, but it isn't a promise of complete anonymity: your team, the paths you name and when you're active can hint at who you are.
 - **BuffPrints moderators** see nickname reports, review requests, and a private log of nickname changes, so they can handle abuse. Reporters are never shown to the person reported, and rejected names and nickname histories are never shown to other students.
 - **No one else** sees your email, the paths you have claimed, or your location.
@@ -46,7 +46,7 @@ Find the Herd is the scavenger hunt inside BuffPrints. It was built to work on a
 
 ## Services that help run BuffPrints
 
-Supabase stores account data and relays Find the Herd's encrypted messages between teammates' phones. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.
+Supabase stores account data and relays Herd and Seek's encrypted messages between teammates' phones. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.
 
 ## How long it is kept
 
@@ -56,8 +56,8 @@ Until you delete it. Hazard pins stop showing after 60 days unless someone confi
 
 - **Export** everything stored on this device, including your route log (Progress → Export my data).
 - **Reset progress** clears your progress here and in your account but keeps your account.
-- **Delete everything** permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes, path names, and every Find the Herd check-in, team membership and reward token — and erases this device. This cannot be undone.
-- **Leave a herd** (Find the Herd → Leave herd) to remove it from this phone.
+- **Delete everything** permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes, path names, and every Herd and Seek check-in, team membership and reward token — and erases this device. This cannot be undone.
+- **Leave a herd** (Herd and Seek → Leave herd) to remove it from this phone.
 - **Location:** stop recording at any time, or turn off location for this site in your phone's settings.
 
 Questions or requests: see the contact address shown in the app's privacy notice.

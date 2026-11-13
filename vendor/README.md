@@ -1,6 +1,6 @@
 # Vendored libraries
 
-Kept in the repository (not loaded from a CDN) so Find the Herd's QR codes work offline and no third party sees when a herd forms.
+Kept in the repository (not loaded from a CDN) so Herd and Seek's QR codes work offline and no third party sees when a herd forms.
 
 | File | Library | Version | License | Used for |
 |---|---|---|---|---|
