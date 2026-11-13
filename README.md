@@ -28,6 +28,7 @@ Phone GPS only works on an `https://` page, so the files need a host.
 |---|---|
 | `index.html` | The app shell and script. |
 | `app.css` | Styles. |
+| `splash.js`, `splash.css` | Launch splash (returning users) and welcome screen (first visit, or the ? button in the header). Remembered in `localStorage` as `buffprints_onboarded_v1`. |
 | `student-core.js` | Goal, walk-summary and request logic shared with the tests. |
 | `schedule-core.js` | Class schedule (.ics) reading, CU term calendar and walkway routing, shared with the tests. |
 | `username-core.js` | Nickname format rules and messages (moderation itself runs only on the server). |

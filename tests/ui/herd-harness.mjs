@@ -74,7 +74,8 @@ window.supabase={createClient(){
   };
 }};`;
 
-  const types = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.geojson': 'application/json'};
+  const types = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.geojson': 'application/json',
+                 '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json'};
   const body = req => new Promise(res => { let b = ''; req.on('data', d => b += d); req.on('end', () => res(b)); });
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
