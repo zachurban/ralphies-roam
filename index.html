@@ -17,11 +17,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link rel="manifest" href="public/site.webmanifest">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=32">
-<link rel="stylesheet" href="splash.css?v=32">
+<link rel="stylesheet" href="app.css?v=33">
+<link rel="stylesheet" href="splash.css?v=33">
 </head>
 <body data-view="home">
-<script src="splash.js?v=32"></script>
+<script src="splash.js?v=33"></script>
 <div id="app">
   <div id="side">
     <header class="topbar">
@@ -64,9 +64,10 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="student-core.js?v=32"></script>
-<script src="username-core.js?v=32"></script>
-<script src="schedule-core.js?v=32"></script>
+<script src="student-core.js?v=33"></script>
+<script src="track-core.js?v=33"></script>
+<script src="username-core.js?v=33"></script>
+<script src="schedule-core.js?v=33"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -86,6 +87,7 @@ const SEG_MAX_M = 20;   // paths are diced into claimable pieces this long
 const REVEAL_M  = 34;   // fog hole radius per claimed piece (meters)
 const FOG_ALPHA = 0.65; // fog darkness, 0 (none) to 1 (solid)
 const ACC_MAX_M = 35;   // ignore GPS fixes with worse accuracy than this
+const CLAIM_ACC_M = 20; // only claim walkways from fixes at least this accurate (distance still counts up to ACC_MAX_M)
 const MAX_SPEED = 8;    // m/s — anything faster is a GPS jump (or a bus)
 const LS_KEY = 'ralphies-roam-v1';   // storage keys keep the original name so nobody loses progress
 const STREAK_SEGS = 10;  // a day counts toward a streak with 1 new claim OR this many distinct segments walked
@@ -173,7 +175,7 @@ function distToSeg(p,s){
   return Math.hypot(p[0]-(s.ax+t*dx), p[1]-(s.ay+t*dy));
 }
 let SEGS=[], SEG_BY_ID={}, TOTAL_LEN=0;
-let PATH_BY_ID={};
+let PATH_BY_ID={}, STRETCH={of:{},list:{}}, SEG_LEN={};   // stretches = junction-to-junction runs you claim as a whole
 let SEG_META={}, PATH_SEGN={}, PATH_SEGS={}, PATH_LEN={};   // path indexes for goals (filled by indexPaths)
 let GRAPH=null, EDGE_SEGS=null, PLAN_CACHE={}, DAYM={};               // walkway routing for the class commute (rebuilt with the paths)
 function buildSegments(){
@@ -186,26 +188,27 @@ function buildSegments(){
         const a=[A[0]+(B[0]-A[0])*j/n, A[1]+(B[1]-A[1])*j/n];
         const b=[A[0]+(B[0]-A[0])*(j+1)/n, A[1]+(B[1]-A[1])*(j+1)/n];
         const axy=toXY(a[0],a[1]), bxy=toXY(b[0],b[1]);
-        const s={id:p.id+'.'+i+'.'+j, pid:p.id, zone:p.zone, name:p.name, tags:p.tags||[], a, b,
+        const s={id:p.id+'.'+i+'.'+j, pid:p.id, vi:i, zone:p.zone, name:p.name, tags:p.tags||[], a, b, brg:RoamTrack.bearing(axy[0],axy[1],bxy[0],bxy[1]),
                  mid:[(a[0]+b[0])/2,(a[1]+b[1])/2], ax:axy[0], ay:axy[1], bx:bxy[0], by:bxy[1], len:d/n,
                  cx:(axy[0]+bxy[0])/2, cy:(axy[1]+bxy[1])/2, rr:d/n/2+CLAIM_M};
         SEGS.push(s); SEG_BY_ID[s.id]=s; TOTAL_LEN+=s.len;
       }
     }
   });
+  STRETCH=RoamTrack.stretches(PATHS,SEGS); SEGS.forEach(s=>{ s.stretch=STRETCH.of[s.id]; }); SEG_LEN={}; SEGS.forEach(s=>{ SEG_LEN[s.id]=s.len; });
   indexPaths(); GRAPH=null; EDGE_SEGS=null; PLAN_CACHE={}; DAYM={};
 }
 
 /* =====================================================================
    STATE + PERSISTENCE (localStorage = fast snapshot, IndexedDB = mirror + GPS track log)
    ===================================================================== */
-function DEF(){ return {claimed:{}, meters:0, badges:{}, fogOn:false, started:Date.now(),
+function DEF(){ return {claimed:{}, cover:{}, meters:0, badges:{}, fogOn:false, started:Date.now(),
   pending:{claims:{},badges:{},week:false,streak:false},
   streak:{count:0,best:0,last:null,freezes:0}, week:{id:null,visits:{}}, day:{id:null,seen:{},newSegs:0},
   quest:null, scenic:{done:[],knowWay:null}}; }
 function normalize(){
   const d=DEF();
-  ['claimed','badges'].forEach(k=>{ if(!S[k]) S[k]={}; });
+  ['claimed','badges','cover'].forEach(k=>{ if(!S[k]) S[k]={}; });
   if(!S.pending||!S.pending.claims) S.pending=d.pending;
   if(!S.pending.badges) S.pending.badges={};
   if(!S.streak) S.streak=d.streak;
@@ -395,17 +398,32 @@ map.on('dragstart',()=>{ follow=false; $('fabFollow').classList.remove('on'); })
    POSITION PIPELINE — every GPS fix flows through onFix
    ===================================================================== */
 let last=null; // last accepted fix {ll,t}
-function claimAlong(points){
+let onStretch=null; // stretch you were last matched to (keeps side-by-side lines from flickering)
+// Each point is matched to the one walkway you're on (see track-core.js). A piece you walk is "covered";
+// once most of its stretch is covered, the whole stretch is claimed.
+function claimAlong(points,heading,canClaim){
   const fresh=[]; let visited=0;
   for(const pt of points){
-    const xy=toXY(pt[0],pt[1]);
+    const xy=toXY(pt[0],pt[1]), cands=[];
     for(let i=0;i<SEGS.length;i++){
       const s=SEGS[i];
       if(Math.abs(xy[0]-s.cx)>s.rr||Math.abs(xy[1]-s.cy)>s.rr) continue;
-      if(distToSeg(xy,s)>CLAIM_M) continue;
-      if(!S.week.visits[s.id]){ S.week.visits[s.id]=1; S.pending.week=true; visited++; }
-      if(!S.day.seen[s.id]){ S.day.seen[s.id]=1; visited++; }
-      if(!S.claimed[s.id]){ S.claimed[s.id]=Date.now(); S.pending.claims[s.id]=S.claimed[s.id]; S.day.newSegs++; fresh.push(s); }
+      const d=distToSeg(xy,s); if(d>CLAIM_M) continue;
+      cands.push({id:s.id,d,brg:s.brg,stretch:s.stretch});
+    }
+    const ids=RoamTrack.pick(cands,heading,onStretch);
+    for(const id of ids){
+      const s=SEG_BY_ID[id]; onStretch=s.stretch;
+      if(!S.week.visits[id]){ S.week.visits[id]=1; S.pending.week=true; visited++; }
+      if(!S.day.seen[id]){ S.day.seen[id]=1; visited++; }
+      if(!canClaim||S.claimed[id]) continue;
+      S.cover[id]=1;
+      const st=STRETCH.list[s.stretch];
+      if(st&&RoamTrack.ready(st,S.cover,SEG_LEN)){
+        const now=Date.now();
+        st.ids.forEach(sid=>{ delete S.cover[sid]; if(S.claimed[sid]) return;
+          S.claimed[sid]=now; S.pending.claims[sid]=now; S.day.newSegs++; fresh.push(SEG_BY_ID[sid]); });
+      }
     }
   }
   return {fresh, visited};
@@ -445,7 +463,7 @@ function onFix(lat,lng,acc,src){
   if(src==='gps') setStatus(good?'ok':'warn', good?('Tracking · ±'+Math.round(acc)+' m'):('Weak GPS · ±'+Math.round(acc)+' m — waiting'));
   if(good){
     rollDates();
-    const now=Date.now(), here=[lat,lng]; let pts=[here], moved=false;
+    const now=Date.now(), here=[lat,lng]; let pts=[here], moved=false, heading=null;
     if(!last){ last={ll:here,t:now}; logTrack(lat,lng,acc,src); recPoint(lat,lng); }
     else{
       const d=distM(last.ll,here), dt=(now-last.t)/1000;
@@ -455,11 +473,12 @@ function onFix(lat,lng,acc,src){
           S.meters+=d; if(S.rec){ S.rec.meters+=d; if(d/Math.max(dt,0.5)>=0.3) S.rec.moving=(S.rec.moving||0)+Math.min(dt,30); } moved=true;
           const n=Math.min(40,Math.floor(d/6)); // fill the gap between fixes so nothing is skipped
           for(let k=1;k<n;k++) pts.push([last.ll[0]+(lat-last.ll[0])*k/n, last.ll[1]+(lng-last.ll[1])*k/n]);
+          const p0=toXY(last.ll[0],last.ll[1]), p1=toXY(lat,lng); heading=RoamTrack.bearing(p0[0],p0[1],p1[0],p1[1]);
         }
         last={ll:here,t:now}; logTrack(lat,lng,acc,src); recPoint(lat,lng);
       }
     }
-    const r=claimAlong(pts), fresh=r.fresh; if(S.rec)S.rec.newSegments+=fresh.length;
+    const r=claimAlong(pts,heading,acc<=CLAIM_ACC_M), fresh=r.fresh; if(S.rec)S.rec.newSegments+=fresh.length;
     const streakUp=updateStreak();
     if(fresh.length){ fresh.forEach(markClaimed); onFreshClaims(fresh); buzz(30); }
     else renderRecBar();
@@ -472,34 +491,50 @@ function onFix(lat,lng,acc,src){
    REAL GPS — navigator.geolocation.watchPosition
    ===================================================================== */
 let watchId=null, wakeLock=null;
-const GEO_OPTS={enableHighAccuracy:true, maximumAge:1000, timeout:10000};
+const GEO_OPTS={enableHighAccuracy:true, maximumAge:0, timeout:15000};
+const smooth=RoamTrack.smoother();
+let awayAt=0;   // when the page went to the background during a walk
+function watchGPS(){
+  watchId=navigator.geolocation.watchPosition(
+    p=>{ const raw=p.coords.accuracy||999;
+      if(raw>ACC_MAX_M*3){ onFix(p.coords.latitude,p.coords.longitude,raw,'gps'); return; }   // too rough to smooth with
+      const f=smooth.update(p.coords.latitude,p.coords.longitude,raw,p.timestamp||Date.now());
+      onFix(f.lat,f.lng,raw,'gps'); },
+    err=>{
+      if(err.code===1){ stopGPS(); gpsProblem('Location permission was denied.','To use real GPS, allow location for this site (iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using; then reload). On Android: tap the lock icon by the address → Permissions → Location → Allow.'); }
+      else if(err.code===2) setStatus('bad','GPS unavailable — still trying');
+      else setStatus('warn','GPS timeout — still trying');
+    }, GEO_OPTS);
+}
 function startGPS(){
   if(!('geolocation' in navigator)) return gpsProblem('This browser has no location support.','Try Safari on iPhone or Chrome on Android.');
   if(!window.isSecureContext) return gpsProblem('GPS needs a secure (https) page.','Open this app from its https:// address.');
   if(watchId!==null)return;
   if(!S.rec) S.rec={at:Date.now(),meters:0,newSegments:0,moving:0,newPaths:0,pts:[],seen:{}}; saveNow(); go('explore');
   setStatus('warn','Finding GPS…');
-  watchId=navigator.geolocation.watchPosition(
-    p=>onFix(p.coords.latitude,p.coords.longitude,p.coords.accuracy||999,'gps'),
-    err=>{
-      if(err.code===1){ stopGPS(); gpsProblem('Location permission was denied.','To use real GPS, allow location for this site (iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using; then reload). On Android: tap the lock icon by the address → Permissions → Location → Allow.'); }
-      else if(err.code===2) setStatus('bad','GPS unavailable — still trying');
-      else setStatus('warn','GPS timeout — still trying');
-    }, GEO_OPTS);
+  last=null; onStretch=null; smooth.reset(); watchGPS();
   follow=true; $('fabFollow').classList.add('on');
   lockScreen(); setTrackUI(true);
 }
 function stopGPS(){
   if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
   if(wakeLock){ try{wakeLock.release();}catch(e){} wakeLock=null; }
-  last=null; setTrackUI(false); setStatus('', 'GPS off'); finishRecording(); saveNow();
+  last=null; onStretch=null; setTrackUI(false); setStatus('', 'GPS off'); finishRecording(); saveNow();
 }
 function lockScreen(){ // keep the screen awake so the browser keeps delivering GPS fixes
   if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w=>{wakeLock=w;}).catch(()=>{});
 }
+// Phone browsers stop GPS for a page in the background (another tab, another app, screen off).
+// Nothing a web page can do changes that, so when you come back the walk picks up where it left off:
+// the watch is restarted (some browsers quietly drop it) and the gap is not filled in.
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'){ saveNow(); flush(); }
-  else if(watchId!==null){ last=null; lockScreen(); }
+  if(document.visibilityState==='hidden'){ if(watchId!==null){ awayAt=Date.now(); if(S.rec) S.rec.lastAt=awayAt; } saveNow(); flush(); }
+  else if(watchId!==null){
+    try{ navigator.geolocation.clearWatch(watchId); }catch(e){}
+    last=null; onStretch=null; smooth.reset(); watchGPS(); lockScreen();
+    if(awayAt&&Date.now()-awayAt>15000) toast('Welcome back — still recording. GPS pauses while BuffPrints isn’t on screen.');
+    awayAt=0;
+  }
 });
 window.addEventListener('pagehide',saveNow);
 function gpsProblem(title,body){
@@ -837,6 +872,30 @@ try{ const m=sessionStorage.getItem('rr-erased'); if(m){ sessionStorage.removeIt
    distance total, badges, and hazard pins the student chooses to file.
    ===================================================================== */
 const CFG = window.RR_CONFIG || {};
+// Herd and Seek opens in a full-screen panel over the app instead of a new page, so a walk you're
+// recording keeps tracking while you play (leaving the page would stop the GPS).
+let herdSheet=null;
+function openHerd(href){
+  if(herdSheet) return;
+  herdSheet=document.createElement('div'); herdSheet.id='herdSheet';
+  herdSheet.innerHTML='<iframe title="Herd and Seek" allow="geolocation; camera; clipboard-write; web-share"></iframe>';
+  herdSheet.firstChild.src=href||'herd.html';
+  document.body.appendChild(herdSheet); document.body.classList.add('herd-open');
+  try{ history.pushState({herd:1},''); }catch(e){}
+}
+function closeHerd(fromPop){
+  if(!herdSheet) return;
+  herdSheet.remove(); herdSheet=null; document.body.classList.remove('herd-open');
+  if(!fromPop&&history.state&&history.state.herd){ try{ history.back(); }catch(e){} }
+  render();
+}
+window.BP_TRACKING=()=>watchId!==null;
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('a[href^="herd.html"]'); if(!a||e.metaKey||e.ctrlKey) return;
+  e.preventDefault(); openHerd(a.getAttribute('href'));
+});
+window.addEventListener('message',e=>{ if(e.origin===location.origin&&e.data&&e.data.bp==='close-herd') closeHerd(); });
+window.addEventListener('popstate',()=>{ if(herdSheet) closeHerd(true); });
 // Herd and Seek links on Home and Community. Off until the demo route is walked; herd.html still opens by direct link.
 const HERD_PUBLIC = CFG.findTheHerdLinks === true;
 const cloud = {sb:null, user:null, syncing:false, lastSync:0, err:'', step:'email', email:'', board:'week', hazards:[],
@@ -1767,7 +1826,7 @@ function renderRecBar(){
   else { g.textContent='GPS ±'+Math.round(pos.acc)+' m'; g.className='gps'+(pos.acc>ACC_MAX_M?' weak':''); }
 }
 function recPoint(lat,lng){
-  if(!S.rec) return; const pts=S.rec.pts||(S.rec.pts=[]);
+  if(!S.rec) return; S.rec.lastAt=Date.now(); const pts=S.rec.pts||(S.rec.pts=[]);
   pts.push([Math.round(lat*1e6)/1e6, Math.round(lng*1e6)/1e6]); if(pts.length>5000) pts.shift();
 }
 function pathVisitAt(pid){   // when this path first counted as visited (same rule as the goals), or null
@@ -2593,7 +2652,10 @@ if(LINK_RE.test(LINK_IN)) handleLink(LINK_IN);
 window.addEventListener('hashchange',()=>{ const h=location.hash||''; if(!LINK_RE.test(h)) return;
   try{ history.replaceState(null,'',location.pathname+'#home'); }catch(e){} go('home'); handleLink(h); });
 drawNameLabels(); drawZoneLabels(); drawHoofs();
-if(S.rec&&S.rec.at){
+const RESUME_MS=2*60*60*1000;   // a walk interrupted by a reload or tab switch resumes on its own within this window
+if(S.rec&&S.rec.at&&S.privacyAck&&Date.now()-(S.rec.lastAt||S.rec.at)<RESUME_MS){
+  startGPS(); setTimeout(()=>toast('Walk resumed — GPS pauses while BuffPrints isn’t on screen'),600);
+} else if(S.rec&&S.rec.at){
   modal('Unfinished walk','<p>You started a walk on '+esc(dayLabel(new Date(S.rec.at).toISOString(),true))+' that wasn’t finished. Recording stops when the app closes.</p>',
     [['Resume recording','pri',()=>startGPS()],['Finish it now','',()=>finishRecording()],['Discard it','danger',()=>{ S.rec=null; saveNow(); }]]);
 } loadNames(); setInterval(()=>{ if(document.visibilityState==='visible') loadNames(); }, 5*60*1000);

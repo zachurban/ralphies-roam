@@ -411,7 +411,7 @@ async function openScanner(ctx){
     scan.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     const v=$('scanVideo'); if(!v){ stopScan(); return; }
     v.srcObject=scan.stream; await v.play();
-    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=32');
+    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=33');
     say('Point the camera at the QR code on your teammate’s screen.');
     const canvas=document.createElement('canvas'), g=canvas.getContext('2d',{willReadFrequently:true}); let last=0;
     const loop=ts=>{
@@ -841,4 +841,18 @@ setInterval(()=>{ const s=A.session; if(document.hidden||!s||!s.state||!s.state.
   go('lobby');
 })();
 if('serviceWorker' in navigator&&location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+
+/* Opened from inside BuffPrints (a panel over the app), so a walk being recorded keeps tracking.
+   The back link closes the panel instead of loading the app again. */
+(function(){
+  let embedded=false; try{ embedded=window.parent!==window&&window.parent.location.origin===location.origin; }catch(e){}
+  if(!embedded) return;
+  document.body.classList.add('in-app');
+  const back=document.querySelector('.htop .back');
+  if(back){ back.textContent='‹ BuffPrints'; back.addEventListener('click',e=>{ e.preventDefault(); window.parent.postMessage({bp:'close-herd'},location.origin); }); }
+  try{ if(window.parent.BP_TRACKING&&window.parent.BP_TRACKING()){
+    const t=document.createElement('span'); t.className='rec-on'; t.textContent='● Walk recording';
+    t.setAttribute('aria-label','Your walk is still recording'); back&&back.parentNode.insertBefore(t,back);
+  } }catch(e){}
 })();
