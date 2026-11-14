@@ -387,3 +387,7 @@ body.rec #sheetBody{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec
 a.chip{text-decoration:none}
 .ic-lead.ok{background:#E6F0E8;color:#2E6B3F}
 .ic-lead.no{background:var(--warn-soft);color:var(--warn)}
+
+/* Herd and Seek panel over the app (keeps a recorded walk tracking) */
+#herdSheet{position:fixed;inset:0;z-index:2500;background:#1D2122}
+#herdSheet iframe{border:0;width:100%;height:100%;display:block}

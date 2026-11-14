@@ -1,11 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v32';
+const VERSION = 'rr-v33';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=32', 'splash.css?v=32', 'splash.js?v=32', 'student-core.js?v=32', 'username-core.js?v=32', 'schedule-core.js?v=32', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=33', 'splash.css?v=33', 'splash.js?v=33', 'student-core.js?v=33', 'track-core.js?v=33', 'username-core.js?v=33', 'schedule-core.js?v=33', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
   // Herd and Seek
-  'herd.html', 'herd.css?v=32', 'herd-core.js?v=32', 'herd-editions.js?v=32', 'herd-app.js?v=32', 'vendor/qrcode.min.js?v=32', 'vendor/jsqr.min.js?v=32',
+  'herd.html', 'herd.css?v=33', 'herd-core.js?v=33', 'herd-editions.js?v=33', 'herd-app.js?v=33', 'vendor/qrcode.min.js?v=33', 'vendor/jsqr.min.js?v=33',
   'public/icon-192.png', 'public/icon-512.png', 'public/icon-192-maskable.png', 'public/icon-512-maskable.png', 'public/apple-touch-icon.png', 'public/hoofprint-logo.svg',
   'public/icon.svg', 'public/favicon.ico', 'public/favicon-32x32.png', 'public/favicon-16x16.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
