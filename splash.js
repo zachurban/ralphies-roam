@@ -3,7 +3,7 @@
      * Returning users (localStorage buffprints_onboarded_v1 === 'true'): a 1.1 s overlay that
        never blocks taps (pointer-events: none) and removes itself.
      * First-time users, or the "?" button in the header: the full welcome screen.
-       "Start Exploring" saves buffprints_onboarded_v1 = 'true'.
+       "Start Roaming" saves buffprints_onboarded_v1 = 'true'.
    No network calls, nothing sent anywhere. */
 (function(){
 'use strict';
@@ -14,6 +14,7 @@ function standalone(){ try{ return window.matchMedia('(display-mode: standalone)
 function reduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
 var ico=function(d){ return '<svg class="bp-ico" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>'; };
 var I={
+  walk:ico('<path d="M4 19c3-1 3-5 6-6s3-5 6-6 3-2 4-3"/><circle cx="4" cy="19" r="1.6"/><circle cx="20" cy="4" r="1.6"/>'),
   cal:ico('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
   hunt:ico('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4M11 8v6M8 11h6"/>'),
   meet:ico('<circle cx="8.5" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.5"/><path d="M3 19c.6-3 2.8-4.6 5.5-4.6S13.4 16 14 19M14.5 15.2c.7-.5 1.3-.7 2-.7 2.2 0 3.7 1.4 4.3 4.5"/>'),
@@ -23,11 +24,11 @@ var I={
   x:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>'
 };
 var FEATURES=[
-  [I.cal,'Class Schedule','Import your Buff Portal calendar for daily class walks and scenic detours down new paths.'],
-  [I.hunt,'Herd and Seek','A 5-checkpoint outdoor scavenger hunt with puzzles. Play solo or in teams.'],
-  [I.meet,'Meet-Ups','Share free times with friends and plan when and where to meet.'],
-  [I.safe,'Campus Safety','Pin hazards like ice or broken lights, and draft requests to get them fixed.'],
-  [I.comm,'Community','Pick a moderated nickname, name paths you’ve walked, and climb weekly leaderboards.']
+  [I.walk,'Walk the Map','Record walks to clear the fog off campus, earn badges and keep a streak.'],
+  [I.cal,'Class Schedule','Import your Buff Portal calendar for class walks and scenic detours.'],
+  [I.meet,'Meet-Ups','Share free times with friends and pick a place to meet.'],
+  [I.safe,'Campus Safety','Pin hazards like ice or broken lights and ask for a fix.'],
+  [I.comm,'Herd','Weekly standings for herds, dorms and teams.']
 ];
 
 function boot(){
@@ -65,15 +66,15 @@ function welcome(){
     '<button class="x" type="button" data-bp="close" aria-label="Close">'+I.x+'</button>'+
     '<div class="scroll"><div class="wrap">'+
       '<header class="bp-hero"><img src="'+LOGO+'" alt="" width="64" height="64"><h1 id="bpTitle">BuffPrints</h1>'+
-        '<p class="tag">Explore campus. Leave your mark.</p><p class="sub">A free walking game for the CU Boulder campus.</p></header>'+
+        '<p class="tag">Explore campus. Leave your mark.</p><p class="sub">Free scavenger hunts and walks on the CU Boulder campus.</p></header>'+
       '<section class="bp-card" aria-labelledby="bpHow"><h2 id="bpHow">How it works</h2>'+
-        '<p>Tap <b>Record</b> and walk. Clear the fog off the campus satellite map as you cover paths, earn badges, keep streaks, and score weekly zone points for your dorm or team.</p></section>'+
-      '<h2 class="bp-label" id="bpMore">Beyond walking</h2>'+
+        '<p>Pick a <b>roam</b>: five stops, five puzzles, about 40 minutes outdoors. Go solo or bring a herd of friends.</p></section>'+
+      '<h2 class="bp-label" id="bpMore">Also inside</h2>'+
       '<ul class="bp-grid" aria-labelledby="bpMore">'+FEATURES.map(function(f){ return '<li><b>'+f[0]+f[1]+'</b>'+f[2]+'</li>'; }).join('')+'</ul>'+
       '<div class="bp-privacy">'+I.shield+'<div><b>Privacy built in.</b> Your GPS track and exact location stay on your phone. Signing in is optional; it saves your progress (which paths you’ve covered, totals and badges), never your GPS route. <a href="#" data-bp="privacy">Your data &amp; privacy</a></div></div>'+
       (standalone()?'':'<p class="bp-install"><b>Tip:</b> Add BuffPrints to your phone’s Home Screen for the full app experience.</p>')+
     '</div></div>'+
-    '<div class="bp-foot"><div class="wrap"><button class="bp-cta" type="button" data-bp="start">Start Exploring</button>'+
+    '<div class="bp-foot"><div class="wrap"><button class="bp-cta" type="button" data-bp="start">Start Roaming</button>'+
       '<small>Independent student/community project — not an official CU Boulder app.</small></div></div>';
   el.addEventListener('click',function(e){
     var b=e.target.closest('[data-bp]'); if(!b) return; e.preventDefault();

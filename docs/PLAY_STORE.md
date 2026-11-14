@@ -46,28 +46,29 @@ New personal accounts need **12 testers opted in for 14 days in a row** on the c
 
 ## Store listing (drafts)
 
-**App name** (30): `BuffPrints: Campus Walks`
+**App name** (30): `BuffPrints: Campus Roams`
 
-**Short description** (80): `Walk CU Boulder, claim paths, clear the fog, and play Herd and Seek with friends.`
+**Short description** (80): `Campus scavenger hunts for CU Boulder. Roam solo or with friends, clear the map.`
 
 **Full description:**
 
-> BuffPrints turns the walk between classes into a game. Record a walk, and every stretch of campus sidewalk and walkway you cover turns gold on the map. The fog of war clears as you explore.
+> BuffPrints turns the CU Boulder campus into a scavenger hunt. Pick a roam: five outdoor stops, five puzzles, about 40 minutes. Go solo or invite a herd of friends and solve it together.
 >
+> • Roams: check in at each stop, crack the puzzle, and climb the weekly herd and dorm standings
+> • Walk the map: record a walk and every sidewalk you cover turns gold as the fog clears
 > • Claim paths across Norlin Quad, Farrand Field, Engineering, Kittredge, Williams Village, East Campus and the Boulder Creek Path
 > • Keep a streak, earn badges and finish whole zones
 > • Name a path you've walked, and see what other students called theirs
-> • Herd and Seek: a five-checkpoint campus scavenger hunt to play solo or with friends
 > • Import your class schedule to see your daily walking commute and scenic routes between classes
 > • Flag hazards like broken lights or ice so other walkers know
 >
-> Privacy built in: your location is used only while you record, and your route never leaves your phone. Sign-in is optional, and you can export or delete your data anytime.
+> Privacy built in: your location is used only while you roam or record, and it never leaves your phone. Sign-in is optional, and you can export or delete your data anytime.
 >
 > BuffPrints is an independent student project. It is not an official University of Colorado Boulder app.
 
-**Category:** Health & Fitness (alternative: Travel & Local). **Contact email:** the forwarding address. **Privacy policy:** `https://buffprints.app/privacy.html`.
+**Category:** Travel & Local (alternative: Health & Fitness). **Contact email:** the forwarding address. **Privacy policy:** `https://buffprints.app/privacy.html`.
 
-**Graphics:** icon `docs/play/app-icon-512.png`; feature graphic `docs/play/feature-graphic.png`; **phone screenshots: take 4–6 real ones on campus** (Explore map with gold paths, a finished walk, Progress, Herd and Seek, Class Schedule). Real satellite map screenshots sell it far better than mockups.
+**Graphics:** icon `docs/play/app-icon-512.png`; feature graphic `docs/play/feature-graphic.png`; **phone screenshots: take 4–6 real ones on campus** (the Roam home screen, a roam in progress, a finished roam, the Map with gold paths, Herd standings, You). Real satellite map screenshots sell it far better than mockups.
 
 ## Data safety (based on PRIVACY.md — double-check before submitting)
 
@@ -75,14 +76,14 @@ New personal accounts need **12 testers opted in for 14 days in a row** on the c
 - **Location → Approximate location:** collected, *optional*, for *app functionality*. GPS points never leave the phone, but for signed-in users the walkway sections they've claimed (and hazard pins they post) are stored, and those show roughly where they've been. Declaring this is the honest, safer call.
 - **Personal info → Email address:** collected, optional (sign-in), for *account management*.
 - **Personal info → User IDs:** the public nickname, optional, *app functionality*.
-- **App activity → Other user-generated content:** hazard pins, votes, path names, nickname reports. **App activity → Other actions:** badges, streaks, distance, weekly zone totals, Herd and Seek check-ins ("inside: yes" only).
+- **App activity → Other user-generated content:** hazard pins, votes, path names, nickname reports. **App activity → Other actions:** badges, streaks, distance, weekly zone totals, roam check-ins ("inside: yes" only).
 - Not collected: precise location (on-device only), contacts, photos, files, payments, health, device IDs, ads data.
 
 ## Other forms
 
-- **Ads:** none. **In-app purchases:** none. (Herd and Seek rewards are demo tokens with no purchase value.)
+- **Ads:** none. **In-app purchases:** none. (Roam rewards are demo tokens with no purchase value.)
 - **Target audience:** 18 and over is simplest. Choosing under 18 brings extra policy requirements.
 - **Content rating:** no violence, sexual content, gambling or drugs. *Users can interact*: **yes** (public nicknames, path names, hazard notes, herd chat-style sharing) — mention moderation and reporting.
 - **App access:** "All or some functionality is restricted" → explain that everything works without signing in except Competition Mode and saving progress, which use an emailed sign-in code. No test account needed.
-- **Location permission:** the app uses foreground location only, while recording. It doesn't request background location, so no background-location declaration. If the Console asks for a precise-location declaration, answer: *GPS tracks which campus walkways the user walks during an active recording; approximate location can't tell adjacent walkways apart.*
+- **Location permission:** the app uses foreground location only, while recording a walk or while a roam is open. It doesn't request background location, so no background-location declaration. If the Console asks for a precise-location declaration, answer: *GPS checks the user in at scavenger-hunt stops (about 30 m across) and tracks which campus walkways they walk during an active recording; approximate location can't do either.*
 - **Trademarks:** the store reviews names and imagery. "Buffs" and Ralphie are CU marks. Keep the "not an official CU Boulder app" line, use no CU logos, and consider asking CU Licensing for a written OK.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>BuffPrints · Herd and Seek admin</title>
+<title>BuffPrints · Roam admin</title>
 <link rel="icon" href="public/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="public/icon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32x32.png">
@@ -39,12 +39,12 @@
 </style>
 </head>
 <body>
-<header><span><b>BuffPrints</b> · Herd and Seek admin</span><a href="herd.html">Back to Herd and Seek</a></header>
+<header><span><b>BuffPrints</b> · Roam admin</span><a href="herd.html">Back to Roams</a></header>
 <main>
   <div id="msg" role="status" aria-live="polite"></div>
   <div id="gate" class="card">Checking access…</div>
   <div id="ui" class="hidden">
-    <p class="small muted">Private to hunt administrators (the <code>admin_allowlist</code> table). Publishing never changes a run that is already under way: each run stays on the version it started with.</p>
+    <p class="small muted">Private to roam administrators (the <code>admin_allowlist</code> table). Publishing never changes a run that is already under way: each run stays on the version it started with.</p>
     <h2>Funnel (anonymous totals)</h2>
     <div class="card scroll"><div id="metrics"></div><p class="small muted">Each number is a counter that only goes up. Nothing records who, or when. Demo Practice is not counted.</p></div>
     <h2>Checkpoints</h2>
@@ -136,9 +136,9 @@ $('newGo').addEventListener('click',async()=>{ const id=$('newId').value.trim();
 (async function(){
   $('newDoc').value=JSON.stringify(TEMPLATE,null,2);
   const {data}=await sb.auth.getSession();
-  if(!data||!data.session){ $('gate').textContent='Sign in to BuffPrints first (Herd and Seek → Competition), then reload this page.'; return; }
+  if(!data||!data.session){ $('gate').textContent='Sign in to BuffPrints first (Roam → Competition), then reload this page.'; return; }
   let ok=false; try{ ok=(await sb.rpc('hunt_am_i_admin')).data===true; }catch(e){}
-  if(!ok){ $('gate').textContent='This account isn’t a hunt administrator. Access is granted by adding a confirmed email address to the admin_allowlist table.'; return; }
+  if(!ok){ $('gate').textContent='This account isn’t a roam administrator. Access is granted by adding a confirmed email address to the admin_allowlist table.'; return; }
   $('gate').classList.add('hidden'); $('ui').classList.remove('hidden');
   try{ await load(); }catch(e){}
 })();

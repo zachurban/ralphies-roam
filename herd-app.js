@@ -1,12 +1,14 @@
-/* BuffPrints — Herd and Seek: the player screens (herd.html).
+/* BuffPrints — Roam (the campus scavenger hunt): the player screens (herd.html).
    The rules live in herd-core.js (shared with the tests). This file is screens, the relay
    connection, the camera, and the one place GPS is read.
 
    Three promises this file has to keep:
      1. The herd key arrives in the link's #fragment, is read once, and is removed from the
         address bar. It is never put in a request. Everything teammates share is sealed with it.
-     2. GPS readings stay inside locate(): they are compared with the checkpoint on this phone
-        and thrown away. Only "inside: yes" ever leaves that function.
+     2. GPS readings never leave this phone and are never stored. locate() compares a reading
+        with the checkpoint and reports only "inside: yes". While a roam is on screen, the last
+        reading is also held in memory (A.live) to draw your dot and the distance to the next stop.
+        The map does not follow you, so the map-image provider only ever sees the route's area.
      3. Friends Mode and Demo Practice call nothing that writes a row about anyone. */
 (function(){
 'use strict';
@@ -40,7 +42,7 @@ const me={user:null, who:null};
 /* ---------- app state ---------- */
 const A={view:'loading', editions:[], serverOk:false, pick:null, mode:null, session:null, raw:null, relay:null, link:'off',
          comp:null, token:null, open:0, gps:{}, busy:{}, msg:{}, joinWait:0, standings:null, stEd:null, wallet:null,
-         signin:{step:'email', email:'', msg:''}, celebrated:false, form:{}};
+         signin:{step:'email', email:'', msg:''}, celebrated:false, form:{}, live:null};
 
 /* ---------- small UI kit (same shapes as the main app) ---------- */
 function toast(msg){
@@ -192,7 +194,7 @@ function gpsHTML(g,cp,canVouch,practice){
   if(g.state==='near'){ t='Almost — your GPS isn’t sure yet'; b='You look about '+f.distance+' m from the checkpoint, but your phone is only accurate to ±'+f.accuracy+' m right now. Step into the open, give it a few seconds, and try again.'; }
   else if(g.state==='outside'){ t='You’re not at this checkpoint yet'; b='It’s about '+(f.distance>=1000?(f.distance/1000).toFixed(1)+' km':f.distance+' m')+' to the '+f.toward+'. Try again when you get to '+esc(cp.name)+'.'; }
   else if(g.state==='weak'){ t='Your phone can’t pin down where you are'; b='The best it could do was ±'+(f.accuracy==null?'?':f.accuracy)+' m, which isn’t enough to tell. Move away from tall buildings and trees, wait a few seconds, and try again.'; }
-  else if(g.state==='denied'){ t='Location is turned off for this site'; b='Herd and Seek reads your location only when you tap Check in, compares it with the checkpoint on this phone, and never sends it anywhere. To allow it, turn on Location for this site in your browser or phone settings, then try again.'; }
+  else if(g.state==='denied'){ t='Location is turned off for this site'; b='Roam reads your location only while a roam is open, to check you in and show how far the next stop is. It’s worked out on this phone. Tap Check in, compares it with the checkpoint on this phone, and never sends it anywhere. To allow it, turn on Location for this site in your browser or phone settings, then try again.'; }
   else if(g.state==='timeout'||g.state==='unavailable'){ t='No GPS signal yet'; b='Your phone didn’t report a location in time. Make sure Location is on, step outside, and try again.'; }
   else if(g.state==='insecure'||g.state==='unsupported'){ t='This browser can’t share location here'; b='Open BuffPrints from its https:// address in Safari or Chrome.'; }
   return '<div class="statusbox warn" role="status"><b>'+t+'</b>'+b+alt+'</div>';
@@ -239,7 +241,8 @@ function afterChange(){
       if(status==='crediting'&&me.user&&!A.busy['credit'+cp]) credit(cp,st.puzzles[cp].answer);   // herd solved it and I'm there: save my attendance
       if(status==='done') bump('checkpoint_'+cp+'_completions');
     }
-    if(H.finished(st,s.self)) bump('completions');
+    if(H.finished(st,s.self)){ bump('completions');
+      if(st.mode!=='practice') try{ const a=JSON.parse(localStorage.getItem('bp-roams-done')||'[]'); if(a.indexOf(st.editionId)<0){ a.push(st.editionId); localStorage.setItem('bp-roams-done',JSON.stringify(a)); } }catch(e){} }
   }
   if(!drawQueued){ drawQueued=true; requestAnimationFrame(()=>{ drawQueued=false; render(); }); }
 }
@@ -331,8 +334,10 @@ function cpOf(no){ return A.session.state.edition.checkpoints[no-1]; }
 async function checkInHere(no){
   const s=A.session, cp=cpOf(no); if(A.busy['gps'+no]) return;
   A.busy['gps'+no]=true; A.gps[no]={state:'checking'}; render();
+  liveStop(true); A.locating=true;   // one reader at a time: the check-in takes its own fresh reading
   const r=await locate(cp,g=>{ if(A.gps[no]&&A.gps[no].state==='checking'){ A.gps[no].fence=g; render(); } });
-  A.busy['gps'+no]=false;
+  A.busy['gps'+no]=false; A.locating=false;
+  if(!r.error) liveStart();
   if(r.fence&&r.fence.inside){ A.gps[no]=null; await arrived(no,'gps'); }
   else{ A.gps[no]={state:r.error||r.fence.state, fence:r.fence}; render(); }
 }
@@ -379,7 +384,7 @@ function showInvite(){
   modal('Invite teammates',(locked?'<p class="msg warn">Your roster is locked for scoring because you’ve completed a checkpoint. New players can’t join this competitive run.</p>':'')+
     '<p>Have a teammate scan this with their phone camera. Share it in person: anyone with this code can join your herd and see what you share.</p>'+qrSvg(url)+
     '<label class="f" for="invUrl">Or send the link</label><input class="field" id="invUrl" readonly value="'+esc(url)+'">',
-    [['Copy link','pri',()=>copyText(url),null,'stay']].concat(navigator.share?[['Share…','',()=>{ navigator.share({title:'Herd and Seek',text:'Join my herd on BuffPrints',url}).catch(()=>{}); },null,'stay']]:[]).concat([['Done','',()=>{}]]));
+    [['Copy link','pri',()=>copyText(url),null,'stay']].concat(navigator.share?[['Share…','',()=>{ navigator.share({title:'BuffPrints Roam',text:'Join my herd on BuffPrints',url}).catch(()=>{}); },null,'stay']]:[]).concat([['Done','',()=>{}]]));
 }
 async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('Link copied'); }catch(e){ const i=$('invUrl'); if(i){ i.focus(); i.select(); toast('Select and copy the link'); } } }
 function showCode(no){
@@ -411,7 +416,7 @@ async function openScanner(ctx){
     scan.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     const v=$('scanVideo'); if(!v){ stopScan(); return; }
     v.srcObject=scan.stream; await v.play();
-    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=33');
+    if(!window.jsQR) await loadScript('vendor/jsqr.min.js?v=34');
     say('Point the camera at the QR code on your teammate’s screen.');
     const canvas=document.createElement('canvas'), g=canvas.getContext('2d',{willReadFrequently:true}); let last=0;
     const loop=ts=>{
@@ -442,7 +447,7 @@ async function handleScan(text){
     const v=await H.verifyPresence(s.keys,kind==='digits'?digits:text,Date.now(),{self:s.self,cp:ctx.cp||undefined,peers});
     if(!v.ok){
       say({stale:'That code has expired. Ask them to hold up the live code and scan again.',self:'That’s your own code.',other_checkpoint:'That code is for a different checkpoint.',
-           wrong:kind==='digits'?'Those digits don’t match a teammate who’s checked in here. Codes change every few seconds — try the current one.':'That code isn’t from your herd.'}[v.reason]||'That isn’t a Herd and Seek code.');
+           wrong:kind==='digits'?'Those digits don’t match a teammate who’s checked in here. Codes change every few seconds — try the current one.':'That code isn’t from your herd.'}[v.reason]||'That isn’t a BuffPrints roam code.');
       return false;
     }
     const peer=st.members[v.peerId];
@@ -454,7 +459,7 @@ async function handleScan(text){
     if(had) toast('Together with '+peer.nick+' at '+cpOf(v.cp).name);
     return true;
   }
-  say('That isn’t a Herd and Seek code.'); return false;
+  say('That isn’t a BuffPrints roam code.'); return false;
 }
 async function askJoin(raw){
   const s=A.session;
@@ -516,14 +521,14 @@ function eligibilityHTML(){
   const w=me.who; if(!w) return '';
   return w.cu_verified
     ?'<p class="small" style="margin:8px 0 0"><span class="pill good">✓ colorado.edu verified</span> Eligible for weekly standings and demo rewards'+(w.affiliation?', playing for <b>'+esc(w.affiliation)+'</b>.':'. Add your dorm or team in BuffPrints to play for it.')+'</p>'
-    :'<p class="small" style="margin:8px 0 0"><span class="pill">Guest</span> You can play the whole hunt. Standings and demo rewards are for verified colorado.edu addresses, so this run won’t be listed.</p>';
+    :'<p class="small" style="margin:8px 0 0"><span class="pill">Guest</span> You can play the whole roam. Standings and demo rewards are for verified colorado.edu addresses, so this run won’t be listed.</p>';
 }
 async function loadWho(){ me.who=null; if(!me.user) return; const r=await rpc('hunt_whoami'); if(!r.error) me.who=r.data; }
 
 /* ---------- screens ---------- */
 const PRIVACY_POINTS={
   herd:['Your herd sees your nickname, avatar and progress','They travel phone to phone, scrambled with a key that exists only in your invite link. Our servers pass the scrambled messages along and can’t read them.'],
-  gps:['Your location stays on this phone','When you tap Check in, the phone compares its own GPS with the checkpoint and reports only “I’m inside: yes”. Exact coordinates are never sent and never stored — not even on this phone.'],
+  gps:['Your location stays on this phone','While a roam is open, your phone uses its location to check you in and show how far the next stop is. It reports only “I’m inside: yes”. Exact coordinates are never sent and never stored — not even on this phone.'],
   friends:['Friends Mode saves nothing about you','No sign-in, no standings, no rewards. Your herd’s progress lives on your phones and nowhere else.'],
   competition:['Competition Mode saves the minimum','To your account: which checkpoints you completed and when. For your team: its name, avatar, hints used and score. Public standings show team and dorm or team names only — never who is on a team.'],
   practice:['Demo Practice is a sandbox','Check-ins are simulated on this phone. It earns no points and no rewards, and nothing is saved anywhere.'],
@@ -534,27 +539,27 @@ function privacyHTML(mode){
   return '<ul class="summary-list">'+items.map(k=>'<li><b>'+PRIVACY_POINTS[k][0]+'</b>'+PRIVACY_POINTS[k][1]+'</li>').join('')+'</ul>';
 }
 function fullPrivacy(){
-  modal('Herd and Seek and your privacy','<div class="privacy">'+['herd','gps','friends','competition','practice','counts'].map(k=>'<h4>'+PRIVACY_POINTS[k][0]+'</h4><p>'+PRIVACY_POINTS[k][1]+'</p>').join('')+
+  modal('Roams and your privacy','<div class="privacy">'+['herd','gps','friends','competition','practice','counts'].map(k=>'<h4>'+PRIVACY_POINTS[k][0]+'</h4><p>'+PRIVACY_POINTS[k][1]+'</p>').join('')+
     '<h4>Deleting it</h4><p>Leave a herd to remove it from this phone. Deleting your BuffPrints account (Progress → Privacy &amp; delete my data) also deletes every check-in, team membership and reward token.</p>'+
     '<p>The full notice is in BuffPrints under Progress → Privacy &amp; delete my data.</p></div>',[['Close','pri',()=>{}]]);
 }
 function lobbyHTML(){
-  let h='<h1 class="title" tabindex="-1">Herd and Seek</h1><p class="lead">Five outdoor checkpoints, five puzzles, about 20 to 40 minutes. Go solo or bring friends.</p>';
-  h+='<div class="label">Pick a route</div>';
+  let h='<h1 class="title" tabindex="-1">Roams</h1><p class="lead">Five stops, five puzzles, 20 to 40 minutes. Solo or with friends.</p>';
+  h+='<div class="label">Pick a roam</div>';
   h+=A.editions.length?A.editions.map(e=>{ const c=e.content; return '<button class="card" data-act="pick" data-id="'+esc(c.id)+'">'+(c.demo?'<span class="pill gold">Demo route</span> ':'')+
-      '<h3 style="margin-top:6px">'+esc(c.title)+'</h3><div class="sub">'+esc(c.theme)+' · '+esc(c.style)+'</div><p>'+esc(c.intro)+'</p></button>'; }).join('')
+      '<h3 style="margin-top:6px">'+esc(c.theme)+'</h3><div class="sub">'+esc(c.title)+' · '+esc(c.style)+'</div><p>'+esc(c.intro)+'</p></button>'; }).join('')
     :'<p class="empty">No routes are open right now. Check back soon.</p>';
   h+='<div class="label">Joining friends?</div><div class="card"><b>Join a herd</b><p>Scan the QR code on a teammate’s screen, or open the link they sent you.</p><div class="rowbtns"><button class="btn pri" data-act="scanJoin">Scan a code</button></div></div>';
   h+='<div class="label">More</div><div class="list">'+
     '<button class="row" data-act="standings"><span class="grow"><b>Weekly standings</b><small>Herds and dorms, Monday to Sunday</small></span><span class="chev" aria-hidden="true">›</span></button>'+
     '<button class="row" data-act="wallet"><span class="grow"><b>Reward wallet</b><small>Demo rewards from finished competitive runs</small></span><span class="chev" aria-hidden="true">›</span></button>'+
     '<button class="row" data-act="privacy"><span class="grow"><b>How your privacy works here</b><small>What your herd sees, and what never leaves your phone</small></span><span class="chev" aria-hidden="true">›</span></button>'+
-    (me.who&&me.who.admin?'<a class="row" href="herd-admin.html" style="text-decoration:none;color:inherit"><span class="grow"><b>Hunt admin</b><small>Routes, checkpoints and counters</small></span><span class="chev" aria-hidden="true">›</span></a>':'')+'</div>';
+    (me.who&&me.who.admin?'<a class="row" href="herd-admin.html" style="text-decoration:none;color:inherit"><span class="grow"><b>Roam admin</b><small>Routes, checkpoints and counters</small></span><span class="chev" aria-hidden="true">›</span></a>':'')+'</div>';
   return h;
 }
 function modeHTML(){
   const e=edition(); if(!e) return lobbyHTML(); const c=e.content, compOk=!!sb&&A.serverOk;
-  return '<button class="link" data-act="lobby">‹ All routes</button><h1 class="title" tabindex="-1">'+esc(c.title)+'</h1><p class="lead">'+esc(c.theme)+' · '+esc(c.style)+'</p>'+
+  return '<button class="link" data-act="lobby">‹ All roams</button><h1 class="title" tabindex="-1">'+esc(c.theme)+'</h1><p class="lead">'+esc(c.title)+' · '+esc(c.style)+'</p>'+
     '<p style="margin:0 0 6px">'+esc(c.intro)+'</p><p class="small muted" style="margin:0 0 14px">5 checkpoints · '+c.est_minutes[0]+'–'+c.est_minutes[1]+' minutes including puzzles · about '+c.walk_minutes[0]+'–'+c.walk_minutes[1]+' minutes of walking · all outdoors</p>'+
     '<div class="label">How do you want to play?</div>'+
     '<button class="card" data-act="mode" data-mode="friends"><h3>Friends</h3><div class="sub">No sign-in · nothing saved on our servers</div><p>Casual play with whoever you invite. No standings, no rewards.</p></button>'+
@@ -584,7 +589,7 @@ function setupHTML(){
 }
 function joiningHTML(){
   return '<h1 class="title" tabindex="-1">Looking for your herd…</h1><p class="lead">Your phone is asking a teammate’s phone for the herd.</p>'+
-    (A.joinSlow?'<div class="statusbox warn" role="status"><b>No teammate’s phone has answered yet</b>The herd lives on your teammates’ phones, not on a server, so at least one of them needs Herd and Seek open and online. Ask them to open it, then try again.</div><div class="rowbtns"><button class="btn pri" data-act="retryJoin">Try again</button><button class="btn" data-act="cancelJoin">Cancel</button></div>'
+    (A.joinSlow?'<div class="statusbox warn" role="status"><b>No teammate’s phone has answered yet</b>The herd lives on your teammates’ phones, not on a server, so at least one of them needs BuffPrints open on their roam and online. Ask them to open it, then try again.</div><div class="rowbtns"><button class="btn pri" data-act="retryJoin">Try again</button><button class="btn" data-act="cancelJoin">Cancel</button></div>'
                :'<p class="empty">Connecting…</p><button class="btn" data-act="cancelJoin">Cancel</button>');
 }
 function joinFormHTML(){
@@ -624,16 +629,17 @@ function cpHTML(c){
   const pts=p.solvedAt?H.puzzlePoints(p.hints):0, via=((st.members[s.self].prox||{})[no]||{}).via;
   const pill={todo:'',unlocked:'<span class="pill gold">Puzzle open</span>',here:'<span class="pill dark">You’re here</span>',solved:'<span class="pill gold">Solved · check in</span>',
               crediting:'<span class="pill">Saving…</span>',done:'<span class="pill good">Done'+(practice?'':' · '+pts)+'</span>'}[status];
-  let h='<section class="cp '+status+'" aria-label="Checkpoint '+no+': '+esc(c.name)+'"><button class="hd" data-act="open" data-no="'+no+'" aria-expanded="'+open+'"><span class="num" aria-hidden="true">'+(status==='done'?'✓':no)+'</span><span class="grow"><b>'+esc(c.name)+'</b><small>'+esc(c.spot)+'</small></span>'+pill+'</button>';
+  let h='<section class="cp '+status+(open?' open':'')+'" aria-label="Checkpoint '+no+': '+esc(c.name)+'"><button class="hd" data-act="open" data-no="'+no+'" aria-expanded="'+open+'"><span class="num" aria-hidden="true">'+(status==='done'?'✓':no)+'</span><span class="grow">'+(open&&!here?'<span class="kick">Next stop</span>':'')+'<b>'+esc(c.name)+'</b><small>'+esc(c.spot)+'</small></span>'+pill+
+        (open&&!here?'<span class="dist" id="liveDist" data-no="'+no+'" hidden></span>':'')+'</button>';
   if(!open) return h+'</section>';
-  h+='<div class="body"><p class="where">'+esc(c.entrance_note)+'</p>'+(c.access_note?'<p class="where muted">'+esc(c.access_note)+'</p>':'')+
-     (c.needs_onsite_check?'<p class="flag">Demo route: this spot and its notes haven’t been checked on site yet.</p>':'');
+  h+='<div class="body"><details class="notes"><summary>Where to stand</summary><p class="where">'+esc(c.entrance_note)+'</p>'+(c.access_note?'<p class="where muted">'+esc(c.access_note)+'</p>':'')+
+     (c.needs_onsite_check?'<p class="flag">Demo route: this spot hasn’t been checked on site yet.</p>':'')+'</details>';
   if(!here){
     const canVouch=H.activeMembers(st).some(id=>id!==s.self&&st.members[id].prox&&st.members[id].prox[no]);
-    h+='<div class="rowbtns"><button class="btn pri" data-act="checkin" data-no="'+no+'"'+(A.busy['gps'+no]?' disabled':'')+'>'+(A.busy['gps'+no]?'Checking…':A.gps[no]?'Try again':'Check in here')+'</button>'+
+    h+='<div class="rowbtns"><button class="btn pri big" data-act="checkin" data-no="'+no+'"'+(A.busy['gps'+no]?' disabled':'')+'>'+(A.busy['gps'+no]?'Checking…':A.gps[no]?'Try again':'Check in')+'</button>'+
        (canVouch?'<button class="btn" data-act="vouch" data-no="'+no+'">Use a teammate’s code</button>':'')+
        (practice?'<button class="btn warn" data-act="sim" data-no="'+no+'">Simulate arriving</button>':'')+'</div>'+
-       (status==='todo'&&!A.gps[no]?'<p class="note">Your phone checks its own location when you tap. Nothing is sent but “inside: yes”.</p>':'')+gpsHTML(A.gps[no],c,canVouch,practice);
+       gpsHTML(A.gps[no],c,canVouch,practice);
   }else if(via&&via!=='gps') h+='<span class="stamp">'+(via==='sim'?'Simulated check-in':via==='vouch'?'Checked in with a teammate’s code':'Checked in')+'</span>';
   if(status!=='todo'){
     h+='<div class="puzzle"><p class="q">'+esc(pz.prompt)+'</p>'+(pz.format?'<p class="fmt">Answer: '+esc(pz.format)+'</p>':'');
@@ -644,22 +650,22 @@ function cpHTML(c){
       if(!here) h+='<p class="msg">Your herd solved it. Check in here yourself to get your own credit.</p>';
     }else if(here){
       h+='<div class="ans"><label class="sr" for="ans'+no+'">Your answer</label><input class="field" id="ans'+no+'" maxlength="80" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Your answer" data-enter="answer" data-no="'+no+'"><button class="btn pri" data-act="answer" data-no="'+no+'"'+(A.busy['ans'+no]?' disabled':'')+'>'+(A.busy['ans'+no]?'Checking…':'Submit')+'</button></div>'+
-         (p.hints<H.MAX_HINTS?'<div class="rowbtns"><button class="btn sm" data-act="hint" data-no="'+no+'"'+(A.busy['hint'+no]?' disabled':'')+'>Reveal hint '+(p.hints+1)+(practice?'':' (−'+H.HINT_COST+' points)')+'</button></div>':'<p class="note">Both hints are showing. This checkpoint is worth '+H.MIN_POINTS+' points now — it can’t go lower.</p>');
-    }else h+='<p class="msg">A teammate unlocked this puzzle. You can read along now; check in here to answer and get credit.</p>';
+         (p.hints<H.MAX_HINTS?'<div class="rowbtns"><button class="btn sm" data-act="hint" data-no="'+no+'"'+(A.busy['hint'+no]?' disabled':'')+'>Reveal hint '+(p.hints+1)+(practice?'':' (−'+H.HINT_COST+' points)')+'</button></div>':'');
+    }else h+='<p class="msg">A teammate unlocked this puzzle. Check in to answer.</p>';
     if(A.msg[no]) h+='<p class="msg '+A.msg[no].cls+'" role="alert">'+esc(A.msg[no].text)+'</p>';
     h+='</div>';
   }
   if(here){
     const tg=(st.members[s.self].together||{})[no]||[];
     if(tg.length) h+='<span class="stamp">Together with '+tg.map(id=>esc((st.members[id]||{}).nick||'a teammate')).join(', ')+'</span>';
-    if(H.activeMembers(st).length>1) h+='<div class="rowbtns"><button class="btn sm" data-act="code" data-no="'+no+'">Show my code</button><button class="btn sm" data-act="vouch" data-no="'+no+'">Scan a teammate</button></div><p class="note">“We’re together”: scan each other’s live code at a checkpoint for a stamp. It’s also how a teammate with weak GPS checks in.</p>';
+    if(H.activeMembers(st).length>1) h+='<div class="rowbtns"><button class="btn sm" data-act="code" data-no="'+no+'">Show my code</button><button class="btn sm" data-act="vouch" data-no="'+no+'">Scan a teammate</button></div>';
   }
   return h+'</div></section>';
 }
 function finishHTML(){
   const s=A.session, st=s.state, sc=H.herdScore(st), comp=st.mode==='competition', c=A.comp||{}, first=!A.celebrated; A.celebrated=true;
   let h='<div class="card gold finish'+(first?' in':'')+'" role="status"><span class="pill gold">All five checkpoints</span>';
-  if(st.mode==='practice') h+='<h2 style="margin-top:8px">Practice complete</h2><p>That’s how a hunt works. Nothing was saved, and no points or rewards were earned.</p><div class="rowbtns"><button class="btn pri" data-act="playAgain">Play a route for real</button></div>';
+  if(st.mode==='practice') h+='<h2 style="margin-top:8px">Practice complete</h2><p>That’s how a roam works. Nothing was saved, and no points or rewards were earned.</p><div class="rowbtns"><button class="btn pri" data-act="playAgain">Play a route for real</button></div>';
   else{
     const team=comp&&c.team_score!=null?c.team_score:sc.team;
     h+='<div class="score" style="margin-top:8px">'+team+'</div><div class="of">of 600 · '+(comp?'team score':'herd score, just for fun')+'</div>';
@@ -668,29 +674,24 @@ function finishHTML(){
       else if(c.reward_note==='not_cu'||c.cu_verified===false) h+='<p>Nice work. Demo rewards and standings are for verified colorado.edu addresses, so this run isn’t listed.</p>';
       else if(c.reward_note==='repeat_run'||c.counts===false) h+='<p>Nice work. This was a repeat run, so it doesn’t change the standings — your first run of this route is the one that counts.</p>';
       h+='<div class="rowbtns"><button class="btn pri" data-act="standings">See standings</button><button class="btn" data-act="wallet">Reward wallet</button></div>';
-    }else h+='<p>Friends Mode isn’t on the standings and saves nothing. Want it to count? Start a Competition run.</p><div class="rowbtns"><button class="btn pri" data-act="playAgain">Play another route</button></div>';
+    }else h+='<p>Friends Mode isn’t on the standings and saves nothing. Want it to count? Start a Competition run.</p><div class="rowbtns"><button class="btn pri" data-act="playAgain">Play another roam</button></div>';
   }
   return h+'</div>';
 }
 function runHTML(){
-  const s=A.session, st=s.state, sc=H.herdScore(st), act=H.activeMembers(st), comp=st.mode==='competition', practice=st.mode==='practice', c=A.comp||{};
+  const s=A.session, st=s.state, sc=H.herdScore(st), comp=st.mode==='competition', practice=st.mode==='practice', c=A.comp||{};
   let h=practice?'<div class="practice-bar" role="note">DEMO PRACTICE · simulated check-ins · 0 points · no rewards</div>':'';
-  h+='<div class="herdhead"><div class="big" aria-hidden="true">'+av(st.herd.avatar)+'</div><div class="grow"><h1 class="title" tabindex="-1" style="margin:0">'+esc(st.herd.name)+'</h1><div class="small muted">'+esc(st.edition.title)+' · '+esc(st.edition.theme)+' · '+({friends:'Friends',competition:'Competition',practice:'Demo Practice'}[st.mode])+'</div></div></div>'+linkHTML();
+  h+='<div class="herdhead"><div class="big" aria-hidden="true">'+av(st.herd.avatar)+'</div><div class="grow"><h1 class="title" tabindex="-1" style="margin:0">'+esc(st.herd.name)+'</h1><div class="small muted">'+esc(st.edition.theme||st.edition.title)+' · '+({friends:'Friends',competition:'Competition',practice:'Demo Practice'}[st.mode])+'</div></div>'+
+     '<button class="btn sm" data-act="invite">Invite</button></div>'+linkHTML();
   h+='<div class="members" aria-label="Your herd">'+Object.keys(st.members).sort((a,b)=>(a===s.self?-1:b===s.self?1:(st.members[a].joinedAt||0)-(st.members[b].joinedAt||0))).map(id=>{
     const m=st.members[id], left=m.leftAt>0;
     return '<div class="mem'+(id===s.self?' self':'')+(left?' away':'')+'"><span class="a" aria-hidden="true">'+av(m.avatar)+'</span><b>'+esc(m.nick)+(id===s.self?' (you)':'')+'</b><small>'+(left?'Left':sc.members[id].done+' of 5')+'</small>'+
       '<div class="dots" aria-hidden="true">'+[1,2,3,4,5].map(cp=>{ const x=H.checkpointStatus(st,id,cp); return '<i class="'+(x==='done'||x==='crediting'?'done':x==='here'?'here':'')+'"></i>'; }).join('')+'</div></div>'; }).join('')+'</div>';
-  h+='<div class="rowbtns" style="margin:0 0 12px"><button class="btn sm" data-act="invite">Invite</button><button class="btn sm" data-act="scan">Scan</button><button class="btn sm" data-act="map">Route map</button></div>';
   if(comp&&!me.user) h+=signinHTML('keep scoring');
-  if(!practice){
-    const team=comp&&c.team_score!=null?c.team_score:sc.team, mine=comp&&c.my_points!=null?c.my_points:sc.members[s.self].points;
-    h+='<div class="tiles" style="--n:3;margin-bottom:6px;background:#fff"><div class="tile"><b>'+team+'</b><span>'+(comp?'team score':'herd score')+'</span></div><div class="tile"><b>'+mine+'</b><span>your points</span></div><div class="tile"><b>'+sc.solved+'<small> / 5</small></b><span>puzzles solved</span></div></div>'+
-       '<p class="note" style="margin:0 0 12px">'+(comp?(c.cu_verified===false?'Guest run: scored for fun, not listed on standings. ':c.counts===false?'Repeat run: it won’t change the standings. ':'')+'Team score is the average of everyone who has checked in, so big herds and solo players compete evenly.'+(st.rosterLockedAt?' Roster locked.':'')
-          :'Friends Mode: scored just for fun. Nothing is saved off your phones.')+'</p>';
-  }
+  if(comp&&(c.cu_verified===false||c.counts===false)) h+='<p class="note" style="margin:0 0 10px">'+(c.cu_verified===false?'Guest run: scored for fun, not on the standings.':'Repeat run: it won’t change the standings.')+'</p>';
   if(H.finished(st,s.self)) h+=finishHTML();
   h+=st.edition.checkpoints.map(cpHTML).join('');
-  h+='<div class="foot"><button class="link" data-act="leave" style="color:var(--danger)">Leave herd</button><button class="link" data-act="privacy">Privacy</button><button class="link" data-act="lobbyKeep">All routes</button></div>';
+  h+='<div class="foot"><button class="link" data-act="leave" style="color:var(--danger)">Leave herd</button><button class="link" data-act="scan">Scan a code</button><button class="link" data-act="privacy">Privacy</button><button class="link" data-act="lobbyKeep">All roams</button></div>';
   return h;
 }
 async function loadStandings(){
@@ -721,20 +722,84 @@ function walletHTML(){
     '<div class="sub">'+esc(t.title||t.edition_id)+' · week of '+esc(t.week)+'</div><p class="small" style="color:var(--warn);font-weight:700">'+DEMO_NOTE+'</p>'+
     (t.status==='issued'?'<div class="rowbtns"><button class="btn sm" data-act="useToken" data-token="'+esc(t.token)+'">Try a demo redemption</button></div><p class="note">Shows how a single-use token works. It doesn’t get you anything.</p>':'')+'</div>').join('');
 }
-let routeMap=null;
-async function showMap(){
-  const cps=A.session.state.edition.checkpoints;
-  modal('Route map','<div id="routeMap" role="img" aria-label="Map of the five checkpoints"></div><ol class="small" style="padding-left:20px;margin:10px 0 0">'+cps.map(c=>'<li><b>'+esc(c.name)+'</b> — '+esc(c.spot)+'</li>').join('')+'</ol><p class="note">Circles show roughly where a check-in counts. Any order works. Your location isn’t shown or shared.</p>',
-    [['Close','pri',()=>{}]],()=>{ if(routeMap){ routeMap.remove(); routeMap=null; } });
+/* ---------- the roam map and your live position ----------
+   The map shows the route, never follows the player, and falls back to a simple drawing offline.
+   A.live holds the latest GPS reading in memory only, for the dot and the distance read-out. */
+const RM={map:null, layer:null, failed:false, loading:false, fitFor:null};
+let liveId=null;
+function liveStart(){
+  if(liveId!==null||!('geolocation' in navigator)||window.isSecureContext===false) return;
+  try{ liveId=navigator.geolocation.watchPosition(p=>{ A.live={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy}; paintLive(); },()=>{},{enableHighAccuracy:true,maximumAge:5000}); }catch(e){}
+}
+function liveStop(keep){ if(liveId!==null){ try{ navigator.geolocation.clearWatch(liveId); }catch(e){} liveId=null; } if(!keep) A.live=null; }
+/* Start watching only if the player has already allowed location (no surprise prompt). */
+function liveMaybe(){
+  if(liveId!==null||A.locating||!navigator.permissions||!navigator.permissions.query) return;
+  navigator.permissions.query({name:'geolocation'}).then(r=>{ if(r.state==='granted'&&A.view==='run'&&!document.hidden&&!A.locating) liveStart(); },()=>{});
+}
+function bearing(lat1,lng1,lat2,lng2){
+  const r=Math.PI/180, y=Math.sin((lng2-lng1)*r)*Math.cos(lat2*r), x=Math.cos(lat1*r)*Math.sin(lat2*r)-Math.sin(lat1*r)*Math.cos(lat2*r)*Math.cos((lng2-lng1)*r);
+  return (Math.atan2(y,x)/r+360)%360;
+}
+function distText(m){ return m>=1000?(m/1000).toFixed(1)+' km':m>=95?Math.round(m/10)*10+' m':Math.max(5,Math.round(m/5)*5)+' m'; }
+function paintLive(){
+  const el=$('liveDist');
+  if(el){
+    const s=A.session, c=s&&s.state&&s.state.edition.checkpoints[Number(el.dataset.no)-1];
+    if(A.live&&c&&A.live.accuracy<=150){
+      const d=H.distanceM(A.live.lat,A.live.lng,c.lat,c.lng), b=bearing(A.live.lat,A.live.lng,c.lat,c.lng);
+      el.innerHTML='<span class="arrow" style="transform:rotate('+Math.round(b)+'deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span><b>'+distText(d)+'</b>';
+      el.setAttribute('aria-label',distText(d)+' to the '+H.compass(A.live.lat,A.live.lng,c.lat,c.lng)); el.hidden=false;
+    }else el.hidden=true;
+  }
+  drawRunMap(true);
+}
+function pinState(no){ const s=A.session, x=H.checkpointStatus(s.state,s.self,no); return x==='done'||x==='crediting'?'done':no===A.open?'nx':x==='here'?'here':''; }
+function sketchHTML(cps){   // offline stand-in for the map: the stops, in their real arrangement
+  const la=cps.map(c=>c.lat), ln=cps.map(c=>c.lng), pts=cps.slice();
+  if(A.live) { la.push(A.live.lat); ln.push(A.live.lng); }
+  const a0=Math.min.apply(0,la), a1=Math.max.apply(0,la), b0=Math.min.apply(0,ln), b1=Math.max.apply(0,ln), k=Math.cos(a0*Math.PI/180);
+  const w=Math.max((b1-b0)*k,1e-5), h=Math.max(a1-a0,1e-5), X=g=>(14+72*((g-b0)*k)/w).toFixed(1), Y=g=>(22+56*(a1-g)/h).toFixed(1);
+  return '<svg class="sk" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts.map(c=>X(c.lng)+','+Y(c.lat)).join(' ')+'" fill="none" stroke="#C9B476" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'+
+    pts.map(c=>'<div class="rpin '+pinState(c.no)+'" style="left:'+X(c.lng)+'%;top:'+Y(c.lat)+'%">'+(pinState(c.no)==='done'?'✓':c.no)+'</div>').join('')+
+    (A.live?'<div class="medot" style="left:'+X(A.live.lng)+'%;top:'+Y(A.live.lat)+'%"></div>':'');
+}
+function drawRunMap(liveOnly){
+  const s=A.session; if(A.view!=='run'||!s||!s.state||!s.state.members[s.self]) return;
+  const cps=s.state.edition.checkpoints;
+  if(RM.map){
+    RM.layer.clearLayers();
+    L.polyline(cps.map(c=>[c.lat,c.lng]),{color:'#C9B476',weight:3,dashArray:'2 9',opacity:.9,interactive:false}).addTo(RM.layer);
+    cps.forEach(c=>{ const st=pinState(c.no); L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',html:'<div class="rpin '+st+'">'+(st==='done'?'✓':c.no)+'</div>',iconSize:[30,30],iconAnchor:[15,15]}),keyboard:false,interactive:false}).addTo(RM.layer); });
+    if(A.live) L.marker([A.live.lat,A.live.lng],{icon:L.divIcon({className:'',html:'<div class="medot"></div>',iconSize:[20,20],iconAnchor:[10,10]}),keyboard:false,interactive:false}).addTo(RM.layer);
+    if(RM.fitFor!==s.channelId){ RM.fitFor=s.channelId; RM.map.invalidateSize(); RM.map.fitBounds(cps.map(c=>[c.lat,c.lng]),{padding:[46,46],animate:false}); }
+  }else if(RM.failed){ $('runMap').innerHTML=sketchHTML(cps); }
+}
+async function ensureRunMap(){
+  if(RM.map||RM.failed||RM.loading) return; RM.loading=true;
   try{
+    if(!navigator.onLine) throw new Error('offline');
     if(!window.L){ const l=document.createElement('link'); l.rel='stylesheet'; l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l); await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'); }
-    if(!$('routeMap')) return;
-    routeMap=L.map('routeMap',{zoomControl:true,attributionControl:true}); routeMap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery &copy; Esri, Maxar'}).addTo(routeMap);
-    cps.forEach(c=>{ L.circle([c.lat,c.lng],{radius:c.radius_m,color:'#CFB87C',weight:2,fillOpacity:.18}).addTo(routeMap);
-      L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',html:'<div class="cpmk">'+c.no+'</div>',iconSize:[26,26],iconAnchor:[13,13]}),keyboard:false}).addTo(routeMap); });
-    routeMap.fitBounds(cps.map(c=>[c.lat,c.lng]),{padding:[30,30]});
-  }catch(e){ const m=$('routeMap'); if(m) m.outerHTML='<p class="msg">The map couldn’t load (you may be offline). The checkpoints are listed below.</p>'; }
+    RM.map=L.map('runMap',{zoomControl:false,attributionControl:true}); RM.map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery &copy; Esri, Maxar'}).addTo(RM.map);
+    RM.layer=L.layerGroup().addTo(RM.map);
+  }catch(e){ RM.failed=true; }
+  RM.loading=false; drawRunMap();
+}
+function runTop(){
+  const s=A.session, on=A.view==='run'&&s&&s.state&&s.state.members[s.self];
+  const was=!$('runTop').hidden;
+  document.body.classList.toggle('run',!!on); $('runTop').hidden=!on;
+  if(!on){ liveStop(); return; }
+  if(!was&&RM.map) setTimeout(()=>{ RM.map.invalidateSize(); RM.fitFor=null; drawRunMap(); },30);
+  const st=s.state, sc=H.herdScore(st), comp=st.mode==='competition', c=A.comp||{}, practice=st.mode==='practice';
+  const done=[1,2,3,4,5].filter(n=>{ const x=H.checkpointStatus(st,s.self,n); return x==='done'||x==='crediting'; });
+  $('runDots').innerHTML=[1,2,3,4,5].map(n=>'<i class="'+(done.indexOf(n)>=0?'d':n===A.open?'c':'')+'"></i>').join('');
+  $('runDots').setAttribute('aria-label',done.length+' of 5 stops done');
+  const pts=$('runScore'); pts.hidden=practice; pts.textContent=comp&&c.team_score!=null?c.team_score:sc.team; pts.setAttribute('aria-label',(comp?'Team score ':'Herd score ')+pts.textContent);
+  let rec=false; try{ rec=window.parent!==window&&window.parent.BP_TRACKING&&window.parent.BP_TRACKING(); }catch(e){}
+  $('runRec').hidden=!rec;
+  ensureRunMap(); drawRunMap(); liveMaybe();
 }
 
 /* ---------- render: redraw the current screen, keeping whatever the player was typing ---------- */
@@ -757,6 +822,7 @@ function render(){
   else if(A.view==='wallet') h=walletHTML();
   else{ A.view='lobby'; h=(inHerd?'<button class="card gold" data-act="backToRun"><span class="pill gold">In progress</span><h3 style="margin-top:6px">'+av(s.state.herd.avatar)+' '+esc(s.state.herd.name)+'</h3><div class="sub">'+esc(s.state.edition.title)+' · '+H.herdScore(s.state).members[s.self].done+' of 5 checkpoints</div><p>Tap to keep going.</p></button>':'')+lobbyHTML(); }
   root.innerHTML=h;
+  runTop(); paintLive();
   Object.keys(keep).forEach(id=>{ const i=$(id); if(i&&!i.readOnly) i.value=keep[id]; });
   Object.keys(radios).forEach(n=>{ const i=root.querySelector('input[name="'+n+'"][value="'+radios[n]+'"]'); if(i) i.checked=true; });
   if(fid&&$(fid)) $(fid).focus({preventScroll:true});
@@ -768,6 +834,7 @@ async function act(a,d){
   const no=d&&d.no?Number(d.no):0, s=A.session;
   if(a==='lobby'){ A.pendingJoin=null; A.form={}; go('lobby'); }
   else if(a==='lobbyKeep') go('lobby');
+  else if(a==='exitRun'){ let emb=false; try{ emb=window.parent!==window&&window.parent.location.origin===location.origin; }catch(e){} if(emb) window.parent.postMessage({bp:'close-herd'},location.origin); else go('lobby'); }
   else if(a==='backToRun'){ A.open=A.open||nextOpen(); go('run'); }
   else if(a==='pick'){ A.pick=d.id; bumpView(d.id); go('mode'); }
   else if(a==='backToMode'){ A.form={}; go('mode'); }
@@ -807,17 +874,16 @@ async function act(a,d){
   else if(a==='pieceQr') await showPiece(no,Number(d.i));
   else if(a==='pieceSend'){ await s.sharePiece(no,Number(d.i)); toast('Sent piece '+(Number(d.i)+1)+' to your herd'); }
   else if(a==='invite') showInvite();
-  else if(a==='map') showMap();
   else if(a==='leave') confirmLeave();
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; act(b.dataset.act,b.dataset); });
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&A.session&&A.session.state) A.session.hello(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) liveStop(); else{ if(A.session&&A.session.state) A.session.hello(); if(A.view==='run') liveMaybe(); } });
 window.addEventListener('online',()=>{ if(A.session&&A.session.state){ A.session.hello(); afterChange(); } });
 setInterval(()=>{ const s=A.session; if(document.hidden||!s||!s.state||!s.state.members[s.self]) return; if(A.link==='live') s.ping(); afterChange(); },30000);   // presence + retry any unsaved credit
 
 /* ---------- boot ---------- */
 (async function boot(){
-  if(!window.crypto||!crypto.subtle){ $('hv').innerHTML='<h1 class="title">Herd and Seek</h1><p class="empty">This browser can’t run Herd and Seek here. Open BuffPrints from its https:// address in a current version of Safari or Chrome.</p>'; return; }
+  if(!window.crypto||!crypto.subtle){ $('hv').innerHTML='<h1 class="title">Roam</h1><p class="empty">This browser can’t run roams here. Open BuffPrints from its https:// address in a current version of Safari or Chrome.</p>'; return; }
   if(sb){
     try{ const {data}=await sb.auth.getSession(); me.user=data&&data.session?data.session.user:null; }catch(e){}
     sb.auth.onAuthStateChange((ev,session)=>{ const u=session?session.user:null, changed=(u&&u.id)!==(me.user&&me.user.id); me.user=u;
@@ -830,14 +896,16 @@ setInterval(()=>{ const s=A.session; if(document.hidden||!s||!s.state||!s.state.
     if(cur){ const k=await keyGet(cur); if(k){ const s=await openHerd(k); if(s.state&&s.state.members[s.self]&&!(s.state.members[s.self].leftAt>0)){ A.view='run'; render(); return askJoin(raw); } closeSession(); } }
     return beginJoinFlow(raw);
   }
+  const Q=new URLSearchParams(location.search);   // ?roam=<id> opens that route; ?do=invite shows the invite
   const cur=activeGet();
   if(cur){
     const k=await keyGet(cur);
-    if(k){ const s=await openHerd(k); if(s.state&&s.state.members[s.self]&&!(s.state.members[s.self].leftAt>0)){ await resumeComp(); A.open=nextOpen(); const v=new URLSearchParams(location.search).get('view'); if(v==='standings') return act('standings'); return go('run'); } closeSession(); }
+    if(k){ const s=await openHerd(k); if(s.state&&s.state.members[s.self]&&!(s.state.members[s.self].leftAt>0)){ await resumeComp(); A.open=nextOpen(); const v=new URLSearchParams(location.search).get('view'); if(v==='standings') return act('standings'); go('run'); if(Q.get('do')==='invite') showInvite(); return; } closeSession(); }
     activeSet(null);
   }
   const v=new URLSearchParams(location.search).get('view');
   if(v==='standings') return act('standings'); if(v==='wallet') return act('wallet');
+  if(Q.get('roam')&&A.editions.some(e=>e.content.id===Q.get('roam'))) return act('pick',{id:Q.get('roam')});
   go('lobby');
 })();
 if('serviceWorker' in navigator&&location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});

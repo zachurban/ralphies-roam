@@ -15,7 +15,7 @@ async function ctx(o={}){ const c=await b.newContext({viewport:o.vp||{width:390,
   await p.goto(h.base+'/index.html'); await p.waitForSelector('.bp-welcome .bp-cta');
   ok(await p.locator('.bp-boot').count()===0,'first visit: full welcome screen, no boot overlay');
   const t=await p.textContent('.bp-welcome');
-  for(const s of ['Explore campus. Leave your mark.','A free walking game for the CU Boulder campus.','Tap Record and walk','Class Schedule','Herd and Seek','Meet-Ups','Campus Safety','Community','Privacy built in','Add BuffPrints to your phone’s Home Screen','Start Exploring','not an official CU Boulder app']) ok(t.includes(s),'shows: '+s);
+  for(const s of ['Explore campus. Leave your mark.','Free scavenger hunts and walks on the CU Boulder campus.','Pick a roam','Walk the Map','Class Schedule','Meet-Ups','Campus Safety','Herd','Privacy built in','Add BuffPrints to your phone’s Home Screen','Start Roaming','not an official CU Boulder app']) ok(t.includes(s),'shows: '+s);
   ok(await p.evaluate(()=>document.activeElement.classList.contains('bp-welcome')),'focus starts on the welcome screen itself');
   ok(await p.evaluate(()=>{ const r=document.querySelector('.bp-foot').getBoundingClientRect(); return r.bottom<=innerHeight+1; }),'button is pinned at the bottom of the screen');
   await p.waitForFunction(()=>document.querySelector('.bp-hero img').complete);
@@ -23,7 +23,7 @@ async function ctx(o={}){ const c=await b.newContext({viewport:o.vp||{width:390,
   ok(logo.c&&logo.w===64&&await p.evaluate(async()=>(await fetch(document.querySelector('.bp-hero img').src)).status===200),'logo loads at 64 px');
   await p.waitForTimeout(600); await p.screenshot({path:SHOT('splash-welcome-390.png')});
     await p.click('.bp-cta'); await p.waitForSelector('.bp-welcome',{state:'detached'});
-  ok(await p.evaluate(()=>localStorage.getItem('buffprints_onboarded_v1'))==='true','Start Exploring saves buffprints_onboarded_v1 = true');
+  ok(await p.evaluate(()=>localStorage.getItem('buffprints_onboarded_v1'))==='true','Start Roaming saves buffprints_onboarded_v1 = true');
   ok(await p.evaluate(()=>getComputedStyle(document.documentElement).overflow!=='hidden'),'page scrolls again after closing');
   // returning
   await p.reload(); await p.waitForSelector('.bp-boot',{state:'attached'}); await p.waitForTimeout(250); await p.screenshot({path:SHOT('splash-boot.png')});

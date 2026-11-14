@@ -45,6 +45,7 @@ export function startHarness({db = process.env.RR_UI_DB || 'rr_herd_ui', port = 
   // ---- what the stand-in saw ----
   const log = {rpc: [], frames: [], requests: []};
   const subs = new Map();   // channel -> Set of {id, res}
+  const setReturning = {};
 
   const fakeSupabase = `
 window.supabase={createClient(){
@@ -60,6 +61,9 @@ window.supabase={createClient(){
       signOut:async()=>{ localStorage.removeItem('test-auth'); listeners.forEach(cb=>cb('SIGNED_OUT',null)); return {error:null}; }
     },
     rpc:(fn,args)=>post('/__rpc',{fn,args:args||{},user:cur()}),
+    // The main app also reads a few tables directly; the stand-in answers "nothing there".
+    from(){ const none={data:[],error:null}, q={select:()=>q,eq:()=>q,order:()=>q,limit:()=>q,update:()=>q,delete:()=>q,insert:()=>Promise.resolve({error:null}),upsert:()=>Promise.resolve({error:null}),
+      maybeSingle:()=>Promise.resolve({data:null,error:null}),then:(ok,no)=>Promise.resolve(none).then(ok,no)}; return q; },
     channel(name){
       const id=Math.random().toString(36).slice(2), hs=[]; let es=null;
       const ch={ on(type,filter,cb){ hs.push({event:filter.event,cb}); return ch; },
@@ -87,7 +91,10 @@ window.supabase={createClient(){
       if (!/^[a-z_]+$/.test(fn)) return json({error: {message: 'bad function'}});
       const named = Object.entries(args).map(([k, v]) => `${k.replace(/[^a-z_]/g, '')} => ${lit(v)}`).join(', ');
       const r = asUser(u, `select public.${fn}(${named}) as r`);
-      return json(r.error ? {data: null, error: r.error} : {data: r.data[0].r, error: null});
+      if (r.error) return json({data: null, error: r.error});
+      // functions that return a table come back one row each; everything else is a single value
+      if (!(fn in setReturning)) setReturning[fn] = q(`select bool_or(proretset) s from pg_proc where proname = ${lit(fn)} and pronamespace = 'public'::regnamespace`)[0].s === true;
+      return json({data: setReturning[fn] ? r.data.map(x => x.r) : (r.data[0] ? r.data[0].r : null), error: null});
     }
     if (url.pathname === '/__auth') {
       const {email, token} = JSON.parse(await body(req));
