@@ -15,7 +15,7 @@ Phone GPS only works on an `https://` page, so the files need a host.
 1. On github.com: **New repository** → name it `ralphies-roam` → Public → Create.
 2. **Add file → Upload files** → drag in everything from this folder (keep the `public` folder) → Commit.
 3. **Settings → Pages** → Source: *Deploy from a branch* → Branch: `main`, folder `/ (root)` → Save.
-4. After a minute the app is live at `https://<your-username>.github.io/ralphies-roam/`.
+4. After a minute the app is live at `https://<your-username>.github.io/ralphies-roam/` (BuffPrints itself runs at `https://buffprints.app/` — the `CNAME` file sets that; see docs/PLAY_STORE.md).
 
 ## Install on a phone
 
