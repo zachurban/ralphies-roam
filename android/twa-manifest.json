@@ -16,19 +16,28 @@
   "iconUrl": "https://raw.githubusercontent.com/zachurban/ralphies-roam/main/public/icon-512.png",
   "maskableIconUrl": "https://raw.githubusercontent.com/zachurban/ralphies-roam/main/public/icon-512-maskable.png",
   "splashScreenFadeOutDuration": 300,
-  "signingKey": { "path": "./upload.jks", "alias": "upload" },
+  "signingKey": {
+    "path": "./upload.jks",
+    "alias": "upload"
+  },
   "appVersionCode": 1,
   "appVersion": "1.0.0",
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "REPLACED_BY_WORKFLOW",
   "fallbackType": "customtabs",
-  "features": { "locationDelegation": { "enabled": true } },
-  "alphaDependencies": { "enabled": false },
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "minSdkVersion": 21,
+  "minSdkVersion": 24,
   "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],

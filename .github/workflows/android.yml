@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -47,8 +47,16 @@ jobs:
         run: |
           test -n "$KEYSTORE_B64" || { echo "::error::Add the ANDROID_KEYSTORE_B64 secret first"; exit 1; }
           npm i -g @bubblewrap/cli@1.27.0
+          # Bubblewrap checks for a legacy "tools" folder in the SDK. GitHub's runners only ship
+          # cmdline-tools, so point "tools" at them, then install the build-tools version it needs.
+          test -e "$ANDROID_HOME/tools" || ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
+          BT=$(node -p "require('$(npm root -g)/@bubblewrap/cli/node_modules/@bubblewrap/core/dist/lib/androidSdk/AndroidSdkTools.js').BUILD_TOOLS_VERSION" 2>/dev/null \
+               || node -p "require('$(npm root -g)/@bubblewrap/core/dist/lib/androidSdk/AndroidSdkTools.js').BUILD_TOOLS_VERSION")
+          echo "Bubblewrap needs build-tools $BT"
+          yes | "$ANDROID_HOME/tools/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "build-tools;$BT" "platform-tools" > /dev/null
           mkdir -p ~/.bubblewrap
           echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_HOME\"}" > ~/.bubblewrap/config.json
+          bubblewrap doctor
           echo "$KEYSTORE_B64" | base64 -d > android/upload.jks
           # Version code goes up with every run so each upload to Play is accepted.
           jq --arg h "${{ inputs.host }}" --arg v "${{ inputs.version }}" --argjson c "${{ github.run_number }}" \
