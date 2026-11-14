@@ -17,24 +17,23 @@
 <link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link rel="manifest" href="public/site.webmanifest">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=33">
-<link rel="stylesheet" href="splash.css?v=33">
+<link rel="stylesheet" href="app.css?v=34">
+<link rel="stylesheet" href="splash.css?v=34">
 </head>
 <body data-view="home">
-<script src="splash.js?v=33"></script>
+<script src="splash.js?v=34"></script>
 <div id="app">
   <div id="side">
     <header class="topbar">
       <div class="wordmark"><span class="mark"><svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="#C9B476" fill-rule="evenodd" d="M 221,786 L 224,792 L 232,793 L 231,790 L 225,785 Z M 154,781 L 154,787 L 152,790 L 152,797 L 154,801 L 155,813 L 160,818 L 161,821 L 160,825 L 162,832 L 168,838 L 169,842 L 173,846 L 175,852 L 180,857 L 181,861 L 195,875 L 198,876 L 202,880 L 208,882 L 210,884 L 214,884 L 221,888 L 234,890 L 252,890 L 265,885 L 278,873 L 281,866 L 285,862 L 285,848 L 284,845 L 280,839 L 279,834 L 268,821 L 264,821 L 259,827 L 257,827 L 254,822 L 249,822 L 247,820 L 249,817 L 249,814 L 245,815 L 241,810 L 243,808 L 245,810 L 249,810 L 251,808 L 257,808 L 258,804 L 252,799 L 251,795 L 247,794 L 243,796 L 241,799 L 240,804 L 236,808 L 225,806 L 223,803 L 223,800 L 220,800 L 220,803 L 217,806 L 212,805 L 212,802 L 214,800 L 214,796 L 211,796 L 211,801 L 208,805 L 211,812 L 210,818 L 207,821 L 205,820 L 204,814 L 202,811 L 203,804 L 199,803 L 195,796 L 192,797 L 191,805 L 194,808 L 197,815 L 197,818 L 195,823 L 189,825 L 190,834 L 185,841 L 182,840 L 182,834 L 179,829 L 173,828 L 172,822 L 175,816 L 172,815 L 171,802 L 167,793 L 167,791 L 171,787 L 168,784 L 164,788 L 158,785 L 158,782 L 156,780 Z M 194,827 L 196,828 L 197,832 L 194,830 Z M 862,761 L 855,760 L 848,766 L 846,764 L 846,759 L 843,759 L 837,762 L 833,762 L 826,769 L 823,777 L 818,785 L 820,788 L 819,793 L 815,795 L 811,793 L 809,795 L 806,795 L 804,793 L 810,788 L 809,785 L 804,786 L 798,791 L 789,792 L 788,796 L 785,796 L 783,798 L 783,800 L 780,802 L 778,800 L 778,798 L 776,798 L 774,800 L 769,800 L 767,802 L 759,804 L 755,813 L 753,835 L 749,840 L 752,842 L 752,845 L 743,854 L 738,853 L 737,858 L 738,864 L 747,871 L 745,877 L 749,883 L 757,886 L 762,890 L 787,892 L 797,891 L 799,888 L 804,888 L 809,886 L 811,883 L 823,879 L 824,877 L 830,874 L 843,861 L 844,858 L 847,856 L 848,853 L 852,849 L 855,843 L 860,837 L 861,832 L 865,825 L 867,814 L 870,810 L 872,799 L 870,773 L 865,767 L 864,763 Z M 868,446 L 867,448 L 869,452 L 871,452 Z M 591,368 L 593,369 L 595,367 L 597,367 L 596,365 Z M 792,258 L 794,260 L 795,258 L 794,256 Z M 408,136 L 384,137 L 375,142 L 369,143 L 365,146 L 359,148 L 356,151 L 352,152 L 347,157 L 345,157 L 344,159 L 346,160 L 352,159 L 355,161 L 356,165 L 353,169 L 349,170 L 344,169 L 341,171 L 337,171 L 334,169 L 331,171 L 325,172 L 323,175 L 318,177 L 313,177 L 309,180 L 307,180 L 304,183 L 300,184 L 297,187 L 293,188 L 288,192 L 285,192 L 275,200 L 273,206 L 269,209 L 268,212 L 257,221 L 253,226 L 253,229 L 250,232 L 244,235 L 226,253 L 225,263 L 217,270 L 214,279 L 205,288 L 202,297 L 194,307 L 192,313 L 189,316 L 188,323 L 186,327 L 186,332 L 182,335 L 179,342 L 179,346 L 173,356 L 167,376 L 166,393 L 168,399 L 166,403 L 167,413 L 163,417 L 160,415 L 157,418 L 157,423 L 153,429 L 152,439 L 148,452 L 147,461 L 148,465 L 147,489 L 148,503 L 150,508 L 150,523 L 152,532 L 152,543 L 154,546 L 155,551 L 159,552 L 162,555 L 163,559 L 166,559 L 169,563 L 168,574 L 165,578 L 165,586 L 163,588 L 163,594 L 170,602 L 170,613 L 174,617 L 172,622 L 172,626 L 175,629 L 176,633 L 181,640 L 183,649 L 187,655 L 188,661 L 194,672 L 203,681 L 205,686 L 213,692 L 220,703 L 220,706 L 224,715 L 230,720 L 231,724 L 235,728 L 245,734 L 252,742 L 263,751 L 265,751 L 270,755 L 273,759 L 277,761 L 287,762 L 292,767 L 296,768 L 302,772 L 314,774 L 319,778 L 326,778 L 330,782 L 335,783 L 343,783 L 348,780 L 361,781 L 367,778 L 376,778 L 377,775 L 376,772 L 373,770 L 373,768 L 371,766 L 365,767 L 364,773 L 361,775 L 355,774 L 354,770 L 356,768 L 360,767 L 363,762 L 371,759 L 374,756 L 382,755 L 385,759 L 379,765 L 381,772 L 382,769 L 385,768 L 390,771 L 392,771 L 395,769 L 408,769 L 412,768 L 414,766 L 419,765 L 430,754 L 431,750 L 434,747 L 440,745 L 459,726 L 461,715 L 464,712 L 466,706 L 470,701 L 475,689 L 479,684 L 480,676 L 479,657 L 484,649 L 484,645 L 486,641 L 486,634 L 484,630 L 485,628 L 490,626 L 486,616 L 483,577 L 480,570 L 480,562 L 477,556 L 476,546 L 473,544 L 473,540 L 471,536 L 472,533 L 471,529 L 467,524 L 463,508 L 460,504 L 459,493 L 456,490 L 455,481 L 453,477 L 453,462 L 450,459 L 449,447 L 446,441 L 446,436 L 442,424 L 441,408 L 438,402 L 437,387 L 435,383 L 434,370 L 433,327 L 436,323 L 437,314 L 436,311 L 437,308 L 440,306 L 441,299 L 446,290 L 446,277 L 449,274 L 451,269 L 451,263 L 454,257 L 454,251 L 457,247 L 458,239 L 460,236 L 461,225 L 464,221 L 465,200 L 467,197 L 467,184 L 460,164 L 455,160 L 455,158 L 450,155 L 449,152 L 444,150 L 440,146 L 434,144 L 431,141 L 424,139 L 418,139 L 411,141 Z M 420,741 L 420,744 L 410,756 L 408,757 L 401,757 L 397,754 L 397,749 L 401,744 L 407,743 L 410,741 L 417,740 Z M 304,739 L 307,740 L 307,744 L 305,744 L 303,742 Z M 431,734 L 425,740 L 422,739 L 427,733 L 429,732 Z M 297,734 L 295,736 L 290,736 L 286,738 L 284,743 L 276,735 L 280,732 L 285,733 L 288,731 L 293,731 Z M 260,725 L 262,725 L 265,728 L 264,732 L 259,731 L 258,727 Z M 455,692 L 457,694 L 457,697 L 454,700 L 452,700 L 450,698 L 450,696 Z M 171,514 L 173,517 L 172,521 L 176,525 L 176,528 L 171,531 L 168,539 L 163,539 L 162,524 L 167,520 L 168,516 Z M 174,501 L 178,505 L 175,507 L 172,503 Z M 296,393 L 298,395 L 298,397 L 293,402 L 293,405 L 290,407 L 288,405 L 288,403 L 290,401 L 291,394 Z M 221,302 L 223,304 L 223,306 L 219,310 L 218,315 L 216,317 L 210,316 L 210,310 L 213,304 L 215,302 Z M 420,285 L 425,284 L 427,287 L 429,287 L 432,290 L 432,292 L 430,294 L 425,295 L 422,292 L 422,288 Z M 416,268 L 415,272 L 412,271 L 412,269 Z M 353,238 L 355,236 L 357,236 L 362,241 L 361,244 L 355,244 L 353,242 Z M 263,238 L 263,240 L 259,243 L 256,242 L 256,240 L 261,236 Z M 377,165 L 379,168 L 375,169 Z M 391,154 L 393,156 L 394,164 L 392,166 L 385,166 L 381,163 L 381,161 Z M 408,141 L 407,144 L 396,151 L 392,151 L 392,148 L 395,145 L 396,141 L 406,139 Z M 589,134 L 586,136 L 584,140 L 582,152 L 580,150 L 576,149 L 573,144 L 569,143 L 564,147 L 564,149 L 562,151 L 561,159 L 559,161 L 555,161 L 550,168 L 550,174 L 548,179 L 548,187 L 552,188 L 557,192 L 556,196 L 554,196 L 552,198 L 551,207 L 554,212 L 553,218 L 555,222 L 555,231 L 558,235 L 559,246 L 563,252 L 564,262 L 569,268 L 569,271 L 574,278 L 576,286 L 581,291 L 581,307 L 582,312 L 586,318 L 589,346 L 590,348 L 596,347 L 607,356 L 607,359 L 601,366 L 603,367 L 600,378 L 597,380 L 586,381 L 586,395 L 588,400 L 592,405 L 591,419 L 587,426 L 589,431 L 585,437 L 585,444 L 582,448 L 581,457 L 574,461 L 573,463 L 573,470 L 575,473 L 575,476 L 571,482 L 570,485 L 571,488 L 569,490 L 566,488 L 566,494 L 562,499 L 561,507 L 557,521 L 554,525 L 553,535 L 550,540 L 550,547 L 546,554 L 545,564 L 542,568 L 541,580 L 537,590 L 536,601 L 537,630 L 538,633 L 542,637 L 543,642 L 548,642 L 550,644 L 549,648 L 546,651 L 546,666 L 553,670 L 554,673 L 551,677 L 551,686 L 555,693 L 560,694 L 566,699 L 567,702 L 571,703 L 575,698 L 583,697 L 586,698 L 592,704 L 595,704 L 596,701 L 603,701 L 604,707 L 610,700 L 615,700 L 618,703 L 625,703 L 631,706 L 632,709 L 630,712 L 625,713 L 623,711 L 621,717 L 618,720 L 615,720 L 613,718 L 609,717 L 605,713 L 603,709 L 596,715 L 594,719 L 594,723 L 590,727 L 582,725 L 582,723 L 584,721 L 589,719 L 589,716 L 584,714 L 583,711 L 581,710 L 574,710 L 572,708 L 570,708 L 569,710 L 570,712 L 568,716 L 573,719 L 573,726 L 580,729 L 585,734 L 589,736 L 598,736 L 608,745 L 612,746 L 629,756 L 652,756 L 660,762 L 665,762 L 669,766 L 705,766 L 715,761 L 728,760 L 733,756 L 738,756 L 738,750 L 745,750 L 753,748 L 765,742 L 775,734 L 779,733 L 781,730 L 788,726 L 795,717 L 798,716 L 801,708 L 806,705 L 807,702 L 810,699 L 810,697 L 819,689 L 819,687 L 823,681 L 822,671 L 826,667 L 827,662 L 832,659 L 834,654 L 837,652 L 840,640 L 845,633 L 847,622 L 851,617 L 851,614 L 853,610 L 856,607 L 858,602 L 860,601 L 862,595 L 862,587 L 864,584 L 864,573 L 867,569 L 870,553 L 870,545 L 872,542 L 872,535 L 875,528 L 876,511 L 875,470 L 874,465 L 872,463 L 870,463 L 868,466 L 868,469 L 865,472 L 863,472 L 861,470 L 861,466 L 858,461 L 858,453 L 861,448 L 855,442 L 856,433 L 851,424 L 851,422 L 853,420 L 859,418 L 861,415 L 861,411 L 857,407 L 857,403 L 860,401 L 861,394 L 860,393 L 859,385 L 856,386 L 855,391 L 848,390 L 847,388 L 848,368 L 846,363 L 841,357 L 841,349 L 843,345 L 842,331 L 841,329 L 839,329 L 836,326 L 833,318 L 833,313 L 825,306 L 822,306 L 820,304 L 821,296 L 817,287 L 812,283 L 812,278 L 810,275 L 810,272 L 805,263 L 801,260 L 793,265 L 790,260 L 788,259 L 786,254 L 786,251 L 788,249 L 786,247 L 781,247 L 777,245 L 774,241 L 776,236 L 771,231 L 774,227 L 769,220 L 766,213 L 750,200 L 745,200 L 740,195 L 732,196 L 730,193 L 732,191 L 731,188 L 710,171 L 700,167 L 697,163 L 690,160 L 681,158 L 679,156 L 671,155 L 666,151 L 662,151 L 658,147 L 655,146 L 653,143 L 647,141 L 634,140 L 626,137 L 623,134 L 614,132 L 606,132 L 602,134 Z M 664,756 L 669,754 L 671,754 L 673,756 L 672,759 L 667,759 Z M 631,712 L 635,708 L 638,708 L 640,710 L 641,714 L 644,716 L 642,718 L 640,718 L 637,715 L 633,714 L 631,715 Z M 796,700 L 800,700 L 800,705 L 798,707 L 794,704 Z M 783,675 L 785,678 L 784,682 L 779,685 L 778,688 L 768,697 L 766,697 L 763,694 L 763,692 L 768,688 L 769,684 L 772,681 L 775,681 L 779,675 L 781,674 Z M 827,648 L 829,646 L 832,647 L 831,650 L 829,650 Z M 561,646 L 563,646 L 566,649 L 566,651 L 564,653 L 562,653 L 560,651 L 559,648 Z M 801,617 L 803,619 L 805,625 L 800,638 L 797,637 L 797,632 L 795,628 L 795,620 L 796,618 Z M 591,435 L 594,435 L 593,441 L 590,441 Z M 604,414 L 603,416 L 599,416 L 602,412 Z M 606,401 L 608,398 L 611,397 L 617,403 L 614,406 L 610,403 L 606,403 Z M 614,374 L 615,379 L 612,379 Z M 619,347 L 621,349 L 619,351 L 617,349 Z M 630,324 L 633,325 L 634,327 L 630,328 Z M 594,294 L 597,297 L 598,300 L 598,306 L 595,309 L 592,308 L 589,305 L 591,297 Z M 765,251 L 771,257 L 770,260 L 768,260 L 765,257 Z M 758,237 L 760,234 L 763,233 L 769,237 L 769,240 L 764,244 L 762,244 L 758,241 Z M 565,208 L 567,208 L 571,212 L 572,219 L 575,223 L 574,229 L 572,229 L 568,224 L 563,223 L 563,210 Z M 612,174 L 615,170 L 619,170 L 622,168 L 630,168 L 635,173 L 645,171 L 645,168 L 642,165 L 643,163 L 650,163 L 651,165 L 655,166 L 658,169 L 663,169 L 664,172 L 668,171 L 669,165 L 672,162 L 674,162 L 676,164 L 678,170 L 685,175 L 686,179 L 693,179 L 695,184 L 682,185 L 672,178 L 660,180 L 655,178 L 651,179 L 646,174 L 644,176 L 644,181 L 641,184 L 635,184 L 632,195 L 630,197 L 627,197 L 624,193 L 625,187 L 624,184 L 622,184 L 619,181 L 617,174 L 615,177 L 612,176 Z M 608,160 L 609,157 L 618,158 L 622,162 L 620,164 L 618,164 L 614,169 L 612,167 L 611,163 Z M 628,156 L 630,156 L 632,158 L 632,160 L 630,162 L 625,161 L 625,159 Z"/></svg></span>BuffPrints</div><span class="spacer"></span>
       <button class="bp-info" id="bpInfo" type="button" aria-label="About BuffPrints: features and privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6M12 16.6v.2"/></svg></button>
-      <button class="acct" data-go="progress" aria-label="Your progress and account">You</button>
     </header>
     <div id="offline" role="status">You’re offline. Walks still record and save on this phone and sync when you reconnect.</div>
     <main id="views">
-      <section class="view act" id="v-home" aria-label="Home"><div id="homeTop"></div><div class="mapcard" id="homeMapSlot"><div class="open"><button class="btn" data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg>Open map</button></div></div><div id="homeNext"></div><div id="homeClasses"></div><div id="homeBottom"></div></section>
-      <section class="view" id="v-explore" aria-label="Explore"><div id="exploreMap"></div><div id="sheet"><button id="sheetHandle" aria-label="Show more" aria-expanded="false" aria-controls="sheetBody"></button><div id="sheetBody"></div></div></section>
-      <section class="view" id="v-progress" aria-label="Progress"><div id="progressBody"></div><div class="label">Account</div><div id="cloudBox"></div><div id="dataBox"></div></section>
-      <section class="view" id="v-community" aria-label="Community"></section>
+      <section class="view act" id="v-home" aria-label="Roam"><div class="mapcard" id="homeMapSlot"><span class="hero-chip" id="roamChip" hidden></span></div><div id="homeRoam"></div></section>
+      <section class="view" id="v-explore" aria-label="Map"><div id="exploreMap"></div><div id="sheet"><button id="sheetHandle" aria-label="Show more" aria-expanded="false" aria-controls="sheetBody"></button><div id="sheetBody"></div></div></section>
+      <section class="view" id="v-progress" aria-label="You"><div id="progressBody"></div><div id="homeClasses"></div><div id="progressMore"></div><div class="label">Account</div><div id="cloudBox"></div><div id="dataBox"></div></section>
+      <section class="view" id="v-community" aria-label="Herd"></section>
       <section class="view" id="v-safety" aria-label="Safety"></section>
     </main>
     <button id="recIdle"><span class="dot" aria-hidden="true"></span>Record</button>
@@ -46,7 +45,7 @@
       <span class="gps" id="recGps">Finding GPS…</span>
       <button id="recFinish">Finish</button>
     </div>
-    <nav class="tabs" aria-label="Main"><button data-go="home" class="act" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.5 9-7 9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg>Home</button><button data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14M15 6v14"/></svg>Explore</button><button data-go="progress"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-7M12 20V5M19 20v-10M3 20h18"/></svg>Progress</button><button data-go="community"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 4.7a3 3 0 0 1 0 6.2M18 14.8c1.9.7 3 2.6 3 5.2"/></svg>Community</button><button data-go="safety"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6Z"/><path d="m9 12 2 2 4-4"/></svg>Safety</button></nav>
+    <nav class="tabs" aria-label="Main"><button data-go="home" class="act" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Roam</button><button data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14M15 6v14"/></svg>Map</button><button data-go="community"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.5-3.2 2.7-5 5.5-5s5 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.8 14.3c2.4 0 4.1 1.5 4.7 4.2"/></svg>Herd</button><button data-go="progress"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.7-3.8 3.4-6 7-6s6.3 2.2 7 6"/></svg>You</button></nav>
   </div>
   <div id="deskMap"></div>
 </div>
@@ -64,10 +63,12 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
-<script src="student-core.js?v=33"></script>
-<script src="track-core.js?v=33"></script>
-<script src="username-core.js?v=33"></script>
-<script src="schedule-core.js?v=33"></script>
+<script src="student-core.js?v=34"></script>
+<script src="track-core.js?v=34"></script>
+<script src="username-core.js?v=34"></script>
+<script src="schedule-core.js?v=34"></script>
+<script src="herd-core.js?v=34"></script>
+<script src="herd-editions.js?v=34"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -775,23 +776,23 @@ map.on('contextmenu',e=>{ if(PLACING) return; const sg=pathAt(e.latlng); if(sg) 
 /* =====================================================================
    PRIVACY NOTICE + DATA DELETION  (keep in sync with PRIVACY.md)
    ===================================================================== */
-const PRIVACY_UPDATED='November 12, 2026';
+const PRIVACY_UPDATED='November 14, 2026';
 function privacyHTML(){
   const contact=(window.RR_CONFIG&&RR_CONFIG.contactEmail)||'';
   return '<div class="privacy">'+
   '<p class="pmeta">Last updated '+PRIVACY_UPDATED+'</p>'+
   '<p>BuffPrints is an independent student project. It is not an official University of Colorado Boulder app, and it is not monitored by CU or emergency services. In an emergency, call 911.</p>'+
   '<h4>What stays on your phone</h4><ul>'+
-  '<li><b>Your location</b>, only while you are recording a walk with the app open. It is used to work out which paths you walk.</li>'+
+  '<li><b>Your location</b>, only while you are recording a walk or have a roam open. It is used to work out which paths you walk, to check you in at a roam’s stops, and to show how far the next stop is.</li>'+
   '<li><b>Your detailed route</b> (a log of GPS points) is saved only on this device. It is never uploaded.</li>'+
   '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).</li>'+
   '<li>Improvement requests you save on the Safety page, and the follow-up notes you add.</li>'+
   '<li>An unfinished walk, so you can resume or finish it after the app closes.</li>'+
   '<li><b>Your class schedule</b>, if you import one: course codes, meeting days and times, and building codes, plus where you start your day and any buildings you place on the map. Room numbers, instructors and everything else in the file are discarded when it is read. Your schedule is never uploaded.</li>'+
-  '<li><b>Herd and Seek:</b> your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can’t be read without the herd’s invite key. When you tap Check in, your phone compares its own GPS with the checkpoint and keeps only “inside: yes” — the coordinates are not saved, even here.</li>'+
+  '<li><b>Roams:</b> your herd (nicknames, avatars, progress, shared answers), stored scrambled so it can’t be read without the herd’s invite key, and which roams you have finished. Location readings used during a roam are not saved, even here.</li>'+
   '<li><b>Meet-ups:</b> if you share your free times, the link holds your class times, building codes and the name you choose (no course names or rooms); it goes through the app you share it with, not BuffPrints. Friends’ links you add are saved only on this phone and expire at the end of the term. A meet-up invite link holds the day, time, meeting spot and your name; a reply holds yes or no and the replier’s name. Planned meet-ups are saved only on this phone.</li></ul>'+
-  '<h4>Herd and Seek</h4><ul>'+
-  '<li><b>Your location never leaves your phone.</b> The check-in is worked out on the phone. The most that is ever sent is “I’m inside this checkpoint: yes” — never coordinates, accuracy or a route.</li>'+
+  '<h4>Roams</h4><ul>'+
+  '<li><b>Your location never leaves your phone.</b> While a roam is open, the phone uses its GPS to show your dot on the roam map and how far the next stop is, and to work out on the phone whether you are inside a checkpoint when you tap Check in. Readings are never saved. The most that is ever sent is “I’m inside this checkpoint: yes” — never coordinates, accuracy or a route. The roam map does not follow you, so the map-image provider does not learn where you are.</li>'+
   '<li><b>Your herd syncs phone to phone.</b> Nicknames, avatars, progress, clue pieces, hints and answers are encrypted on your phone with a key that exists only in your invite link (the part after #, which browsers never send to servers). Our relay passes along scrambled messages it can’t read and doesn’t keep them.</li>'+
   '<li><b>Friends Mode and Demo Practice</b> save nothing about you or your herd on our servers. No sign-in. (For routes that aren’t stored in the app, an answer you type is sent to be checked and is not kept.)</li>'+
   '<li><b>Competition Mode</b> (signed in) saves to your account: which checkpoints you completed and when, each marked “inside: yes”, and whether your email was a verified colorado.edu address (yes or no). For your team: its name and avatar, the route, hints used, puzzles solved and score. Finishing all five earns a demo reward token. “Demo reward — not redeemable. No purchase benefit is available.”</li>'+
@@ -805,21 +806,21 @@ function privacyHTML(){
   '<li>Anything you choose to post: hazard pins (location, category, note), your “Still there” / “Fixed” votes, and names you give paths.</li></ul>'+
   '<h4>Who can see what</h4><ul>'+
   '<li><b>Anyone, even signed out:</b> path names and the nickname of the student who named them.</li>'+
-  '<li><b>Anyone, even signed out:</b> Herd and Seek weekly standings, which show team names, team avatars, dorm or team names and scores only — never who is on a team, and never times or places.</li>'+
-  '<li><b>Your herd:</b> the nickname, avatar and checkpoint progress you share in Herd and Seek, for as long as you are in that herd.</li>'+
+  '<li><b>Anyone, even signed out:</b> weekly roam standings, which show team names, team avatars, dorm or team names and scores only — never who is on a team, and never times or places.</li>'+
+  '<li><b>Your herd:</b> the nickname, avatar and checkpoint progress you share on a roam, for as long as you are in that herd.</li>'+
   '<li><b>Signed-in students:</b> leaderboards (nickname, dorm or team, totals, streak) and hazard pins. Pins never show who reported or voted. Your nickname is public, but it isn’t a promise of complete anonymity: your team, the paths you name and when you’re active can hint at who you are.</li>'+
   '<li><b>BuffPrints moderators</b> see nickname reports, review requests, and a private log of nickname changes, so they can handle abuse. Reporters are never shown to the person reported, and rejected names and nickname histories are never shown to other students.</li>'+
   '<li><b>No one else</b> sees your email, the paths you have claimed, or your location.</li>'+
   '<li>We do not sell or share your data, show ads, or use analytics or tracking tools.</li></ul>'+
   '<h4>Services that help run BuffPrints</h4>'+
-  '<p>Supabase stores account data and relays Herd and Seek’s encrypted messages between teammates’ phones. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.</p>'+
+  '<p>Supabase stores account data and relays roams’ encrypted messages between teammates’ phones. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.</p>'+
   '<h4>How long it is kept</h4>'+
   '<p>Until you delete it. Hazard pins stop showing after 60 days unless someone confirms they are still there.</p>'+
   '<h4>Your choices</h4><ul>'+
-  '<li><b>Export</b> everything stored on this device, including your route log (Progress → Export my data).</li>'+
+  '<li><b>Export</b> everything stored on this device, including your route log (You → Export my data).</li>'+
   '<li><b>Reset progress</b> clears your progress here and in your account but keeps your account.</li>'+
-  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes, path names, and every Herd and Seek check-in, team membership and reward token — and erases this device. This cannot be undone.</li>'+
-  '<li><b>Leave a herd</b> (Herd and Seek → Leave herd) to remove it from this phone.</li>'+
+  '<li><b>Delete everything</b> permanently removes your account and all of its data — profile, nickname, progress, hazard pins, votes, path names, and every roam check-in, team membership and reward token — and erases this device. This cannot be undone.</li>'+
+  '<li><b>Leave a herd</b> (Roam → Leave herd) to remove it from this phone.</li>'+
   '<li><b>Location:</b> stop recording at any time, or turn off location for this site in your phone’s settings.</li></ul>'+
   (contact?'<p>Questions or requests: <a href="mailto:'+esc(contact)+'">'+esc(contact)+'</a></p>':'')+
   '</div>';
@@ -838,7 +839,7 @@ function confirmEraseDevice(){
 }
 function confirmDeleteAccount(){
   modal('Delete everything?',
-    '<p>This permanently deletes your BuffPrints account and all of its data: your profile, progress, streaks, badges, dorm points, hazard pins, votes, the names you gave paths, and your Herd and Seek check-ins, team memberships and reward tokens. It also erases this device. This cannot be undone.</p>'+
+    '<p>This permanently deletes your BuffPrints account and all of its data: your profile, progress, streaks, badges, dorm points, hazard pins, votes, the names you gave paths, and your roam check-ins, team memberships and reward tokens. It also erases this device. This cannot be undone.</p>'+
     '<p>Type <b>DELETE</b> to confirm.</p><label class="f" for="delConfirm">Type DELETE</label><input class="field" id="delConfirm" autocomplete="off" autocapitalize="characters" placeholder="DELETE">',
     [['Delete my account','danger',deleteAccount,'delGo'],['Cancel','',()=>{}]]);
   const inp=$('delConfirm'), go=$('delGo'); go.disabled=true;
@@ -854,8 +855,8 @@ async function deleteAccount(){
 async function eraseDevice(msg){
   try{ if(watchId!==null) stopGPS(); }catch(e){}
   try{ if(cloud.sb) await cloud.sb.auth.signOut(); }catch(e){}
-  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k===FRIENDS_KEY||k===PLANS_KEY||k===MYNAME_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0) localStorage.removeItem(k); }); }catch(e){}
-  await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('bp-herd'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });   // Herd and Seek keys
+  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k===FRIENDS_KEY||k===PLANS_KEY||k===MYNAME_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0||k==='bp-roams-done') localStorage.removeItem(k); }); }catch(e){}
+  await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('bp-herd'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });   // roam keys
   try{ sessionStorage.clear(); }catch(e){}
   try{ if(db) db.close(); }catch(e){}
   await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('ralphies-roam'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });
@@ -872,13 +873,13 @@ try{ const m=sessionStorage.getItem('rr-erased'); if(m){ sessionStorage.removeIt
    distance total, badges, and hazard pins the student chooses to file.
    ===================================================================== */
 const CFG = window.RR_CONFIG || {};
-// Herd and Seek opens in a full-screen panel over the app instead of a new page, so a walk you're
+// A roam opens in a full-screen panel over the app instead of a new page, so a walk you're
 // recording keeps tracking while you play (leaving the page would stop the GPS).
 let herdSheet=null;
 function openHerd(href){
   if(herdSheet) return;
   herdSheet=document.createElement('div'); herdSheet.id='herdSheet';
-  herdSheet.innerHTML='<iframe title="Herd and Seek" allow="geolocation; camera; clipboard-write; web-share"></iframe>';
+  herdSheet.innerHTML='<iframe title="Roam" allow="geolocation; camera; clipboard-write; web-share"></iframe>';
   herdSheet.firstChild.src=href||'herd.html';
   document.body.appendChild(herdSheet); document.body.classList.add('herd-open');
   try{ history.pushState({herd:1},''); }catch(e){}
@@ -887,7 +888,7 @@ function closeHerd(fromPop){
   if(!herdSheet) return;
   herdSheet.remove(); herdSheet=null; document.body.classList.remove('herd-open');
   if(!fromPop&&history.state&&history.state.herd){ try{ history.back(); }catch(e){} }
-  render();
+  roamActive().then(()=>{ drawRoamPins(); if(VIEW==='home') fitRoam(); if(VIEW==='community') renderCommunity(); else render(); });
 }
 window.BP_TRACKING=()=>watchId!==null;
 document.addEventListener('click',e=>{
@@ -896,8 +897,6 @@ document.addEventListener('click',e=>{
 });
 window.addEventListener('message',e=>{ if(e.origin===location.origin&&e.data&&e.data.bp==='close-herd') closeHerd(); });
 window.addEventListener('popstate',()=>{ if(herdSheet) closeHerd(true); });
-// Herd and Seek links on Home and Community. Off until the demo route is walked; herd.html still opens by direct link.
-const HERD_PUBLIC = CFG.findTheHerdLinks === true;
 const cloud = {sb:null, user:null, syncing:false, lastSync:0, err:'', step:'email', email:'', board:'week', hazards:[],
                profile:null, territory:null, weekBoard:null, terrAt:0};
 let DORM_LIST=[];
@@ -1451,9 +1450,10 @@ let VIEW='home';
 function go(v,opts){
   v=LEGACY[v]||v; if(VIEWS.indexOf(v)<0) v='home'; VIEW=v; document.body.dataset.view=v;
   VIEWS.forEach(n=>$('v-'+n).classList.toggle('act',n===v));
-  document.querySelectorAll('nav.tabs button').forEach(b=>{ const on=b.dataset.go===v; b.classList.toggle('act',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  const tab=v==='safety'?'progress':v;   // Safety is reached from You
+  document.querySelectorAll('nav.tabs button').forEach(b=>{ const on=b.dataset.go===tab; b.classList.toggle('act',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   mountMap();
-  if(v==='home') renderHome(); if(v==='explore'){ renderExplore(); setSheet(false); }
+  if(v==='home'){ renderHome(); setTimeout(fitRoam,90); } if(v==='explore'){ renderExplore(); setSheet(false); }
   if(v==='progress') renderProgress(); if(v==='community') renderCommunity();
   if(v==='safety'){ renderSafety(); loadHazards(); }
   if(!(opts&&opts.keepScroll)) $('v-'+v).scrollTop=0;
@@ -1473,6 +1473,61 @@ function mountMap(){
 (MOBILE.addEventListener?MOBILE.addEventListener.bind(MOBILE,'change'):MOBILE.addListener.bind(MOBILE))(()=>{ setupZoomCtl(); mountMap(); });
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 function render(){ if(VIEW==='home') renderHome(); else if(VIEW==='explore') renderExplore(); else if(VIEW==='progress') renderProgress(); }
+
+/* ---------- Roam: this week's route, and the herd on this phone ----------
+   The roam itself runs in herd.html (opened as a panel). Here we only show which route is up,
+   where its stops are, and whether a herd is in progress. The herd is stored encrypted; it is
+   opened with the key this phone already holds, and nothing about it is sent anywhere. */
+const ROAM={eds:(window.HERD_EDITIONS?HERD_EDITIONS.editions.map(e=>e.content):[]), active:null, stand:null, standTab:'teams'};
+function roamFeatured(){
+  if(!ROAM.eds.length) return null;
+  const n=ROAM.eds.length, wk=Math.floor(weekStartMs()/6048e5);
+  return ROAM.eds[((wk%n)+n)%n];   // a different route each Monday
+}
+function roamEdition(){ return ROAM.active?ROAM.active.edition:roamFeatured(); }
+function roamsDone(){ try{ const a=JSON.parse(localStorage.getItem('bp-roams-done')||'[]'); return Array.isArray(a)?a.length:0; }catch(e){ return 0; } }
+async function roamActive(){
+  ROAM.active=null;
+  try{
+    const id=localStorage.getItem('bp-herd-active'); if(!id||!window.HerdCore||!window.indexedDB) return;
+    const keys=await new Promise(res=>{ const rq=indexedDB.open('bp-herd',1); rq.onupgradeneeded=()=>rq.result.createObjectStore('keys'); rq.onerror=()=>res(null);
+      rq.onsuccess=()=>{ const db=rq.result; try{ const g=db.transaction('keys','readonly').objectStore('keys').get(id); g.onsuccess=()=>{ db.close(); res(g.result||null); }; g.onerror=()=>{ db.close(); res(null); }; }catch(e){ db.close(); res(null); } }; });
+    if(!keys||!keys.aes) return;
+    const saved=await HerdCore.restore(keys,{get:async k=>localStorage.getItem(k)});
+    const st=saved&&saved.state, m=st&&st.members[saved.self];
+    if(m&&!(m.leftAt>0)&&st.edition) ROAM.active={state:st, self:saved.self, edition:st.edition};
+  }catch(e){}
+}
+async function roamLoad(){
+  if(cloud.sb&&navigator.onLine){ try{ const r=await cloud.sb.rpc('hunt_get_editions'); if(!r.error&&Array.isArray(r.data)&&r.data.length) ROAM.eds=r.data; }catch(e){} }
+  await roamActive(); drawRoamPins();
+  if(VIEW==='home'){ renderHome(); fitRoam(); }
+}
+let ROAM_LAYER=null;
+function drawRoamPins(){
+  if(ROAM_LAYER){ ROAM_LAYER.remove(); ROAM_LAYER=null; }
+  const ed=roamEdition(); if(!ed) return;
+  const st=ROAM.active&&ROAM.active.state, me=ROAM.active&&ROAM.active.self; let next=0;
+  ROAM_LAYER=L.layerGroup();
+  L.polyline(ed.checkpoints.map(c=>[c.lat,c.lng]),{color:'#C9B476',weight:3,dashArray:'2 9',opacity:.9,interactive:false}).addTo(ROAM_LAYER);
+  ed.checkpoints.forEach(c=>{
+    const done=!!st&&HerdCore.checkpointStatus(st,me,c.no)==='done', isNext=!done&&!next; if(isNext) next=c.no;
+    L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',html:'<div class="rpin'+(done?' done':isNext?' nx':'')+'">'+(done?'✓':c.no)+'</div>',iconSize:[30,30],iconAnchor:[15,15]}),keyboard:false,interactive:false,zIndexOffset:500}).addTo(ROAM_LAYER);
+  });
+  ROAM_LAYER.addTo(map);
+}
+function fitRoam(){
+  const ed=roamEdition(); if(!ed||VIEW!=='home'||S.rec) return;
+  try{ map.invalidateSize(); map.fitBounds(L.latLngBounds(ed.checkpoints.map(c=>[c.lat,c.lng])).pad(0.3),{animate:false}); queueFog(); }catch(e){}
+}
+function avatarsHTML(st,max){
+  return '<span class="pavs">'+HerdCore.activeMembers(st).slice(0,max||5).map(id=>'<span class="pav" aria-hidden="true">'+(HerdCore.AVATAR_EMOJI[st.members[id].avatar]||HerdCore.AVATAR_EMOJI.bison)+'</span>').join('')+'</span>';
+}
+function yring(text,frac,label,size){
+  const z=size||72, r=z/2-6, c=2*Math.PI*r;
+  return '<div class="yring"><div class="rw" style="width:'+z+'px;height:'+z+'px"><svg width="'+z+'" height="'+z+'" viewBox="0 0 '+z+' '+z+'" aria-hidden="true"><circle cx="'+z/2+'" cy="'+z/2+'" r="'+r+'" fill="none" stroke="#3A4244" stroke-width="7"/>'+
+    '<circle cx="'+z/2+'" cy="'+z/2+'" r="'+r+'" fill="none" stroke="#C9B476" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+(c*Math.max(0,Math.min(1,frac))).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 '+z/2+' '+z/2+')"/></svg><b>'+text+'</b></div>'+(label?'<span>'+label+'</span>':'')+'</div>';
+}
 const renderAll=render;
 
 /* ---------- Explore bottom sheet (mobile) ---------- */
@@ -1562,20 +1617,20 @@ function goNudge(n){ if(!n) return; if(n.seg) return openPath(n.seg); if(n.targe
 
 /* ---------- Home ---------- */
 function renderHome(){
-  const p=progress(), h=hist(), a=weekAct(h), rows=goalRowsNow(p,h,a);
-  const isNew=!(S.sessions&&S.sessions.length)&&!Object.keys(S.claimed).length;
-  $('homeTop').innerHTML=(isNew&&!S.welcomed?'<div class="welcome"><span class="mark" style="flex:none">'+hoof()+'</span><div class="grow"><b>Take a new route between classes.</b><p>Tap Record and walk. BuffPrints marks the paths you cover. Your route stays on this phone.</p></div><button class="mbtn" style="box-shadow:none;width:40px;height:40px" data-act="dismissWelcome" aria-label="Dismiss">'+icon('x','sm')+'</button></div>':'')+
-    '<div class="label">This week <button class="more" data-act="goals">Goals</button></div>'+goalTilesHTML(rows,a);
-  const n=S.rec?null:nextAction(p,h,a,rows);
-  $('homeNext').innerHTML=n?'<div class="label">Next</div>'+nextHTML(n):'';
-  $('homeClasses').innerHTML=classesHTML();
-  const t=teamSummary(), ses=S.sessions||[];
-  let b='';
-  if(t) b+='<div class="label">'+esc(t.name)+' this week <button class="more" data-go="community">Community</button></div>'+teamLineHTML(t);
-  if(HERD_PUBLIC) b+='<div class="label">Herd and Seek <span class="pill gold">New</span></div><a class="block" href="herd.html" style="display:block;text-decoration:none;color:inherit"><b>A campus scavenger hunt for you and your friends</b><p class="small muted" style="margin:4px 0 0">Five outdoor checkpoints, five puzzles, about 20–40 minutes. Go solo or bring your herd. Your location never leaves your phone.</p></a>';
-  b+='<div class="label">Recent walks'+(ses.length>2?' <button class="more" data-go="progress">All walks</button>':'')+'</div>'+
-     (ses.length?ses.slice(0,2).map(walkRowHTML).join(''):'<p class="empty">Your walks will show up here after you finish one.</p>');
-  $('homeBottom').innerHTML=b;
+  const ed=roamEdition(), chip=$('roamChip'), el=$('homeRoam');
+  if(!ed){ chip.hidden=true; el.innerHTML='<h1 class="rtitle">Roam</h1><p class="empty">No roams are open right now.</p>'; return; }
+  const act=ROAM.active, st=act&&act.state;
+  chip.hidden=false; chip.textContent=act?'In progress':(ed.demo?'This week · Demo':'This week');
+  let m=0; ed.checkpoints.forEach((c,i)=>{ if(i) m+=HerdCore.distanceM(ed.checkpoints[i-1].lat,ed.checkpoints[i-1].lng,c.lat,c.lng); });
+  const mi=(m*1.3/1609.344).toFixed(1), mins=ed.est_minutes?ed.est_minutes[0]+'–'+ed.est_minutes[1]+' min':'30 min';
+  let herd;
+  if(act){
+    const done=Object.keys(HerdCore.doneMap(st.members[act.self],st.puzzles)).length;
+    herd='<div class="rherd">'+avatarsHTML(st)+'<span class="grow"><b>'+esc(st.herd.name)+'</b><small>'+done+' of '+ed.checkpoints.length+' stops</small></span><a class="btn sm" href="herd.html?do=invite">'+icon('plus','sm')+'Invite</a></div>';
+  }else herd='<div class="rherd"><span class="pavs"><span class="pav ghost">'+icon('users','sm')+'</span></span><span class="grow"><small>Solo or with friends</small></span><a class="link" href="herd.html">All roams</a></div>';
+  el.innerHTML='<h1 class="rtitle">'+esc(ed.theme||ed.title)+'</h1>'+
+    '<div class="rmeta"><span>'+icon('flag','sm')+pl(ed.checkpoints.length,'stop')+'</span><span>'+icon('clock','sm')+mins+'</span><span>'+icon('walk','sm')+mi+' mi</span></div>'+herd+
+    '<a class="btn pri block-btn rgo" href="herd.html'+(act?'':'?roam='+encodeURIComponent(ed.id))+'">'+(act?'Continue roam':'Start roam')+'</a>';
 }
 const SHORT={paths:['new path','new paths'],walks:['walk','walks'],zone:['new zone','new zones'],complete:['path finished','paths finished']};
 function goalTilesHTML(rows,a){
@@ -1627,12 +1682,14 @@ function renderExplore(){
   const p=progress(), h=hist(), a=weekAct(h), rows=goalRowsNow(p,h,a), n=nextAction(p,h,a,rows);
   NUDGES=buildNudges(p);
   const ideas=NUDGES.filter(x=>x.target||x.seg).filter(x=>!n||x.text.indexOf(n.title)<0).slice(0,3);
-  $('sheetBody').innerHTML=routeBoxHTML()+(n&&!ROUTE_VIEW?nextHTML(n):'')+
+  const ses=S.sessions||[];
+  $('sheetBody').innerHTML='<div class="xstat"><b>'+p.pct.toFixed(p.pct<10?1:0)+'%</b><span>of campus explored</span></div>'+goalTilesHTML(rows,a)+
+    routeBoxHTML()+(n&&!ROUTE_VIEW?nextHTML(n):'')+
     '<div class="legend" style="margin-top:12px"><span><i></i>Walked</span><span><i class="open"></i>Not walked yet</span><span><span style="width:16px;height:16px;display:inline-block">'+hoof('#8D7334')+'</span>Path completed</span></div>'+
     (ideas.length?'<div class="label">Nearby</div><div class="list">'+ideas.map(x=>'<button class="row" data-nudge="'+NUDGES.indexOf(x)+'"><span class="grow">'+esc(clean(x.text))+'</span>'+icon('chev','sm')+'</button>').join('')+'</div>':'')+
     '<div class="label">Zones</div>'+zonesHTML(p,h)+
-    '<div class="btns"><button class="btn" data-act="report">'+icon('alert','sm')+'Report an issue here</button></div>'+
-    '<p class="note">Tap a path on the map to see its name or name one you’ve walked. Fog is optional — use the fog button on the map.</p>';
+    (ses.length?'<div class="label">Recent walks</div>'+ses.slice(0,2).map(walkRowHTML).join(''):'')+
+    '<div class="btns"><button class="btn" data-act="report">'+icon('alert','sm')+'Report a hazard</button></div>';
 }
 
 /* ---------- Progress ---------- */
@@ -1644,21 +1701,25 @@ function renderProgress(){
   const listed=BADGES.filter(b=>b.id.indexOf('zone-')!==0||(p.z[b.id.slice(5)]&&p.z[b.id.slice(5)].n));
   const got=listed.filter(b=>S.badges[b.id]), next=listed.filter(b=>!S.badges[b.id]);
   const shown=SHOW_ALL_BADGES?got.concat(next):got.slice(-3).concat(next.slice(0,got.length?3:6));
-  $('progressBody').innerHTML='<h1 class="title">Progress</h1>'+
-    '<div class="label">This week <button class="more" data-act="goals">Edit goals</button></div>'+goalsHTML(rows)+
-    '<div class="label">All time</div><div class="stats">'+
-      stat(p.miles.toFixed(1),'miles walked')+stat(visited.toLocaleString(),'paths visited of '+total.toLocaleString())+
-      stat(completed.toLocaleString(),'paths walked end to end')+stat(zx+' / '+nz.length,'zones explored')+
-      stat(p.pct.toFixed(1)+'%','of campus path length')+stat(pl(p.streak,'day'),'streak · best '+p.best)+'</div>'+
-    '<p class="note">A day counts toward your streak when you walk a new path section or 10 sections in total. Rest days are fine: each 7-day streak earns a freeze that covers one missed day.</p>'+
-    '<div class="label">Badges <span style="text-transform:none;letter-spacing:0;font-weight:600">· '+got.length+' earned</span><button class="more" data-act="allBadges">'+(SHOW_ALL_BADGES?'Show fewer':'Show all')+'</button></div>'+
+  const pr=cloud.profile, nick=pr&&pr.name_state!=='hidden'&&(pr.username||pr.display_name), dorm=pr&&pr.dorm;
+  $('progressBody').innerHTML='<div class="youhead"><span class="mark big">'+hoof()+'</span><div class="grow"><h1 class="title">'+esc(nick||'You')+'</h1><small>'+esc(dorm||(cloud.user?'No dorm or team yet':'Not signed in'))+'</small></div></div>'+
+    '<div class="yrings">'+yring(p.pct.toFixed(p.pct<10?1:0)+'%',p.pct/100,'Campus')+yring(p.streak,Math.min(1,p.streak/7),'Day streak')+yring(roamsDone(),Math.min(1,roamsDone()/Math.max(1,ROAM.eds.length)),'Roams')+'</div>'+
+    '<div class="label">Badges <span style="text-transform:none;letter-spacing:0;font-weight:600">· '+got.length+'</span><button class="more" data-act="allBadges">'+(SHOW_ALL_BADGES?'Fewer':'All')+'</button></div>'+
     '<div class="badges">'+shown.map(badgeHTML).join('')+'</div>'+
+    '<div class="list" style="margin-top:14px">'+
+      '<button class="row" data-act="sched"><span class="ic-lead">'+icon('cal','sm')+'</span><span class="grow"><b>Class schedule</b></span>'+icon('chev','sm')+'</button>'+
+      '<button class="row" data-go="safety"><span class="ic-lead">'+icon('shield','sm')+'</span><span class="grow"><b>Safety &amp; hazards</b></span>'+icon('chev','sm')+'</button>'+
+      '<button class="row" data-act="privacy"><span class="ic-lead">'+icon('doc','sm')+'</span><span class="grow"><b>Privacy &amp; data</b></span>'+icon('chev','sm')+'</button></div>';
+  $('progressMore').innerHTML='<div class="label">Walking this week <button class="more" data-act="goals">Goals</button></div>'+goalsHTML(rows)+
+    '<div class="label">All time</div><div class="stats">'+
+      stat(p.miles.toFixed(1),'miles')+stat(visited.toLocaleString(),'paths of '+total.toLocaleString())+
+      stat(completed.toLocaleString(),'end to end')+stat(zx+' / '+nz.length,'zones')+'</div>'+
     '<div class="label">Walks <span class="pill">On this phone</span></div>'+
-    (ses.length?ses.slice(0,12).map(walkRowHTML).join(''):'<p class="empty">No walks recorded on this phone yet. Tap Record to start one.</p>');
+    (ses.length?ses.slice(0,12).map(walkRowHTML).join(''):'<p class="empty">No walks yet.</p>');
+  $('homeClasses').innerHTML=SCHED?classesHTML():'';
   $('dataBox').innerHTML='<div class="label">Your data</div><div class="list">'+
-    '<button class="row" data-act="sched"><span class="grow"><b>Class schedule</b><small>'+(SCHED?pl(SCHED.classes.length,'class','classes')+' · saved only on this phone':'Import your Buff Portal calendar (.ics) file')+'</small></span>'+icon('chev','sm')+'</button>'+
     '<button class="row" data-act="export"><span class="grow"><b>Export my data</b><small>Everything stored on this phone, including your route log</small></span>'+icon('chev','sm')+'</button>'+
-    '<button class="row" data-act="privacy"><span class="grow"><b>Privacy &amp; delete my data</b><small>What’s collected, who can see it, and how to delete it</small></span>'+icon('chev','sm')+'</button>'+
+    '<button class="row" data-act="privacy"><span class="grow"><b>Delete my data</b><small>Erase this phone or delete your account</small></span>'+icon('chev','sm')+'</button>'+
     '<button class="row" data-act="reset"><span class="grow"><b style="color:var(--danger)">Reset progress</b><small>Clears progress here and in your account; keeps your account</small></span></button></div>';
 }
 function editGoals(){
@@ -1676,16 +1737,41 @@ function editGoals(){
 
 /* ---------- Community: your team first ---------- */
 let commToken=0;
+function roamHerdCardHTML(){
+  const act=ROAM.active;
+  if(!act) return '<div class="hcard"><span class="pav ghost">'+icon('users','sm')+'</span><div class="grow"><b>No herd yet</b><small>Roam solo or invite friends</small></div><a class="btn pri sm" href="herd.html">Start</a></div>';
+  const st=act.state, sc=HerdCore.herdScore(st);
+  return '<a class="hcard" href="herd.html">'+yring(sc.team,sc.team/600,'',76)+'<div class="grow"><b>'+esc(st.herd.name)+'</b>'+avatarsHTML(st,6)+'<small>'+sc.solved+' of 5 solved</small></div>'+icon('chev','sm')+'</a>';
+}
+function roamStandHTML(){
+  const d=ROAM.stand, t=ROAM.standTab, ed=roamEdition();
+  let h='<div class="label">'+esc(ed?(ed.theme||ed.title):'Roam')+' · this week</div><div class="seg" role="tablist"><button role="tab" aria-selected="'+(t==='teams')+'" class="'+(t==='teams'?'act':'')+'" data-act="standTab" data-tab="teams">Herds</button><button role="tab" aria-selected="'+(t==='affs')+'" class="'+(t==='affs'?'act':'')+'" data-act="standTab" data-tab="affs">Dorms</button></div>';
+  if(!cloud.sb) return h+'<p class="empty">Standings need the online service.</p>';
+  if(!d) return h+'<p class="empty">'+(navigator.onLine?'Loading…':'Standings load when you’re back online.')+'</p>';
+  const rows=t==='teams'?d.teams:d.affiliations;
+  if(!rows||!rows.length) return h+'<p class="empty">No scores yet this week. Yours could be first.</p>';
+  return h+rows.slice(0,10).map(x=>t==='teams'
+    ?'<div class="lb'+(x.is_mine?' you':'')+'"><span class="r">'+x.rank+'</span><span class="pav" aria-hidden="true">'+(HerdCore.AVATAR_EMOJI[x.avatar]||'')+'</span><span class="n"><b>'+esc(x.team_name)+'</b><small>'+esc(x.affiliation||'No dorm')+'</small></span><span class="v">'+x.score+'</span></div>'
+    :'<div class="lb'+(x.is_mine?' you':'')+'"><span class="r">'+x.rank+'</span><span class="n"><b>'+esc(x.affiliation)+'</b><small>'+pl(x.players,'player')+'</small></span><span class="v">'+x.score+'</span></div>').join('');
+}
+async function loadRoamStandings(){
+  const ed=roamEdition(); if(!cloud.sb||!ed||!navigator.onLine) return;
+  try{ const r=await cloud.sb.rpc('hunt_standings',{p_edition:ed.id}); if(!r.error&&r.data) ROAM.stand=r.data; }catch(e){}
+  const box=$('commStand'); if(box) box.innerHTML=roamStandHTML();
+}
 async function renderCommunity(){
-  const el=$('v-community'), tk=++commToken, head='<h1 class="title">Community</h1>'+(HERD_PUBLIC?'<div class="list" style="margin:-4px 0 14px"><a class="row" href="herd.html" style="text-decoration:none;color:inherit"><span class="grow"><b>Herd and Seek</b><small>Scavenger hunt · weekly herd and dorm standings</small></span><span class="chev" aria-hidden="true">›</span></a></div>':'');
-  if(!cloud.sb){ el.innerHTML=head+'<p class="empty">Team features need the online service, which isn’t set up in this copy of BuffPrints.</p>'; return; }
-  if(!cloud.user){ el.innerHTML=head+'<div class="block"><b>Walk with your dorm or team</b><p class="small muted" style="margin:4px 0 0">Each path section you walk this week adds a point for your team. The team with the most points in a zone leads it until Monday.</p><div class="btns"><button class="btn pri" data-act="signin">Sign in to join</button></div></div>'; return; }
-  if(!navigator.onLine){ el.innerHTML=head+'<p class="empty">You’re offline. Team standings will load when you reconnect. Your walks still count.</p>'; return; }
-  if(!cloud.profile){ el.innerHTML=head+'<p class="empty">Loading your team…</p>'; await loadProfile(); if(tk!==commToken) return; }
-  el.innerHTML=head+'<p class="empty">Loading this week’s activity…</p>';
+  const tk=++commToken, head='<div class="label">Walking this week</div>';
+  $('v-community').innerHTML='<h1 class="title">Herd</h1>'+roamHerdCardHTML()+'<div id="commStand">'+roamStandHTML()+'</div><div id="commWalk"></div>';
+  loadRoamStandings();
+  const el=$('commWalk');
+  if(!cloud.sb){ el.innerHTML=''; return; }
+  if(!cloud.user){ el.innerHTML=head+'<div class="hcard"><div class="grow"><b>Walk for your dorm</b><small>Sign in to score zone points</small></div><button class="btn sm" data-act="signin">Sign in</button></div>'; return; }
+  if(!navigator.onLine){ el.innerHTML=head+'<p class="empty">Offline. Your walks still count.</p>'; return; }
+  if(!cloud.profile){ el.innerHTML=head+'<p class="empty">Loading…</p>'; await loadProfile(); if(tk!==commToken||!el.isConnected) return; }
+  el.innerHTML=head+'<p class="empty">Loading…</p>';
   await flush();
   const [, dl]=await Promise.all([loadTerritory(), cloud.sb.rpc('get_dorm_leaderboard').then(r=>r,e=>({error:e}))]);
-  if(tk!==commToken||VIEW!=='community') return;
+  if(tk!==commToken||VIEW!=='community'||!el.isConnected) return;
   const my=cloud.profile&&cloud.profile.dorm;
   if(!cloud.territory){ el.innerHTML=head+'<p class="empty">Couldn’t load team activity. Check your connection and try again.</p><button class="btn" data-act="reloadComm">Try again</button>'; return; }
   let html=head;
@@ -1710,7 +1796,7 @@ async function renderCommunity(){
   const wb=cloud.weekBoard||[];
   html+='<div class="label">Students this week</div>'+(wb.length?wb.slice(0,10).map(x=>'<div class="lb'+(x.is_me?' you':'')+'"><span class="r">'+x.rank+'</span><span class="n"><b>'+esc(x.name)+(x.is_me?' (you)':'')+'</b><small>'+esc(x.dorm||'No team')+'</small></span><span class="v">'+x.segments+'</span>'+
     (!x.is_me&&x.name_ref?'<button class="lb-more" data-act="reportName" data-ref="'+esc(x.name_ref)+'" data-name="'+esc(x.name)+'" aria-label="Report the nickname '+esc(x.name)+'"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></button>':'')+'</div>').join(''):'<p class="empty">No one has recorded a walk this week yet.</p>');
-  html+='<p class="note">Points: 1 for each path section walked this week, counted once per section. Totals come from students’ recorded walks and reset Monday. Leaderboards show names and totals only — never routes or locations.</p>';
+  html+='<p class="note">1 point per path section walked this week. Resets Monday.</p>';
   el.innerHTML=html;
 }
 function teamPickerHTML(cur){
@@ -1753,7 +1839,7 @@ function requestsHTML(){
 }
 function renderSafety(){
   const rows=Object.values(HAZ).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));
-  $('v-safety').innerHTML='<h1 class="title">Safety</h1>'+
+  $('v-safety').innerHTML='<button class="link" data-go="progress">‹ You</button><h1 class="title">Safety</h1>'+
     '<div class="urgent"><b>Emergency? Call 911.</b><div class="small" style="margin-top:2px">BuffPrints isn’t monitored by CU or emergency services.</div></div>'+
     '<div class="label">Help and getting home</div><div class="list">'+
       res('https://www.colorado.edu/publicsafety/resources','shield','CU Boulder Safe','Official CU app: alerts, Virtual Walkhome, help')+
@@ -1894,7 +1980,7 @@ function showFinish(s,fresh){
     '<p class="note">Shared images show your stats'+(s.shape?' and, if you choose, the trimmed route shape':'')+'. They never include your name, exact start or finish, place names or time of day.</p>';
   $('finish').classList.add('show'); setTimeout(()=>{ const b=$('finish').querySelector('[data-act=share]'); if(b) b.focus(); },50);
 }
-function closeFinish(){ $('finish').classList.remove('show'); FIN=null; if(VIEW==='explore') go('home'); else render(); }
+function closeFinish(){ $('finish').classList.remove('show'); FIN=null; render(); }
 async function shareWalk(s,withShape){
   const W=1080,H=1350,c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
   const F='"Helvetica Neue",Helvetica,Arial,sans-serif';
@@ -2564,6 +2650,7 @@ document.addEventListener('click',e=>{
   const a=t.dataset.act;
   if(a==='next') doNext(NEXT);
   else if(a==='goals') editGoals();
+  else if(a==='standTab'){ ROAM.standTab=t.dataset.tab; const box=$('commStand'); if(box) box.innerHTML=roamStandHTML(); }
   else if(a==='dismissWelcome'){ S.welcomed=Date.now(); saveSoon(); renderHome(); }
   else if(a==='allBadges'){ SHOW_ALL_BADGES=!SHOW_ALL_BADGES; renderProgress(); }
   else if(a==='export') exportData();
@@ -2647,6 +2734,8 @@ function handleLink(h){
 const LINK_IN=location.hash||'';
 if(LINK_RE.test(LINK_IN)) try{ history.replaceState(null,'',location.pathname+'#home'); }catch(e){}
 go((location.hash||'').replace('#','')||'home',{keepScroll:true});
+roamLoad();
+window.addEventListener('storage',e=>{ if(e.key==='bp-herd-active'||(e.key||'').indexOf('bp-herd:')===0) roamActive().then(()=>{ drawRoamPins(); if(VIEW==='home') renderHome(); }); });
 if(LINK_RE.test(LINK_IN)) handleLink(LINK_IN);
 // A link opened while the app is already open only changes the #part, so listen for it too.
 window.addEventListener('hashchange',()=>{ const h=location.hash||''; if(!LINK_RE.test(h)) return;

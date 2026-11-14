@@ -1,6 +1,6 @@
-# Herd and Seek (Phase 1)
+# Roams (Phase 1)
 
-A campus scavenger hunt inside BuffPrints: five outdoor checkpoints, five puzzles, 20–40 minutes, solo or with friends. It is built to collect as little as possible. No volunteers, no signs or stickers on campus, no native app, no Web Bluetooth or Web NFC.
+Roams are BuffPrints' main feature (called "Find the Herd" and then "Herd and Seek" in earlier versions; file, table and function names still say `herd` and `hunt`). A roam is a campus scavenger hunt: five outdoor checkpoints, five puzzles, 20–40 minutes, solo or with friends. It is built to collect as little as possible. No volunteers, no signs or stickers on campus, no native app, no Web Bluetooth or Web NFC.
 
 Player page: `herd.html`. Admin page: `herd-admin.html`. Privacy notice: [PRIVACY.md](../PRIVACY.md).
 
@@ -41,7 +41,9 @@ Deferred to Phase 2: sponsor campaigns, inventory reservation locks, a sponsor r
 
 **Sync.** Herd state only grows (a check-in is never undone), so phones merge in any order. A phone that (re)connects says hello; the others reply with what they have; whoever knows more says so once. If every phone in a herd is closed at once, each still has its own copy.
 
-**Check-in.** "Check in here" asks for foreground GPS, compares distance and reported accuracy with the checkpoint **on the phone**, and discards the fixes. Inside = within the radius, allowing up to 25 m of the accuracy circle; a fix worse than ±65 m proves nothing. Only `inside: true` is kept. In Competition Mode the server receives `(team, checkpoint number, in_geofence: true, answer)`.
+**Live read-out.** While a roam is on screen and location permission has already been given, the phone watches foreground GPS to draw the player's dot on the roam map and show the distance and direction to the next stop. Fixes live in memory only (`A.live` in `herd-app.js`): never written to storage, never sent. The roam map is fitted to the route and never pans to the player, so tile requests reveal the route area, not the player. The watch stops when the page is hidden.
+
+**Check-in.** "Check in" asks for foreground GPS, compares distance and reported accuracy with the checkpoint **on the phone**, and discards the fixes. Inside = within the radius, allowing up to 25 m of the accuracy circle; a fix worse than ±65 m proves nothing. Only `inside: true` is kept. In Competition Mode the server receives `(team, checkpoint number, in_geofence: true, answer)`.
 
 **Rolling code.** `HMAC(herd key, peer | checkpoint | 7-second window)` as a QR and as six digits (camera-free fallback). Accepted for the current window, two back and one ahead. Verified phone to phone; no server.
 
@@ -85,7 +87,7 @@ Every table has RLS on with no policies and no grants; the API can't read or wri
 2. **Realtime:** in Supabase → Realtime → Settings, **Allow public access** must be on (the default). The relay uses public channels named `herd-<32 hex>`; the payloads are ciphertext.
 3. **Admins:** in the SQL editor, `insert into public.admin_allowlist (email) values ('you@colorado.edu');` (lowercase). There is no sign-up path. The account's address must be confirmed and match the allowlist.
 4. **Sign-in:** the same 6-digit email code as the main app (README → "Home-screen sign-in").
-5. **Soft launch:** the Home card and Community link are hidden until you set `findTheHerdLinks: true` in `config.js`. Until then the hunt opens only from a direct link to `herd.html` (invite links work as normal). Walk the route, fix pins and answers in the admin view, then flip the switch.
+5. **Launch:** roams are the app's home screen, so the featured roam is public as soon as this is deployed. Walk each route and fix pins and answers in the admin view before sharing the app widely. The featured roam rotates weekly through the live editions.
 6. After changing app files, bump `VERSION` in `sw.js` and the `?v=` numbers.
 
 ## Admin view (`herd-admin.html`)

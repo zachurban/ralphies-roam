@@ -1,11 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v33';
+const VERSION = 'rr-v34';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=33', 'splash.css?v=33', 'splash.js?v=33', 'student-core.js?v=33', 'track-core.js?v=33', 'username-core.js?v=33', 'schedule-core.js?v=33', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
-  // Herd and Seek
-  'herd.html', 'herd.css?v=33', 'herd-core.js?v=33', 'herd-editions.js?v=33', 'herd-app.js?v=33', 'vendor/qrcode.min.js?v=33', 'vendor/jsqr.min.js?v=33',
+  'app.css?v=34', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
+  // Roam (the scavenger hunt)
+  'herd.html', 'herd.css?v=34', 'herd-core.js?v=34', 'herd-editions.js?v=34', 'herd-app.js?v=34', 'vendor/qrcode.min.js?v=34', 'vendor/jsqr.min.js?v=34',
   'public/icon-192.png', 'public/icon-512.png', 'public/icon-192-maskable.png', 'public/icon-512-maskable.png', 'public/apple-touch-icon.png', 'public/hoofprint-logo.svg',
   'public/icon.svg', 'public/favicon.ico', 'public/favicon-32x32.png', 'public/favicon-16x16.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -74,7 +74,7 @@ self.addEventListener('fetch', e => {
   // The admin pages are never cached (and must not replace the cached app page)
   if (url.origin === location.origin && (url.pathname.endsWith('/admin.html') || url.pathname.endsWith('/herd-admin.html'))) return;
   if (req.mode === 'navigate' || isConfig) {
-    // Herd and Seek is its own page. It is stored under a fixed name, so an invite link's
+    // The roam game is its own page. It is stored under a fixed name, so an invite link's
     // #key (which never leaves the phone anyway) can't end up in the cache either.
     const isHerd = url.origin === location.origin && url.pathname.endsWith('/herd.html');
     const key = isConfig ? 'config.js' : isHerd ? 'herd.html' : 'index.html';

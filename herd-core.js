@@ -1,4 +1,4 @@
-/* BuffPrints — Herd and Seek: logic shared by herd.html, herd-admin.html and the tests.
+/* BuffPrints — Roams (the scavenger hunt): logic shared by herd.html, herd-admin.html and the tests.
    No DOM. Crypto is the Web Crypto API (every current iPhone/Android browser, and Node 20+).
    Network (the relay) and storage are passed in, so the whole thing runs under `node --test`.
 
