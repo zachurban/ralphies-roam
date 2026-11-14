@@ -15,19 +15,22 @@ What's in the repo:
 
 ## Checklist
 
-### 1. Domain (one time)
-- [ ] Buy the domain (e.g. `buffprints.app`). Turn on the registrar's free email forwarding, e.g. `hello@` → your inbox.
-- [ ] DNS: four `A` records for the bare domain → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`; `CNAME` `www` → `zachurban.github.io`.
-- [ ] Repo Settings → Pages → Custom domain → enter the domain, then tick **Enforce HTTPS** once it's offered. (This adds a `CNAME` file to the repo.) The old `github.io` address redirects to the new one.
-- [ ] Supabase → Authentication → URL Configuration: set **Site URL** to `https://<domain>/` and add `https://<domain>/**` to Redirect URLs, or email sign-in links will break.
-- [ ] `config.js`: set `contactEmail` to the forwarding address (shows on the privacy notice and the deletion page).
-- [ ] Check `https://<domain>/.well-known/assetlinks.json` opens.
+### 1. Domain: buffprints.app (bought on GoDaddy)
+Order matters: set up DNS **before** merging the PR that adds the `CNAME` file, or the site points at a domain that doesn't answer yet.
+- [ ] GoDaddy → My Products → buffprints.app → **DNS**. Delete any existing `A` record for `@` (GoDaddy's "Parked" one) and any `CNAME` for `www`.
+- [ ] Add four `A` records, Name `@`: `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`.
+- [ ] Add a `CNAME`, Name `www`, Value `zachurban.github.io`.
+- [ ] Merge the PR (it adds `CNAME` containing `buffprints.app`). Then repo Settings → Pages: confirm the custom domain shows `buffprints.app` and its DNS check passes, and tick **Enforce HTTPS** once offered. Certificates can take up to an hour or so. `.app` domains only work over HTTPS, so the site stays blank until then.
+- [ ] Optional but recommended: GitHub profile Settings → Pages → **Add a verified domain** (adds a TXT record at GoDaddy), so nobody else can claim the domain on GitHub.
+- [ ] Supabase → Authentication → URL Configuration: **Site URL** `https://buffprints.app/`; add Redirect URLs `https://buffprints.app/**` and `https://www.buffprints.app/**`. Keep the old github.io entry for a while.
+- [ ] Email: set up forwarding for `hello@buffprints.app` to your inbox (GoDaddy's forwarding if your plan includes it, or a free forwarder like ImprovMX), then set `contactEmail: 'hello@buffprints.app'` in `config.js`.
+- [ ] Check `https://buffprints.app/.well-known/assetlinks.json` opens.
 
 Note: progress saved only on a phone (not signed in) is tied to the old address. Signed-in progress comes back on sign-in.
 
 ### 2. Build the app
 - [ ] Repo Settings → Secrets and variables → Actions → add `ANDROID_KEYSTORE_B64` and `ANDROID_KEYSTORE_PASSWORD` (values are in the key file Claude sent you). **Keep `buffprints-upload.jks` and its password somewhere safe**: it signs every update. If it's ever lost, Play support can reset the upload key.
-- [ ] Actions → *Android app (Google Play)* → Run workflow → enter the domain and version `1.0.0`.
+- [ ] Actions → *Android app (Google Play)* → Run workflow (domain defaults to `buffprints.app`, version `1.0.0`).
 - [ ] Download the `buffprints-android` artifact: `app-release-bundle.aab` goes to Play; `app-release-signed.apk` can be installed on an Android phone to try it.
 
 ### 3. Play Console
@@ -62,13 +65,13 @@ New personal accounts need **12 testers opted in for 14 days in a row** on the c
 >
 > BuffPrints is an independent student project. It is not an official University of Colorado Boulder app.
 
-**Category:** Health & Fitness (alternative: Travel & Local). **Contact email:** the forwarding address. **Privacy policy:** `https://<domain>/privacy.html`.
+**Category:** Health & Fitness (alternative: Travel & Local). **Contact email:** the forwarding address. **Privacy policy:** `https://buffprints.app/privacy.html`.
 
 **Graphics:** icon `docs/play/app-icon-512.png`; feature graphic `docs/play/feature-graphic.png`; **phone screenshots: take 4–6 real ones on campus** (Explore map with gold paths, a finished walk, Progress, Herd and Seek, Class Schedule). Real satellite map screenshots sell it far better than mockups.
 
 ## Data safety (based on PRIVACY.md — double-check before submitting)
 
-- Data collected: **yes**. Shared with third parties: **no** (Supabase only stores data for the app, as a service provider). Encrypted in transit: **yes**. Users can request deletion: **yes** (`https://<domain>/delete-account.html`).
+- Data collected: **yes**. Shared with third parties: **no** (Supabase only stores data for the app, as a service provider). Encrypted in transit: **yes**. Users can request deletion: **yes** (`https://buffprints.app/delete-account.html`).
 - **Location → Approximate location:** collected, *optional*, for *app functionality*. GPS points never leave the phone, but for signed-in users the walkway sections they've claimed (and hazard pins they post) are stored, and those show roughly where they've been. Declaring this is the honest, safer call.
 - **Personal info → Email address:** collected, optional (sign-in), for *account management*.
 - **Personal info → User IDs:** the public nickname, optional, *app functionality*.

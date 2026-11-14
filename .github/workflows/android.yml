@@ -11,8 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       host:
-        description: 'Domain the app lives at, no https:// (e.g. buffprints.app)'
+        description: 'Domain the app lives at, no https://'
         required: true
+        default: 'buffprints.app'
       version:
         description: 'Version name shown in the store (e.g. 1.0.0)'
         required: true
