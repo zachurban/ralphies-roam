@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.buffprints.app",
+    "sha256_cert_fingerprints": [
+      "A3:CF:08:60:13:8E:6B:EC:5E:34:14:2F:84:BC:6D:7A:C3:43:0F:C1:01:88:19:3C:10:B1:D0:15:18:52:DE:24"
+    ]
+  }
+}]

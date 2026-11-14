@@ -2,3 +2,10 @@
 hunt-answers*.json
 *.local.json
 node_modules/
+
+# Android signing key — never commit
+*.jks
+*.keystore
+android/app/
+android/*.aab
+android/*.apk
