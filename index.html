@@ -72,6 +72,7 @@
 <script src="schedule-core.js?v=34"></script>
 <script src="herd-core.js?v=34"></script>
 <script src="herd-editions.js?v=34"></script>
+<script src="trail-saved.js"></script>
 <script>
 if(!window.RoamStudent||typeof RoamStudent.pathHistory!=='function'||!window.RoamSchedule||typeof RoamSchedule.commuteLeg!=='function'){
   try{ if(!sessionStorage.getItem('rr-stale-reload')){ sessionStorage.setItem('rr-stale-reload','1'); location.reload(); } }catch(e){}
@@ -589,7 +590,7 @@ function exportData(){
     track=track||[];
     const out={app:"BuffPrints", exported:new Date().toISOString(), state:S, schedule:SCHED, friends:FRIENDS, meetups:PLANS,
       track:{type:'Feature',properties:{points:track.length},geometry:{type:'LineString',coordinates:track.map(t=>[t.lng,t.lat])}},
-      trackPoints:track};
+      trackPoints:track, savedTrailNotes:window.TrailSaved?.readDevice()||[]};
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,1)],{type:'application/json'}));
     a.download='buffprints-'+new Date().toISOString().slice(0,10)+'.json';
@@ -801,8 +802,9 @@ function privacyHTML(){
   '<li><b>Competition Mode</b> (signed in) saves to your account: which checkpoints you completed and when, each marked “inside: yes”, and whether your email was a verified colorado.edu address (yes or no). For your team: its name and avatar, the route, hints used, puzzles solved and score. Finishing all five earns a demo reward token. “Demo reward — not redeemable. No purchase benefit is available.”</li>'+
   '<li><b>Totals, not people.</b> We count how many times a route is viewed, started, each checkpoint completed, hints used and finishes. These are plain counters with no account, device, or time attached. There is no per-person activity log.</li></ul>'+
   '<h4>You’ve Got Trail</h4><p>You’ve Got Trail lets someone hide a private note at an outdoor campus spot. The clue link contains the key needed to read it. Anyone with the link can try the clue, so share it only with your intended recipient.</p>'+
-  '<p>Supabase stores the encrypted clue, note and sign-off, the hiding pin, a random ID, the creation date and a fingerprint of the deletion key. When the recipient taps “I’m here”, Supabase uses one GPS reading and its reported accuracy to check proximity before returning the encrypted note. BuffPrints does not save the reading or send a check-in notice to the sender. Creating and opening a note does not require an account.</p>'+
-  '<p>Clue links expire after 365 days. Expired notes are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.</p>'+
+  '<p>Supabase stores the encrypted clue, note and sign-off, the hiding pin, a random ID, the creation date and a fingerprint of the deletion key. When the recipient taps “I’m at the spot”, Supabase uses one GPS reading and its reported accuracy to check proximity before returning the encrypted note. BuffPrints does not save the reading or send a check-in notice to the sender. Creating and opening a note does not require an account.</p>'+
+  '<p>Clue links expire after 365 days by default. Notes older than 365 days are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.</p>'+
+  '<p>The sender may set an opening time and expiration. Checking in does not reopen an expired clue. After unlocking a note, you can save a personal copy on this device. If you choose to save it to your BuffPrints account, the note, sign-off and dates are stored as readable content in your private account. Saved copies have no expiration. Removing the original clue does not remove copies a recipient has already saved.</p>'+
   '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
   '<li>Your email address, used only to sign you in.</li>'+
   '<li>Your public nickname, your dorm or team, and when you last changed your nickname. A nickname is generated from campus words or typed by you — never from your email, name or schedule.</li>'+
@@ -861,7 +863,7 @@ async function deleteAccount(){
 async function eraseDevice(msg){
   try{ if(watchId!==null) stopGPS(); }catch(e){}
   try{ if(cloud.sb) await cloud.sb.auth.signOut(); }catch(e){}
-  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k===FRIENDS_KEY||k===PLANS_KEY||k===MYNAME_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0||k==='bp-roams-done') localStorage.removeItem(k); }); }catch(e){}
+  try{ Object.keys(localStorage).forEach(k=>{ if(k===LS_KEY||k===SCHED_KEY||k===FRIENDS_KEY||k===PLANS_KEY||k===MYNAME_KEY||k==='rr-names'||k.indexOf('sb-')===0||k.indexOf('bp-herd')===0||k==='bp-roams-done'||k.startsWith(window.TrailSaved?.prefix||'rr-trail-saved:')) localStorage.removeItem(k); }); }catch(e){}
   await new Promise(res=>{ try{ const r=indexedDB.deleteDatabase('bp-herd'); r.onsuccess=r.onerror=r.onblocked=()=>res(); }catch(e){ res(); } });   // roam keys
   try{ sessionStorage.clear(); }catch(e){}
   try{ if(db) db.close(); }catch(e){}
@@ -911,6 +913,13 @@ try{
     cloud.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey,
       {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'implicit'}});
 }catch(e){ cloud.sb=null; }
+
+window.BPTrailClient=()=>cloud.sb;
+window.BPTrailSignIn=()=>go('progress');
+function refreshTrailFrame(){
+  const frame=$('trailFrame');
+  if(frame.hasAttribute('src')) frame.contentWindow?.postMessage({bp:'trail-refresh'}, location.origin);
+}
 
 const HZ = {dark:'Dark area', lighting:'Broken light', ice:'Ice or snow', trip:'Trip hazard', other:'Other'};
 
@@ -1464,7 +1473,10 @@ function go(v,opts){
   if(v==='safety'){ renderSafety(); loadHazards(); }
   if(v==='trail'){
     const frame=$('trailFrame');
-    if(!frame.hasAttribute('src')) frame.src=frame.dataset.src;
+    if(!frame.hasAttribute('src')){
+      const saved=new URLSearchParams(location.search).get('trail')==='saved';
+      frame.src=frame.dataset.src+(saved?'&saved=1':'');
+    }else refreshTrailFrame();
   }
   if(!(opts&&opts.keepScroll)) $('v-'+v).scrollTop=0;
   try{ if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); }catch(e){}
@@ -2726,6 +2738,7 @@ if(cloud.sb){
     const u=session?session.user:null;
     if((u&&u.id)===(cloud.user&&cloud.user.id)) return;
     cloud.user=u; if(!u){ cloud.step='email'; cloud.lastSync=0; cloud.err=''; }
+    refreshTrailFrame();
     setTimeout(()=>{ buildCloudBox(); render(); if(u){ pull().then(loadTerritory); loadProfile(); loadHazards(); loadNames(); toast('Signed in — syncing'); } else { hazardLayer.clearLayers(); HAZ={};renderSafety(); cloud.profile=null; cloud.territory=null; cloud.weekBoard=null; }
       if(VIEW==='community') renderCommunity(); if(VIEW==='safety') renderSafety(); },0);
   });

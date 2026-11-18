@@ -83,6 +83,7 @@
     map.on('click', event => pick(event.latlng));
     return {
       pickCenter: () => pick(map.getCenter()),
+      resize: () => map.invalidateSize(),
       reset: () => {
         if (pin) pin.remove();
         pin = null;

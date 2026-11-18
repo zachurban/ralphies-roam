@@ -1,9 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v36';
+const VERSION = 'rr-v37';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=34', 'app.css?v=35', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=34', 'app.css?v=35', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'trail-saved.js', 'paths.geojson', 'buildings.json',
+  // The in-app Trail shell can open device saves offline.
+  'trail.html?tab=1', 'trail.css?v=4', 'trail.js?v=3', 'trail-map.js?v=3',
   // Roam (the scavenger hunt)
   'herd.html', 'herd.css?v=34', 'herd-core.js?v=34', 'herd-editions.js?v=34', 'herd-app.js?v=34', 'vendor/qrcode.min.js?v=34', 'vendor/jsqr.min.js?v=34',
   'public/icon-192.png', 'public/icon-512.png', 'public/icon-192-maskable.png', 'public/icon-512-maskable.png', 'public/apple-touch-icon.png', 'public/hoofprint-logo.svg',
@@ -72,12 +74,15 @@ self.addEventListener('fetch', e => {
     return;
   }
   // Standalone online pages must never replace the cached app page.
-  if (url.origin === location.origin && /\/(?:admin|herd-admin|trail)\.html$/.test(url.pathname)) return;
+  const isTrail = url.origin === location.origin && url.pathname.endsWith('/trail.html');
+  const isTrailTab = isTrail && url.searchParams.get('tab') === '1';
+  if ((isTrail && !isTrailTab) ||
+      (url.origin === location.origin && /\/(?:admin|herd-admin)\.html$/.test(url.pathname))) return;
   if (req.mode === 'navigate' || isConfig) {
     // The roam game is its own page. It is stored under a fixed name, so an invite link's
     // #key (which never leaves the phone anyway) can't end up in the cache either.
     const isHerd = url.origin === location.origin && url.pathname.endsWith('/herd.html');
-    const key = isConfig ? 'config.js' : isHerd ? 'herd.html' : 'index.html';
+    const key = isConfig ? 'config.js' : isHerd ? 'herd.html' : isTrailTab ? 'trail.html?tab=1' : 'index.html';
     e.respondWith(
       fetch(req).then(res => { const copy = res.clone(); if (res.ok) caches.open(SHELL).then(c => c.put(key, copy)); return res; })
         .catch(() => caches.open(SHELL).then(c => c.match(key)))

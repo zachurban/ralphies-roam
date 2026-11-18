@@ -12,6 +12,18 @@
     timeZone: 'America/Denver'
   });
 
+  const timeFormat = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+  });
+  const params = new URLSearchParams(location.search);
+  const inApp = window.parent !== window && params.has('tab');
+  const library = window.TrailSaved;
+  const refreshSaved = library.mount({
+    getClient: () => inApp ? window.parent.BPTrailClient?.() : null,
+    signIn: () => window.parent.BPTrailSignIn?.(),
+    dateFormat
+  });
+
   const fragment = new URLSearchParams(location.hash.slice(1));
   const id = fragment.get('trail') || '';
   const key = fragment.get('key') || '';
@@ -21,7 +33,10 @@
   let selectedStop;
   let picker;
   let saving = false;
-  let createdAt;
+  let hiddenAt;
+  let revealedNote;
+  let composerStarted = false;
+  let composerStage = 'compose';
 
   const status = message => { $('trailStatus').textContent = message; };
   const unavailable = 'This clue link is invalid, expired, or has been deleted.';
@@ -49,6 +64,106 @@
     if (focusHeading) $(id).querySelector('h2').focus();
   }
 
+  const timing = $('trailTiming');
+  const opensInput = $('trailOpensAt');
+  const expiresInput = $('trailExpiresAt');
+
+  function syncTiming() {
+    const custom = timing.value !== 'any';
+    const startsLater = timing.value === 'window';
+    $('trailTimingFields').hidden = !custom;
+    $('trailOpeningLabel').hidden = !startsLater;
+    opensInput.disabled = !startsLater;
+    opensInput.required = startsLater;
+    expiresInput.disabled = !custom;
+    expiresInput.required = custom;
+  }
+
+  function readLocalTime(value) {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return null;
+    // Reject nonexistent local times during the spring clock change.
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    return local === value ? date.toISOString() : null;
+  }
+
+  function readWindow() {
+    const opens_at = timing.value === 'window' ? readLocalTime(opensInput.value) : null;
+    const expires_at = timing.value !== 'any' ? readLocalTime(expiresInput.value) : null;
+    if (timing.value === 'any') return { opens_at, expires_at };
+    if (!expires_at || (timing.value === 'window' && !opens_at)) {
+      status('Choose a valid date and time in your device’s time zone.');
+    } else if (Date.parse(expires_at) <= Date.now()) {
+      status('Choose an expiration in the future.');
+    } else if (opens_at && opens_at >= expires_at) {
+      status('The opening time must be before the expiration.');
+    } else {
+      return { opens_at, expires_at };
+    }
+    return null;
+  }
+
+  function windowText({ opens_at, expires_at }) {
+    if (!expires_at) return '';
+    const end = timeFormat.format(new Date(expires_at));
+    return opens_at ? 'Available from ' + timeFormat.format(new Date(opens_at)) + ' until ' + end + '.'
+      : 'Available until ' + end + '.';
+  }
+
+  function showWindow(row) {
+    if (row.status !== 'scheduled' && row.status !== 'expired') return false;
+    const scheduled = row.status === 'scheduled';
+    $('hunt').hidden = true;
+    $('trailWindowHeading').textContent = scheduled ? 'This trail opens later' : 'This trail has closed';
+    $('trailWindowMessage').textContent = scheduled ? windowText(row)
+      : 'The clue link expired on ' + timeFormat.format(new Date(row.expires_at)) + '.';
+    $('checkWindow').hidden = !scheduled;
+    status('');
+    show('trailWindow', true);
+    return true;
+  }
+
+  $('trailTimeZone').textContent = 'Times use your device’s time zone (' + timeFormat.resolvedOptions().timeZone + ').';
+  timing.addEventListener('change', syncTiming);
+  syncTiming();
+
+  function switchTab(saved) {
+    for (const button of [$('composeTab'), $('savedTab')]) {
+      const active = saved === (button.id === 'savedTab');
+      button.classList.toggle('pri', active);
+      button.setAttribute('aria-pressed', String(active));
+    }
+    if (saved) {
+      form.hidden = true;
+      $('links').hidden = true;
+      status('');
+      show('savedNotes');
+      refreshSaved();
+    } else {
+      $('savedNotes').hidden = true;
+      if (!composerStarted && ready) {
+        composerStarted = true;
+        startCompose();
+      } else if (composerStarted) {
+        show(composerStage);
+        picker?.resize();
+      } else {
+        status('You’ve Got Trail needs an online BuffPrints connection.');
+      }
+    }
+  }
+
+  $('composeTab').addEventListener('click', () => switchTab(false));
+  $('savedTab').addEventListener('click', () => switchTab(true));
+  window.addEventListener('storage', event => {
+    if ((!event.key || event.key.startsWith(library.prefix)) && !$('savedNotes').hidden) refreshSaved();
+  });
+  window.addEventListener('message', event => {
+    if (!inApp || event.origin !== location.origin || event.source !== window.parent || event.data?.bp !== 'trail-refresh') return;
+    if (!$('savedNotes').hidden) refreshSaved();
+    else picker?.resize();
+  });
+
   async function startCompose() {
     show('compose');
     try {
@@ -75,6 +190,7 @@
 
   $('anotherNote').addEventListener('click', () => {
     $('links').hidden = true;
+    composerStage = 'compose';
     $('inviteLink').value = '';
     $('deleteLink').value = '';
     selectedStop = null;
@@ -100,7 +216,9 @@
     const clue = data.get('clue').trim() || (stop.name === 'Campus walkway'
       ? 'Find the marked spot on a campus walkway. Show the outdoor spot for the pin.'
       : 'Find the marked spot along ' + stop.name + '.');
-    const payload = JSON.stringify({ sender, note, stop, clue });
+    const windowData = readWindow();
+    if (!windowData) return;
+    const payload = JSON.stringify({ sender, note, stop, clue, windowData });
     const button = $('create');
     saving = true;
     button.disabled = true;
@@ -120,10 +238,17 @@
         };
       }
       const saved = pendingSave;
-      const result = await rpc('trail_create', {
+      const args = {
         trail_id: saved.id, delete_key: saved.deletion, sealed: saved.sealedNote,
         clue: saved.sealedClue, lat: stop.lat, lng: stop.lng
-      });
+      };
+      const result = windowData.expires_at
+        ? await rpc('trail_create_timed', { ...args, ...windowData })
+        : await rpc('trail_create', args);
+      if (result === 'invalid_window') {
+        status('The expiration must be in the future and within 365 days of hiding the note.');
+        return;
+      }
       if (result === 'busy') {
         status('BuffPrints is busy. Wait a moment and try again.');
         return;
@@ -133,10 +258,15 @@
       $('inviteLink').value = link({ trail: saved.id, key: saved.key });
       $('deleteLink').value = link({ trail: saved.id, delete: saved.deletion });
       pendingSave = null;
+      $('linkTiming').textContent = windowText(windowData) || 'The clue link works for 365 days.';
       form.reset();
+      syncTiming();
       form.hidden = true;
-      status('');
-      show('links', true);
+      composerStage = 'links';
+      if ($('savedNotes').hidden) {
+        status('');
+        show('links', true);
+      }
     } catch {
       status('Your link couldn’t be saved. Check your connection and try again.');
     } finally {
@@ -162,6 +292,7 @@
 
   async function loadTrail() {
     $('retry').hidden = true;
+    $('trailWindow').hidden = true;
     status('Looking up your clue…');
     let row;
     try {
@@ -175,11 +306,14 @@
       status('This clue was created before location check-ins were required. Ask the sender for a new clue link.');
       return;
     }
+    if (row && showWindow(row)) return;
     if (row?.clue) {
       try {
         const { clue, stop } = await core.open(await core.deriveKeys(key), row.clue);
-        createdAt = 'Hidden on ' + dateFormat.format(new Date(row.created_at));
-        $('hiddenDate').textContent = createdAt;
+        hiddenAt = row.created_at;
+        $('hiddenDate').textContent = 'Hidden on ' + dateFormat.format(new Date(hiddenAt));
+        $('huntTiming').textContent = windowText(row);
+        $('huntTiming').hidden = !row.expires_at;
         $('clueText').textContent = clue;
         $('stopText').textContent = stop.name;
         $('stopMapLink').href = 'https://www.google.com/maps/search/?api=1&query='
@@ -196,12 +330,26 @@
 
   function reveal({ note, sender }) {
     $('hunt').hidden = true;
-    $('foundDate').textContent = createdAt;
+    revealedNote = { trail_id: id, note, sender, hidden_at: hiddenAt };
+    $('foundDate').textContent = 'Hidden on ' + dateFormat.format(new Date(hiddenAt));
     $('noteText').textContent = note;
     $('signoff').textContent = 'From ' + sender;
     status('');
     show('reveal', true);
   }
+
+  $('keepNote').addEventListener('click', () => {
+    if (!revealedNote) return;
+    try {
+      library.keep(revealedNote);
+      $('keepNote').disabled = true;
+      $('keepNote').textContent = 'Saved on this device';
+      $('openSaved').hidden = false;
+      status('Your copy is saved without an expiration date.');
+    } catch {
+      status('This browser couldn’t save the note on this device.');
+    }
+  });
 
   const checkIn = $('checkIn');
   checkIn.addEventListener('click', () => {
@@ -218,6 +366,8 @@
         });
         if (result.status === 'ok') {
           reveal(await core.open(await core.deriveKeys(key), result.sealed));
+        } else if (showWindow(result)) {
+          return;
         } else if (result.status === 'outside') {
           status('You’re outside the check-in area. Get closer to the pin and try again.');
         } else if (result.status === 'inaccurate') {
@@ -239,6 +389,7 @@
   });
 
   $('retry').addEventListener('click', loadTrail);
+  $('checkWindow').addEventListener('click', loadTrail);
   $('remove').addEventListener('click', async () => {
     if (!window.confirm('Delete the note and disable its clue link?')) return;
     $('remove').disabled = true;
@@ -253,10 +404,12 @@
     }
   });
 
-  if (window.parent !== window && new URLSearchParams(location.search).has('tab')) $('trailHome').hidden = true;
+  if (inApp) $('trailHome').hidden = true;
 
-  if (!ready) status('You’ve Got Trail needs an online BuffPrints connection.');
-  else if (!location.hash) startCompose();
+  if (!location.hash) {
+    $('trailNav').hidden = false;
+    switchTab(params.has('saved'));
+  } else if (!ready) status('You’ve Got Trail needs an online BuffPrints connection.');
   else if (uuid.test(id) && uuid.test(deletion) && !key) show('manage');
   else if (uuid.test(id) && core.validKey(key) && !deletion) loadTrail();
   else status(unavailable);

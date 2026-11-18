@@ -89,3 +89,10 @@
 .trail-hint summary { color: var(--ink); font-weight: 600; }
 .trail-hint a { display: inline-block; padding-block: 8px; }
 .trail-hunt .trail-checkin { width: 100%; }
+
+.trail-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.trail-window-inputs, .trail-saved-list { display: grid; gap: 12px; }
+.trail-saved-note summary { overflow-wrap: anywhere; }
+.trail-saved-note .trail-message { margin-block: 10px; }
+.trail-saved-note .btns { margin-top: 8px; }
+#savedStatus:empty, #savedList:empty { display: none; }
