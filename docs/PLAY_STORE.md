@@ -62,7 +62,7 @@ New personal accounts need **12 testers opted in for 14 days in a row** on the c
 > • Import your class schedule to see your daily walking commute and scenic routes between classes
 > • Flag hazards like broken lights or ice so other walkers know
 >
-> Privacy built in: your location is used only while you roam or record, and it never leaves your phone. Sign-in is optional, and you can export or delete your data anytime.
+> Walk and Roam GPS stays on your phone. You’ve Got Trail uses one location check to open a note at its hiding spot. Sign-in is optional, and you can export or delete your data anytime.
 >
 > BuffPrints is an independent student project. It is not an official University of Colorado Boulder app.
 
@@ -73,11 +73,12 @@ New personal accounts need **12 testers opted in for 14 days in a row** on the c
 ## Data safety (based on PRIVACY.md — double-check before submitting)
 
 - Data collected: **yes**. Shared with third parties: **no** (Supabase only stores data for the app, as a service provider). Encrypted in transit: **yes**. Users can request deletion: **yes** (`https://buffprints.app/delete-account.html`).
-- **Location → Approximate location:** collected, *optional*, for *app functionality*. GPS points never leave the phone, but for signed-in users the walkway sections they've claimed (and hazard pins they post) are stored, and those show roughly where they've been. Declaring this is the honest, safer call.
+- **Location → Approximate location:** collected, *optional*, for *app functionality*. For signed-in users, the walkway sections they've claimed (and hazard pins they post) are stored, and those show roughly where they've been. Declaring this is the honest, safer call.
 - **Personal info → Email address:** collected, optional (sign-in), for *account management*.
 - **Personal info → User IDs:** the public nickname, optional, *app functionality*.
 - **App activity → Other user-generated content:** hazard pins, votes, path names, nickname reports. **App activity → Other actions:** badges, streaks, distance, weekly zone totals, roam check-ins ("inside: yes" only).
-- Not collected: precise location (on-device only), contacts, photos, files, payments, health, device IDs, ads data.
+- **Location → Precise location:** You’ve Got Trail sends one GPS fix for an on-demand proximity check. BuffPrints does not store the recipient’s fix. The sender’s hiding pin is stored for the life of the note.
+- Not collected: contacts, photos, files, payments, health, device IDs, ads data.
 
 ## Other forms
 

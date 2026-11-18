@@ -1,9 +1,9 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v35';
+const VERSION = 'rr-v36';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=34', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=34', 'app.css?v=35', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'paths.geojson', 'buildings.json',
   // Roam (the scavenger hunt)
   'herd.html', 'herd.css?v=34', 'herd-core.js?v=34', 'herd-editions.js?v=34', 'herd-app.js?v=34', 'vendor/qrcode.min.js?v=34', 'vendor/jsqr.min.js?v=34',
   'public/icon-192.png', 'public/icon-512.png', 'public/icon-192-maskable.png', 'public/icon-512-maskable.png', 'public/apple-touch-icon.png', 'public/hoofprint-logo.svg',

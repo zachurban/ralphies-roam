@@ -42,6 +42,14 @@ main#views{flex:1;min-height:0;position:relative}
 .view.act{display:block}
 body.rec .view{padding-bottom:calc(var(--nav-h) + var(--safe-b) + var(--rec-h) + 28px)}
 #v-explore{padding:0;overflow:hidden}
+#v-trail{padding:0;overflow:hidden}
+body.rec #v-trail{padding:0 0 var(--rec-h)}
+#trailFrame{display:block;width:100%;height:100%;border:0}
+nav.tabs button[data-go="trail"] span{line-height:1.05}
+@media (min-width:900px){
+  body[data-view="trail"] #side{width:100%;border-right:0}
+  body[data-view="trail"] #deskMap{display:none}
+}
 
 /* ---------- typography & blocks ---------- */
 h1,h2,h3,h4{margin:0;line-height:1.2}

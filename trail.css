@@ -37,3 +37,12 @@
 #retry { margin-top: 12px; }
 .trail footer { padding-block: 22px; }
 .trail footer a { color: inherit; }
+
+.trail-picker { display: grid; gap: 8px; }
+.trail-picker h2 { font-size: 17px; }
+#trailMap { height: clamp(220px, 38vh, 340px); border-radius: 10px; background: var(--white); }
+#trailMap .leaflet-control-attribution { background: var(--white); color: var(--ink); font-size: 10px; }
+#trailMap .leaflet-control-attribution a { color: var(--link); }
+#trailMap .leaflet-control-zoom a { background: var(--white); color: var(--ink); }
+#trailMap .leaflet-control-zoom a.leaflet-disabled { color: var(--muted); }
+.trail-crosshair { pointer-events: none; }
