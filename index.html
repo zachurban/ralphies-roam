@@ -17,7 +17,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link rel="manifest" href="public/site.webmanifest">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="app.css?v=34">
+<link rel="stylesheet" href="app.css?v=35">
 <link rel="stylesheet" href="splash.css?v=34">
 </head>
 <body data-view="home">
@@ -30,9 +30,12 @@
     </header>
     <div id="offline" role="status">You’re offline. Walks still record and save on this phone and sync when you reconnect.</div>
     <main id="views">
-      <section class="view act" id="v-home" aria-label="Roam"><div class="mapcard" id="homeMapSlot"><span class="hero-chip" id="roamChip" hidden></span></div><div id="homeRoam"></div><p><a class="btn block-btn" href="trail.html">You've Got Trail · Hide a note</a></p></section>
+      <section class="view act" id="v-home" aria-label="Roam"><div class="mapcard" id="homeMapSlot"><span class="hero-chip" id="roamChip" hidden></span></div><div id="homeRoam"></div></section>
       <section class="view" id="v-explore" aria-label="Map"><div id="exploreMap"></div><div id="sheet"><button id="sheetHandle" aria-label="Show more" aria-expanded="false" aria-controls="sheetBody"></button><div id="sheetBody"></div></div></section>
       <section class="view" id="v-progress" aria-label="You"><div id="progressBody"></div><div id="homeClasses"></div><div id="progressMore"></div><div class="label">Account</div><div id="cloudBox"></div><div id="dataBox"></div></section>
+      <section class="view" id="v-trail" aria-label="You've Got Trail">
+        <iframe id="trailFrame" title="You've Got Trail" data-src="trail.html?tab=1"></iframe>
+      </section>
       <section class="view" id="v-community" aria-label="Herd"></section>
       <section class="view" id="v-safety" aria-label="Safety"></section>
     </main>
@@ -45,7 +48,7 @@
       <span class="gps" id="recGps">Finding GPS…</span>
       <button id="recFinish">Finish</button>
     </div>
-    <nav class="tabs" aria-label="Main"><button data-go="home" class="act" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Roam</button><button data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14M15 6v14"/></svg>Map</button><button data-go="community"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.5-3.2 2.7-5 5.5-5s5 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.8 14.3c2.4 0 4.1 1.5 4.7 4.2"/></svg>Herd</button><button data-go="progress"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.7-3.8 3.4-6 7-6s6.3 2.2 7 6"/></svg>You</button></nav>
+    <nav class="tabs" aria-label="Main"><button data-go="home" class="act" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Roam</button><button data-go="explore"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14M15 6v14"/></svg>Map</button><button data-go="community"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.5-3.2 2.7-5 5.5-5s5 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.8 14.3c2.4 0 4.1 1.5 4.7 4.2"/></svg>Herd</button><button data-go="trail"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span>You've Got<br>Trail</span></button><button data-go="progress"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.7-3.8 3.4-6 7-6s6.3 2.2 7 6"/></svg>You</button></nav>
   </div>
   <div id="deskMap"></div>
 </div>
@@ -783,7 +786,7 @@ function privacyHTML(){
   '<p class="pmeta">Last updated '+PRIVACY_UPDATED+'</p>'+
   '<p>BuffPrints is an independent student project. It is not an official University of Colorado Boulder app, and it is not monitored by CU or emergency services. In an emergency, call 911.</p>'+
   '<h4>What stays on your phone</h4><ul>'+
-  '<li><b>Your location</b>, only while you are recording a walk, have a roam open, or check in for You’ve Got Trail. It is used to work out which paths you walk, to check you in at a roam’s stops, and to show how far the next stop is.</li>'+
+  '<li><b>Your location</b>, only while you are recording a walk or have a roam open. It is used to work out which paths you walk, to check you in at a roam’s stops, and to show how far the next stop is.</li>'+
   '<li><b>Your detailed route</b> (a log of GPS points) is saved only on this device. It is never uploaded.</li>'+
   '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).</li>'+
   '<li>Improvement requests you save on the Safety page, and the follow-up notes you add.</li>'+
@@ -797,8 +800,8 @@ function privacyHTML(){
   '<li><b>Friends Mode and Demo Practice</b> save nothing about you or your herd on our servers. No sign-in. (For routes that aren’t stored in the app, an answer you type is sent to be checked and is not kept.)</li>'+
   '<li><b>Competition Mode</b> (signed in) saves to your account: which checkpoints you completed and when, each marked “inside: yes”, and whether your email was a verified colorado.edu address (yes or no). For your team: its name and avatar, the route, hints used, puzzles solved and score. Finishing all five earns a demo reward token. “Demo reward — not redeemable. No purchase benefit is available.”</li>'+
   '<li><b>Totals, not people.</b> We count how many times a route is viewed, started, each checkpoint completed, hints used and finishes. These are plain counters with no account, device, or time attached. There is no per-person activity log.</li></ul>'+
-  '<h4>You’ve Got Trail</h4><p>You’ve Got Trail lets someone hide a private note at an outdoor campus stop. The clue link contains the key needed to read it. Anyone with that link can open the note, so share it only with your intended recipient.</p>'+
-  '<p>Supabase stores the encrypted note, sender’s sign-off, clue and chosen stop together, plus a random ID, the creation date and a fingerprint of the separate deletion key. Creating and opening a note does not require an account. If a recipient checks in, GPS is used only on that phone. The location, check-in and whether the recipient opens the note are not sent to Supabase or the sender.</p>'+
+  '<h4>You’ve Got Trail</h4><p>You’ve Got Trail lets someone hide a private note at an outdoor campus spot. The clue link contains the key needed to read it. Anyone with the link can try the clue, so share it only with your intended recipient.</p>'+
+  '<p>Supabase stores the encrypted clue, note and sign-off, the hiding pin, a random ID, the creation date and a fingerprint of the deletion key. When the recipient taps “I’m here”, Supabase uses one GPS reading and its reported accuracy to check proximity before returning the encrypted note. BuffPrints does not save the reading or send a check-in notice to the sender. Creating and opening a note does not require an account.</p>'+
   '<p>Clue links expire after 365 days. Expired notes are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.</p>'+
   '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
   '<li>Your email address, used only to sign you in.</li>'+
@@ -813,7 +816,7 @@ function privacyHTML(){
   '<li><b>Your herd:</b> the nickname, avatar and checkpoint progress you share on a roam, for as long as you are in that herd.</li>'+
   '<li><b>Signed-in students:</b> leaderboards (nickname, dorm or team, totals, streak) and hazard pins. Pins never show who reported or voted. Your nickname is public, but it isn’t a promise of complete anonymity: your team, the paths you name and when you’re active can hint at who you are.</li>'+
   '<li><b>BuffPrints moderators</b> see nickname reports, review requests, and a private log of nickname changes, so they can handle abuse. Reporters are never shown to the person reported, and rejected names and nickname histories are never shown to other students.</li>'+
-  '<li><b>No one else</b> sees your email, the paths you have claimed, or your location.</li>'+
+  '<li><b>No one else</b> sees your email, the paths you have claimed, or your Trail check-in location.</li>'+
   '<li>We do not sell or share your data, show ads, or use analytics or tracking tools.</li></ul>'+
   '<h4>Services that help run BuffPrints</h4>'+
   '<p>Supabase stores account data and relays roams’ encrypted messages between teammates’ phones. GitHub Pages hosts the app. Esri provides the satellite map images. unpkg and jsDelivr deliver code libraries. Like any website, these services receive your IP address and basic device information when the app loads from them, and Esri also sees which part of the map you are viewing.</p>'+
@@ -1447,7 +1450,7 @@ $('fabFog').onclick=()=>{ S.fogOn=!S.fogOn; syncFogBtn(); saveSoon(); queueFog()
 $('fabFollow').onclick=()=>{ follow=true; $('fabFollow').classList.add('on'); if(pos) map.setView([pos.lat,pos.lng],Math.max(map.getZoom(),17)); else map.setView(CAMPUS,ZOOM); };
 
 /* ---------- navigation ---------- */
-const VIEWS=['home','explore','progress','community','safety'];
+const VIEWS=['home','explore','progress','community','safety','trail'];
 const LEGACY={today:'home',zones:'explore',stats:'progress',badges:'progress',board:'community'};
 let VIEW='home';
 function go(v,opts){
@@ -1459,6 +1462,10 @@ function go(v,opts){
   if(v==='home'){ renderHome(); setTimeout(fitRoam,90); } if(v==='explore'){ renderExplore(); setSheet(false); }
   if(v==='progress') renderProgress(); if(v==='community') renderCommunity();
   if(v==='safety'){ renderSafety(); loadHazards(); }
+  if(v==='trail'){
+    const frame=$('trailFrame');
+    if(!frame.hasAttribute('src')) frame.src=frame.dataset.src;
+  }
   if(!(opts&&opts.keepScroll)) $('v-'+v).scrollTop=0;
   try{ if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); }catch(e){}
 }

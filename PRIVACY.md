@@ -6,7 +6,7 @@ BuffPrints is an independent student project. It is not an official University o
 
 ## What stays on your phone
 
-- **Your location**, only while you are recording a walk, have a roam open, or check in for You’ve Got Trail. It is used to work out which paths you walk, to check you in at a roam's stops, and to show how far the next stop is.
+- **Your location**, only while you are recording a walk or have a roam open. It is used to work out which paths you walk, to check you in at a roam's stops, and to show how far the next stop is.
 - **Your detailed route** (a log of GPS points) is saved only on this device. It is never uploaded.
 - Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).
 - Improvement requests you save on the Safety page, and the follow-up notes you add.
@@ -27,9 +27,9 @@ A roam is BuffPrints' campus scavenger hunt: five stops, five puzzles, solo or w
 
 ## You've Got Trail
 
-You’ve Got Trail lets someone hide a private note at an outdoor campus stop. The clue link contains the key needed to read it. Anyone with that link can open the note, so share it only with your intended recipient.
+You’ve Got Trail lets someone hide a private note at an outdoor campus spot. The clue link contains the key needed to read it. Anyone with the link can try the clue, so share it only with your intended recipient.
 
-Supabase stores the encrypted note, sender’s sign-off, clue and chosen stop together, plus a random ID, the creation date and a fingerprint of the separate deletion key. Creating and opening a note does not require an account. If a recipient checks in, GPS is used only on that phone. The location, check-in and whether the recipient opens the note are not sent to Supabase or the sender.
+Supabase stores the encrypted clue, note and sign-off, the hiding pin, a random ID, the creation date and a fingerprint of the deletion key. When the recipient taps “I’m here”, Supabase uses one GPS reading and its reported accuracy to check proximity before returning the encrypted note. BuffPrints does not save the reading or send a check-in notice to the sender. Creating and opening a note does not require an account.
 
 Clue links expire after 365 days. Expired notes are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.
 
@@ -49,7 +49,7 @@ Clue links expire after 365 days. Expired notes are cleared when new notes are c
 - **Your herd:** the nickname, avatar and checkpoint progress you share on a roam, for as long as you are in that herd.
 - **Signed-in students:** leaderboards (nickname, dorm or team, totals, streak) and hazard pins. Pins never show who reported or voted. Your nickname is public, but it isn't a promise of complete anonymity: your team, the paths you name and when you're active can hint at who you are.
 - **BuffPrints moderators** see nickname reports, review requests, and a private log of nickname changes, so they can handle abuse. Reporters are never shown to the person reported, and rejected names and nickname histories are never shown to other students.
-- **No one else** sees your email, the paths you have claimed, or your location.
+- **No one else** sees your email, the paths you have claimed, or your Trail check-in location.
 - We do not sell or share your data, show ads, or use analytics or tracking tools.
 
 ## Services that help run BuffPrints

@@ -5,38 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com/leaflet@1.9.4/dist/leaflet.js; style-src 'self' https://unpkg.com/leaflet@1.9.4/dist/leaflet.css; img-src 'self' data: https://server.arcgisonline.com https://unpkg.com/leaflet@1.9.4/dist/images/; connect-src 'self' https:; base-uri 'none'; object-src 'none'; form-action 'none'">
 <meta name="theme-color" content="#1D2122">
 <title>You've Got Trail · BuffPrints</title>
 <link rel="icon" href="public/favicon.ico">
 <link rel="stylesheet" href="app.css?v=34">
-<link rel="stylesheet" href="trail.css">
+<link rel="stylesheet" href="trail.css?v=2">
 <script defer src="config.js"></script>
 <script defer src="herd-core.js?v=34"></script>
-<script defer src="herd-editions.js?v=34"></script>
-<script defer src="trail.js"></script>
+<script defer src="trail-map.js?v=2"></script>
+<script defer src="trail.js?v=2"></script>
 </head>
 <body>
 <main class="trail">
-  <a class="trail-home" href="./">← BuffPrints</a>
+  <a class="trail-home" id="trailHome" href="./">← BuffPrints</a>
   <h1>You've Got Trail</h1>
 
   <form id="compose" class="trail-card" hidden>
-    <p>Hide a note at an outdoor CU Boulder landmark. Text the private clue link whenever the moment feels right.</p>
+    <p>Hide a note along an outdoor CU Boulder walkway. Text the private clue link whenever the moment feels right.</p>
     <label>Your name or sign-off
       <input name="sender" maxlength="48" placeholder="Mom and Dad" required>
     </label>
-    <label>Outdoor hiding spot
-      <select name="stop" required></select>
-    </label>
+    <div class="trail-picker">
+      <h2 id="pickerHeading" tabindex="-1">Choose a hiding spot</h2>
+      <p id="mapHelp" class="trail-muted">Tap near a marked walkway to drop the pin.</p>
+      <div id="trailMap" role="region" aria-labelledby="pickerHeading" aria-describedby="mapHelp"></div>
+      <button id="pinCenter" class="btn" type="button" disabled>Drop pin at map center</button>
+      <p id="spotStatus" class="trail-muted" role="status">Loading campus walkways…</p>
+    </div>
     <label><span>Clue <small class="trail-muted">(optional)</small></span>
       <textarea name="clue" maxlength="240" rows="2" placeholder="Write your own clue, or use the suggested one below"></textarea>
     </label>
-    <p id="suggestion" class="trail-muted"></p>
     <label>Note
       <textarea name="note" maxlength="1500" rows="5" placeholder="What would you like them to find?" required></textarea>
     </label>
-    <button id="create" class="btn pri" type="submit">Hide the note</button>
+    <button id="create" class="btn pri" type="submit" disabled>Hide the note</button>
   </form>
 
   <section id="links" class="trail-card" hidden>
@@ -50,7 +53,8 @@
       <input id="deleteLink" readonly>
     </label>
     <button class="btn" type="button" data-copy="deleteLink">Copy deletion link</button>
-    <p class="trail-muted">Anyone with the clue link can open the note. Keep the deletion link for yourself.</p>
+    <p class="trail-muted">Anyone with the clue link can try to find the note. Keep the deletion link for yourself.</p>
+    <button id="anotherNote" class="btn" type="button">Hide another note</button>
   </section>
 
   <section id="hunt" class="trail-card" hidden>
@@ -60,12 +64,10 @@
     <details>
       <summary>Show the outdoor spot</summary>
       <p id="stopText"></p>
+      <a id="stopMapLink" target="_blank" rel="noopener noreferrer">Open pin in Maps</a>
     </details>
-    <div class="btns">
-      <button id="checkIn" class="btn pri" type="button">I’m here</button>
-      <button id="openNow" class="btn" type="button">Open now</button>
-    </div>
-    <p class="trail-muted">Use “I’m here” to check your location on this phone, or open the note wherever you are.</p>
+    <p class="trail-muted">Go to the hiding spot to open the note. When you tap “I’m here”, BuffPrints sends one GPS reading to check how close you are.</p>
+    <button id="checkIn" class="btn pri" type="button">I’m here</button>
   </section>
 
   <section id="reveal" class="trail-card" hidden>
