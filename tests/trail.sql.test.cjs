@@ -39,6 +39,7 @@ test('trail notes require a location check and stay private, revocable and time-
 
     assert.equal(anon(`select trail_create(${legacy}, ${key}, '${sealed}')`), 'ok');
     sql(database, '-f', path.join(__dirname, '../supabase/migrations/20261118170000_trail_location_gate.sql'));
+    sql(database, '-f', path.join(__dirname, '../supabase/migrations/20261118180000_trail_windows_and_saved_notes.sql'));
 
     assert.deepEqual(get(legacy), { status: 'legacy' });
     assert.deepEqual(unlock(40.0088, 15, legacy), { status: 'unavailable' });
@@ -76,6 +77,54 @@ test('trail notes require a location check and stay private, revocable and time-
       select gen_random_uuid(), sha256('test'::bytea), '${sealed}' from generate_series(1, 29)`);
     assert.equal(create('gen_random_uuid()'), 'busy');
     assert.equal(create(), 'ok');
+
+    owner('truncate public.trail_notes');
+    const createTimed = (opens, ends) =>
+      anon(`select trail_create_timed(${id}, ${key}, '${sealed}', '${clue}', 40.0088, -105.27112, ${opens}, ${ends})`);
+    const start = owner("select quote_literal(now() + interval '1 hour')");
+    const end = owner("select quote_literal(now() + interval '2 hours')");
+    assert.equal(createTimed(end, start), 'invalid_window');
+    assert.equal(createTimed('null', "now() + interval '366 days'"), 'invalid_window');
+    assert.equal(createTimed('null', "now() - interval '1 second'"), 'invalid_window');
+    assert.equal(createTimed(start, end), 'ok');
+    assert.equal(createTimed(start, end), 'ok');
+    assert.equal(createTimed('null', end), 'invalid_window');
+
+    assert.equal(get(id).status, 'scheduled');
+    assert.ok(!get(id).clue);
+    assert.equal(unlock().status, 'scheduled');
+    assert.ok(!unlock().sealed);
+    owner("update public.trail_notes set opens_at = now() - interval '1 minute'");
+    assert.equal(get(id).clue, clue);
+    assert.ok(Date.parse(get(id).expires_at));
+    assert.deepEqual(unlock(), { status: 'ok', sealed });
+
+    const user = owner("insert into auth.users (email) values ('recipient@colorado.edu') returning id");
+    const stranger = owner("insert into auth.users (email) values ('stranger@colorado.edu') returning id");
+    const asUser = (who, statement) =>
+      `set role authenticated; set request.jwt.claim.sub = '${who}'; ${statement}`;
+    const save = `insert into public.trail_saved_notes(trail_id,note,sender,hidden_at)
+      values (${id},'Your note','Mom and Dad',now()) on conflict (user_id,trail_id) do nothing`;
+    owner(asUser(user, save));
+    owner(asUser(user, save));
+    owner("update public.trail_notes set opens_at = now() - interval '1 hour', expires_at = now() - interval '1 second'");
+    assert.equal(get(id).status, 'expired');
+    assert.ok(!get(id).clue);
+    assert.equal(unlock().status, 'expired');
+    assert.ok(!unlock().sealed);
+    assert.equal(anon(`select trail_remove(${id}, ${key})`), 't');
+    assert.equal(owner(asUser(user, 'select note from public.trail_saved_notes')), 'Your note');
+    assert.equal(owner(asUser(stranger, 'select count(*) from public.trail_saved_notes')), '0');
+    owner(asUser(stranger, 'delete from public.trail_saved_notes'));
+    assert.equal(owner(asUser(user, 'select count(*) from public.trail_saved_notes')), '1');
+    assert.notEqual(psql(database, '-c', 'set role anon; select note from public.trail_saved_notes').status, 0);
+    owner(`delete from auth.users where id = '${user}'`);
+    assert.equal(owner('select count(*) from public.trail_saved_notes'), '0');
+
+    assert.equal(createTimed('null', "now() + interval '1 day'"), 'ok');
+    assert.equal(get(id).clue, clue);
+    assert.equal(get(id).opens_at, undefined);
+    assert.ok(Date.parse(get(id).expires_at));
   } finally {
     sql('postgres', '-c', 'drop database ' + database);
   }

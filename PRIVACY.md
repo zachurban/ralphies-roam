@@ -29,9 +29,11 @@ A roam is BuffPrints' campus scavenger hunt: five stops, five puzzles, solo or w
 
 You’ve Got Trail lets someone hide a private note at an outdoor campus spot. The clue link contains the key needed to read it. Anyone with the link can try the clue, so share it only with your intended recipient.
 
-Supabase stores the encrypted clue, note and sign-off, the hiding pin, a random ID, the creation date and a fingerprint of the deletion key. When the recipient taps “I’m here”, Supabase uses one GPS reading and its reported accuracy to check proximity before returning the encrypted note. BuffPrints does not save the reading or send a check-in notice to the sender. Creating and opening a note does not require an account.
+Supabase stores the encrypted clue, note and sign-off, the hiding pin, a random ID, the creation date and a fingerprint of the deletion key. When the recipient taps “I’m at the spot”, Supabase uses one GPS reading and its reported accuracy to check proximity before returning the encrypted note. BuffPrints does not save the reading or send a check-in notice to the sender. Creating and opening a note does not require an account.
 
-Clue links expire after 365 days. Expired notes are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.
+Clue links expire after 365 days by default. Notes older than 365 days are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.
+
+The sender may set an opening time and expiration. Checking in does not reopen an expired clue. After unlocking a note, you can save a personal copy on this device. If you choose to save it to your BuffPrints account, the note, sign-off and dates are stored as readable content in your private account. Saved copies have no expiration. Removing the original clue does not remove copies a recipient has already saved.
 
 ## What is saved to your account (only if you sign in)
 

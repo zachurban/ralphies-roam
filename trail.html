@@ -10,16 +10,22 @@
 <title>You've Got Trail · BuffPrints</title>
 <link rel="icon" href="public/favicon.ico">
 <link rel="stylesheet" href="app.css?v=34">
-<link rel="stylesheet" href="trail.css?v=3">
+<link rel="stylesheet" href="trail.css?v=4">
 <script defer src="config.js"></script>
 <script defer src="herd-core.js?v=34"></script>
-<script defer src="trail-map.js?v=2"></script>
-<script defer src="trail.js?v=2"></script>
+<script defer src="trail-map.js?v=3"></script>
+<script defer src="trail-saved.js"></script>
+<script defer src="trail.js?v=3"></script>
 </head>
 <body>
 <main class="trail">
   <a class="trail-home" id="trailHome" href="./">← BuffPrints</a>
   <h1>You've Got Trail</h1>
+
+  <nav id="trailNav" class="trail-nav" aria-label="You’ve Got Trail" hidden>
+    <button id="composeTab" class="btn pri" type="button" aria-pressed="true">Hide a note</button>
+    <button id="savedTab" class="btn" type="button" aria-pressed="false">Saved notes</button>
+  </nav>
 
   <form id="compose" class="trail-card" hidden>
     <p>Hide a note along an outdoor CU Boulder walkway. Text the private clue link whenever the moment feels right.</p>
@@ -39,12 +45,29 @@
     <label>Note
       <textarea name="note" maxlength="1500" rows="5" placeholder="What would you like them to find?, or leave them an encouraging note to brighten their day!" required></textarea>
     </label>
+    <label>When can it be found?
+      <select name="timing" id="trailTiming">
+        <option value="any">Any time after I share it</option>
+        <option value="expires">Until a date and time</option>
+        <option value="window">During a time window</option>
+      </select>
+    </label>
+    <div id="trailTimingFields" class="trail-window-inputs" hidden>
+      <label id="trailOpeningLabel" hidden>Opens on
+        <input name="opensAt" id="trailOpensAt" type="datetime-local">
+      </label>
+      <label>Expires on
+        <input name="expiresAt" id="trailExpiresAt" type="datetime-local">
+      </label>
+      <p id="trailTimeZone" class="trail-muted"></p>
+    </div>
     <button id="create" class="btn pri" type="submit" disabled>Hide the note</button>
   </form>
 
   <section id="links" class="trail-card" hidden>
     <h2 tabindex="-1">Your note is hidden</h2>
-    <p>Save the clue link somewhere handy and text it when you’re ready. The clue link works for 365 days.</p>
+    <p>Save the clue link somewhere handy and text it when you’re ready.</p>
+    <p id="linkTiming" class="trail-muted"></p>
     <label>Clue link to send
       <input id="inviteLink" readonly>
     </label>
@@ -55,6 +78,12 @@
     <button class="btn" type="button" data-copy="deleteLink">Copy deletion link</button>
     <p class="trail-muted">Anyone with the clue link can try to find the note. Keep the deletion link for yourself.</p>
     <button id="anotherNote" class="btn" type="button">Hide another note</button>
+  </section>
+
+  <section id="trailWindow" class="trail-card" aria-labelledby="trailWindowHeading" hidden>
+    <h2 id="trailWindowHeading" tabindex="-1"></h2>
+    <p id="trailWindowMessage"></p>
+    <button id="checkWindow" class="btn" type="button">Check again</button>
   </section>
 
   <section id="hunt" class="trail-card trail-hunt" aria-labelledby="huntHeading" hidden>
@@ -68,6 +97,7 @@
       <h3>Your clue</h3>
       <p id="clueText" class="trail-message"></p>
       <p id="hiddenDate" class="trail-muted"></p>
+      <p id="huntTiming" class="trail-muted" hidden></p>
     </div>
 
     <details class="trail-hint">
@@ -89,6 +119,17 @@
       <p id="noteText" class="trail-message"></p>
       <p id="signoff"></p>
     </div>
+    <p class="trail-muted">Keep a personal copy you can read again, even after the clue link expires.</p>
+    <button id="keepNote" class="btn pri" type="button">Keep this note</button>
+    <a id="openSaved" href="./?trail=saved#trail" hidden>Open saved notes in BuffPrints</a>
+  </section>
+
+  <section id="savedNotes" class="trail-card" aria-labelledby="savedHeading" hidden>
+    <h2 id="savedHeading" tabindex="-1">Saved notes</h2>
+    <p class="trail-muted">Keep notes on this device or save them to your BuffPrints account to read on other devices. Account copies are stored as readable text in your private account.</p>
+    <p id="savedStatus" class="trail-muted" role="status"></p>
+    <button id="savedSignIn" class="btn" type="button" hidden>Sign in to save to your account</button>
+    <div id="savedList" class="trail-saved-list"></div>
   </section>
 
   <section id="manage" class="trail-card" hidden>

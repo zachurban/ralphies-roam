@@ -158,4 +158,8 @@ Open the **You've Got Trail** tab, then tap near a marked outdoor walkway on the
 
 Recipients open the clue in their phone browser. They can show the pin for a hint. At the spot, they tap **I’m here** and allow location. Supabase requires a GPS fix within 40 meters of the pin with reported accuracy of 35 meters or better. It releases the encrypted note after the check. BuffPrints does not save the recipient’s GPS reading. Sender and recipient need no accounts.
 
+When hiding a note, choose anytime, an expiration, or an opening and closing window. The sender enters dates in their device’s time zone. The link shows scheduled times in the viewer’s time zone. Timed clue links close even if the page was opened earlier.
+
+After a successful check-in, **Keep this note** saves a personal copy on the recipient’s device without an expiration. Open **Saved notes** in the Trail tab to read or remove it, or to save a copy to a signed-in BuffPrints account. The account copy syncs across devices and the original clue keeps its own schedule.
+
 Apply the Supabase Trail migrations before testing the updated tab. Older clue links predate the location check. Recreate and resend those clues. Their existing deletion links still work.
