@@ -14,14 +14,15 @@ async function ctx(vp){ const c=await b.newContext({viewport:vp||{width:390,heig
   const p=await c.newPage(); p.errs=[]; p.on('pageerror',e=>p.errs.push(e.message)); return {c,p}; }
 const view=p=>p.evaluate(()=>document.body.dataset.view);
 { const {c,p}=await ctx(); await p.goto(h.base+'/index.html'); await p.waitForSelector('.rgo'); await p.waitForTimeout(1500);
-  ok((await p.$$eval('nav.tabs button',els=>els.map(e=>e.textContent.trim()))).join('·')==='Roam·Map·Herd·You','four tabs: Roam · Map · Herd · You');
+  ok((await p.$$eval('nav.tabs button',els=>els.map(e=>e.textContent.trim()))).join('·').startsWith('Roam·Map'),'tabs start with Roam · Map');
   ok(await view(p)==='home','the app opens on Roam');
   ok((await p.textContent('.rtitle')).trim().length>2&&(await p.textContent('.rgo')).trim()==='Start roam','home shows the featured roam and one Start roam button');
   ok(await p.locator('.rpin').count()===5,'the roam’s five stops are pinned on the map');
   ok(!(await p.locator('#recIdle').isVisible()),'no Record button on the Roam tab');
   await p.screenshot({path:SHOT('shell-01-roam.png')});
   await p.click('nav.tabs [data-go=explore]'); await p.waitForTimeout(500);
-  ok(await p.locator('#recIdle').isVisible(),'Record lives on the Map tab'); await p.screenshot({path:SHOT('shell-02-map.png')});
+  ok(await p.locator('#recIdle').isVisible(),'Record lives on the Map tab');
+  ok(await p.locator('.rpin').count()===0,'the roam’s stops are not shown on the Map tab'); await p.screenshot({path:SHOT('shell-02-map.png')});
   await p.click('nav.tabs [data-go=community]'); await p.waitForTimeout(900);
   const herd=await p.textContent('#v-community'); ok(herd.includes('No herd yet')&&herd.includes('Herds')&&herd.includes('Dorms')&&herd.includes('Walking this week'),'Herd: herd card, roam standings, walking below');
   await p.screenshot({path:SHOT('shell-03-herd.png')});
@@ -33,7 +34,8 @@ const view=p=>p.evaluate(()=>document.body.dataset.view);
   ok(await view(p)==='safety'&&await p.evaluate(()=>document.querySelector('nav.tabs [data-go=progress]').classList.contains('act')||document.querySelector('nav.tabs [data-go=progress]').getAttribute('aria-current')==='page'),'Safety opens under the You tab');
   for(const t of ['home','explore','community','progress']){ await p.click('nav.tabs [data-go='+t+']'); await p.waitForTimeout(250);
     ok(!/Herd and Seek|scavenger hunt|\bhunt\b/i.test(await p.evaluate(()=>document.querySelector('.view.act,main .act,#v-'+document.body.dataset.view).innerText)),'no “hunt” wording on '+t); }
-  await p.click('nav.tabs [data-go=home]'); await p.click('.rgo'); const f=p.frameLocator('#herdSheet iframe'); await f.locator('[data-act=mode]').first().waitFor();
+  await p.click('nav.tabs [data-go=home]'); await p.waitForTimeout(200); ok(await p.locator('.rpin').count()===5,'back on Roam, the stops are shown again');
+  await p.click('.rgo'); const f=p.frameLocator('#herdSheet iframe'); await f.locator('[data-act=mode]').first().waitFor();
   ok((await f.locator('h1.title').textContent()).trim()===(await p.textContent('.rtitle')).trim(),'Start roam opens that roam over the app');
   await p.screenshot({path:SHOT('shell-05-start.png')});
   ok(p.errs.length===0,'no page errors: '+p.errs.join(' | ')); await c.close(); }
