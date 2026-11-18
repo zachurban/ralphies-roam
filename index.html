@@ -1467,7 +1467,7 @@ function go(v,opts){
   VIEWS.forEach(n=>$('v-'+n).classList.toggle('act',n===v));
   const tab=v==='safety'?'progress':v;   // Safety is reached from You
   document.querySelectorAll('nav.tabs button').forEach(b=>{ const on=b.dataset.go===tab; b.classList.toggle('act',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-  mountMap();
+  mountMap(); showRoamPins();
   if(v==='home'){ renderHome(); setTimeout(fitRoam,90); } if(v==='explore'){ renderExplore(); setSheet(false); }
   if(v==='progress') renderProgress(); if(v==='community') renderCommunity();
   if(v==='safety'){ renderSafety(); loadHazards(); }
@@ -1536,7 +1536,13 @@ function drawRoamPins(){
     const done=!!st&&HerdCore.checkpointStatus(st,me,c.no)==='done', isNext=!done&&!next; if(isNext) next=c.no;
     L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',html:'<div class="rpin'+(done?' done':isNext?' nx':'')+'">'+(done?'✓':c.no)+'</div>',iconSize:[30,30],iconAnchor:[15,15]}),keyboard:false,interactive:false,zIndexOffset:500}).addTo(ROAM_LAYER);
   });
-  ROAM_LAYER.addTo(map);
+  showRoamPins();
+}
+// The roam's stops belong to the Roam tab only; the Map tab is for walking.
+function showRoamPins(){
+  if(!ROAM_LAYER) return;
+  const on=VIEW==='home', has=map.hasLayer(ROAM_LAYER);
+  if(on&&!has) ROAM_LAYER.addTo(map); else if(!on&&has) ROAM_LAYER.remove();
 }
 function fitRoam(){
   const ed=roamEdition(); if(!ed||VIEW!=='home'||S.rec) return;
