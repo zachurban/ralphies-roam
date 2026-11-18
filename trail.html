@@ -10,7 +10,7 @@
 <title>You've Got Trail · BuffPrints</title>
 <link rel="icon" href="public/favicon.ico">
 <link rel="stylesheet" href="app.css?v=34">
-<link rel="stylesheet" href="trail.css?v=2">
+<link rel="stylesheet" href="trail.css?v=3">
 <script defer src="config.js"></script>
 <script defer src="herd-core.js?v=34"></script>
 <script defer src="trail-map.js?v=2"></script>
@@ -57,24 +57,38 @@
     <button id="anotherNote" class="btn" type="button">Hide another note</button>
   </section>
 
-  <section id="hunt" class="trail-card" hidden>
-    <h2 id="huntHeading" tabindex="-1">Follow the clue</h2>
-    <p id="hiddenDate" class="trail-muted"></p>
-    <p id="clueText" class="trail-message"></p>
-    <details>
-      <summary>Show the outdoor spot</summary>
+  <section id="hunt" class="trail-card trail-hunt" aria-labelledby="huntHeading" hidden>
+    <header class="trail-invitation">
+      <span class="trail-envelope" aria-hidden="true"></span>
+      <h2 id="huntHeading" tabindex="-1">Someone left you a note.</h2>
+      <p>It’s tucked away along an outdoor CU Boulder walkway. Follow the clue, take a little walk, and check in at the hiding spot to open it.</p>
+    </header>
+
+    <div class="trail-clue">
+      <h3>Your clue</h3>
+      <p id="clueText" class="trail-message"></p>
+      <p id="hiddenDate" class="trail-muted"></p>
+    </div>
+
+    <details class="trail-hint">
+      <summary>Need a hint? Show the hiding spot</summary>
       <p id="stopText"></p>
       <a id="stopMapLink" target="_blank" rel="noopener noreferrer">Open pin in Maps</a>
     </details>
-    <p class="trail-muted">Go to the hiding spot to open the note. When you tap “I’m here”, BuffPrints sends one GPS reading to check how close you are.</p>
-    <button id="checkIn" class="btn pri" type="button">I’m here</button>
+    <button id="checkIn" class="btn pri trail-checkin" type="button" aria-describedby="checkInPrivacy">I’m at the spot</button>
+    <p id="checkInPrivacy" class="trail-muted">Each check-in sends one GPS reading to BuffPrints to confirm you’re nearby.</p>
   </section>
 
-  <section id="reveal" class="trail-card" hidden>
-    <h2 tabindex="-1">You found your note</h2>
-    <p id="foundDate" class="trail-muted"></p>
-    <p id="noteText" class="trail-message"></p>
-    <p id="signoff"></p>
+  <section id="reveal" class="trail-card trail-hunt" aria-labelledby="revealHeading" hidden>
+    <header class="trail-invitation">
+      <span class="trail-envelope trail-envelope-open" aria-hidden="true"></span>
+      <h2 id="revealHeading" tabindex="-1">You found your note!</h2>
+    </header>
+    <div class="trail-clue">
+      <p id="foundDate" class="trail-muted"></p>
+      <p id="noteText" class="trail-message"></p>
+      <p id="signoff"></p>
+    </div>
   </section>
 
   <section id="manage" class="trail-card" hidden>
