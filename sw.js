@@ -1,5 +1,5 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v34';
+const VERSION = 'rr-v35';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
@@ -71,8 +71,8 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // The admin pages are never cached (and must not replace the cached app page)
-  if (url.origin === location.origin && (url.pathname.endsWith('/admin.html') || url.pathname.endsWith('/herd-admin.html'))) return;
+  // Standalone online pages must never replace the cached app page.
+  if (url.origin === location.origin && /\/(?:admin|herd-admin|trail)\.html$/.test(url.pathname)) return;
   if (req.mode === 'navigate' || isConfig) {
     // The roam game is its own page. It is stored under a fixed name, so an invite link's
     // #key (which never leaves the phone anyway) can't end up in the cache either.

@@ -1,12 +1,12 @@
 # BuffPrints — Your data & privacy
 
-*Last updated November 14, 2026. The same notice appears in the app under You → Privacy & data.*
+*Last updated November 18, 2026. The same notice appears in the app under You → Privacy & data.*
 
 BuffPrints is an independent student project. It is not an official University of Colorado Boulder app, and it is not monitored by CU or emergency services. In an emergency, call 911.
 
 ## What stays on your phone
 
-- **Your location**, only while you are recording a walk or have a roam open. It is used to work out which paths you walk, to check you in at a roam's stops, and to show how far the next stop is.
+- **Your location**, only while you are recording a walk, have a roam open, or check in for You’ve Got Trail. It is used to work out which paths you walk, to check you in at a roam's stops, and to show how far the next stop is.
 - **Your detailed route** (a log of GPS points) is saved only on this device. It is never uploaded.
 - Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).
 - Improvement requests you save on the Safety page, and the follow-up notes you add.
@@ -24,6 +24,14 @@ A roam is BuffPrints' campus scavenger hunt: five stops, five puzzles, solo or w
 - **Friends Mode and Demo Practice** save nothing about you or your herd on our servers. No sign-in. (For a route that isn't stored in the app itself, an answer you type is sent to be checked and is not kept.)
 - **Competition Mode** (signed in) saves to your account: which checkpoints you completed and when, each marked "inside: yes", and whether your email was a verified colorado.edu address (yes or no — the address isn't copied). For your team: its name and avatar, the route, hints used, puzzles solved and score. Finishing all five earns a demo reward token. *Demo reward — not redeemable. No purchase benefit is available.*
 - **Totals, not people.** We count how many times a route is viewed, started, each checkpoint completed, hints used and finishes. These are plain counters — a number that goes up by one — with no account, device or time attached. There is no per-person activity log, and Demo Practice isn't counted.
+
+## You've Got Trail
+
+You’ve Got Trail lets someone hide a private note at an outdoor campus stop. The clue link contains the key needed to read it. Anyone with that link can open the note, so share it only with your intended recipient.
+
+Supabase stores the encrypted note, sender’s sign-off, clue and chosen stop together, plus a random ID, the creation date and a fingerprint of the separate deletion key. Creating and opening a note does not require an account. If a recipient checks in, GPS is used only on that phone. The location, check-in and whether the recipient opens the note are not sent to Supabase or the sender.
+
+Clue links expire after 365 days. Expired notes are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.
 
 ## What is saved to your account (only if you sign in)
 

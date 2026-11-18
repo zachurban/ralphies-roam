@@ -1,0 +1,39 @@
+.trail {
+  max-width: 39rem;
+  margin: 0 auto;
+  padding: calc(22px + var(--safe-t)) 18px calc(16px + var(--safe-b));
+}
+.trail-home { color: var(--gold-text); }
+.trail h1 { margin: 18px 0; font-size: clamp(28px, 7vw, 40px); line-height: 1.1; }
+.trail h2 { margin: 0; font-size: 22px; }
+.trail-card {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 5vw, 26px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.trail-card p, .trail-card .btns { margin: 0; }
+.trail-card label { display: grid; gap: 6px; font-weight: 700; }
+.trail-card label small { font-weight: 400; }
+.trail-card input, .trail-card textarea, .trail-card select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--white);
+  font-size: 16px;
+  font-weight: 400;
+}
+.trail-card textarea { resize: vertical; }
+.trail-card .btn { justify-self: start; }
+.trail-card summary { display: list-item; min-height: 44px; padding-block: 10px; cursor: pointer; }
+.trail-muted, .trail footer { color: var(--muted); font-size: 14px; }
+.trail-message { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 18px; }
+#signoff { overflow-wrap: anywhere; font-weight: 700; }
+.trail-status:not(:empty) { margin-top: 14px; }
+#retry { margin-top: 12px; }
+.trail footer { padding-block: 22px; }
+.trail footer a { color: inherit; }
