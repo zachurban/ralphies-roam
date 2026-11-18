@@ -1,11 +1,11 @@
 /* BuffPrints service worker — app shell offline + map tile cache */
-const VERSION = 'rr-v37';
+const VERSION = 'rr-v38';
 const SHELL = VERSION + '-shell';
 const TILES = 'rr-tiles';
 const SHELL_FILES = [
-  'app.css?v=34', 'app.css?v=35', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'trail-saved.js', 'paths.geojson', 'buildings.json',
+  'app.css?v=34', 'app.css?v=35', 'splash.css?v=34', 'splash.js?v=34', 'student-core.js?v=34', 'track-core.js?v=34', 'username-core.js?v=34', 'schedule-core.js?v=34', './', 'index.html', 'public/site.webmanifest', 'config.js', 'trail-saved.js?v=2', 'paths.geojson', 'buildings.json',
   // The in-app Trail shell can open device saves offline.
-  'trail.html?tab=1', 'trail.css?v=4', 'trail.js?v=3', 'trail-map.js?v=3',
+  'trail.html?tab=1', 'trail.css?v=4', 'trail.js?v=4', 'trail-map.js?v=3',
   // Roam (the scavenger hunt)
   'herd.html', 'herd.css?v=34', 'herd-core.js?v=34', 'herd-editions.js?v=34', 'herd-app.js?v=34', 'vendor/qrcode.min.js?v=34', 'vendor/jsqr.min.js?v=34',
   'public/icon-192.png', 'public/icon-512.png', 'public/icon-192-maskable.png', 'public/icon-512-maskable.png', 'public/apple-touch-icon.png', 'public/hoofprint-logo.svg',

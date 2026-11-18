@@ -24,6 +24,43 @@
     localStorage.setItem(prefix + entry.trail_id, JSON.stringify({ ...entry, saved_at: new Date().toISOString() }));
   }
 
+  function trimLink(token) {
+    const opening = { ')': '(', ']': '[', '}': '{' };
+    // Keep balanced punctuation in the URL, such as /gift_(birthday).
+    let link = token.replace(/[.,!?;:]+$/, '');
+    let last = link.at(-1);
+    while (opening[last] && link.split(last).length > link.split(opening[last]).length) {
+      link = link.slice(0, -1).replace(/[.,!?;:]+$/, '');
+      last = link.at(-1);
+    }
+    return link;
+  }
+
+  function renderNote(container, note) {
+    const children = [];
+    let offset = 0;
+    for (const match of note.matchAll(/\bhttps:\/\/[^\s<>"'`“”‘’\\]+/gi)) {
+      const label = trimLink(match[0]);
+      let url;
+      try {
+        url = new URL(label);
+      } catch {
+        continue;
+      }
+      if (url.protocol !== 'https:' || url.username || url.password) continue;
+
+      const anchor = container.ownerDocument.createElement('a');
+      anchor.href = url.href;
+      anchor.textContent = label;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      children.push(note.slice(offset, match.index), anchor);
+      offset = match.index + label.length;
+    }
+    children.push(note.slice(offset));
+    container.replaceChildren(...children);
+  }
+
   function mount({ getClient, signIn, dateFormat }) {
     const $ = id => document.getElementById(id);
     const list = $('savedList');
@@ -93,10 +130,12 @@
           : inAccount ? 'In your account' : 'On this device';
         const card = element('details', '', 'trail-clue trail-saved-note');
         const actions = element('div', '', 'btns');
+        const messageBody = element('p', '', 'trail-message');
+        renderNote(messageBody, entry.note);
         card.append(
           element('summary', 'From ' + entry.sender + ' · ' + dateFormat.format(new Date(entry.hidden_at))),
           element('p', location, 'trail-muted'),
-          element('p', entry.note, 'trail-message'),
+          messageBody,
           actions
         );
 
@@ -131,5 +170,5 @@
     return refresh;
   }
 
-  window.TrailSaved = { prefix, readDevice, keep, mount };
+  window.TrailSaved = { prefix, readDevice, keep, renderNote, mount };
 })();

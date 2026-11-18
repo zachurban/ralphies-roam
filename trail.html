@@ -14,8 +14,8 @@
 <script defer src="config.js"></script>
 <script defer src="herd-core.js?v=34"></script>
 <script defer src="trail-map.js?v=3"></script>
-<script defer src="trail-saved.js"></script>
-<script defer src="trail.js?v=3"></script>
+<script defer src="trail-saved.js?v=2"></script>
+<script defer src="trail.js?v=4"></script>
 </head>
 <body>
 <main class="trail">
@@ -43,8 +43,9 @@
       <textarea name="clue" maxlength="240" rows="2" placeholder="Write your own clue to help the recipient find the note"></textarea>
     </label>
     <label>Note
-      <textarea name="note" maxlength="1500" rows="5" placeholder="What would you like them to find? Leave them an encouraging note to brighten their day, or drop them a link to a gift card" required></textarea>
+      <textarea name="note" maxlength="1500" aria-describedby="noteLinkHelp" rows="5" placeholder="What would you like them to find? Leave them an encouraging note to brighten their day, or drop them a link to a gift card" required></textarea>
     </label>
+    <p id="noteLinkHelp" class="trail-muted">Links that start with https:// are tappable after check-in.</p>
     <label>When can it be found?
       <select name="timing" id="trailTiming">
         <option value="any">Any time after I share it</option>

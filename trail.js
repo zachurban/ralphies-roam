@@ -332,7 +332,7 @@
     $('hunt').hidden = true;
     revealedNote = { trail_id: id, note, sender, hidden_at: hiddenAt };
     $('foundDate').textContent = 'Hidden on ' + dateFormat.format(new Date(hiddenAt));
-    $('noteText').textContent = note;
+    library.renderNote($('noteText'), note);
     $('signoff').textContent = 'From ' + sender;
     status('');
     show('reveal', true);
