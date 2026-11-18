@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https:; base-uri 'none'; object-src 'none'; form-action 'none'">
+<meta name="theme-color" content="#1D2122">
+<title>You've Got Trail · BuffPrints</title>
+<link rel="icon" href="public/favicon.ico">
+<link rel="stylesheet" href="app.css?v=34">
+<link rel="stylesheet" href="trail.css">
+<script defer src="config.js"></script>
+<script defer src="herd-core.js?v=34"></script>
+<script defer src="herd-editions.js?v=34"></script>
+<script defer src="trail.js"></script>
+</head>
+<body>
+<main class="trail">
+  <a class="trail-home" href="./">← BuffPrints</a>
+  <h1>You've Got Trail</h1>
+
+  <form id="compose" class="trail-card" hidden>
+    <p>Hide a note at an outdoor CU Boulder landmark. Text the private clue link whenever the moment feels right.</p>
+    <label>Your name or sign-off
+      <input name="sender" maxlength="48" placeholder="Mom and Dad" required>
+    </label>
+    <label>Outdoor hiding spot
+      <select name="stop" required></select>
+    </label>
+    <label><span>Clue <small class="trail-muted">(optional)</small></span>
+      <textarea name="clue" maxlength="240" rows="2" placeholder="Write your own clue, or use the suggested one below"></textarea>
+    </label>
+    <p id="suggestion" class="trail-muted"></p>
+    <label>Note
+      <textarea name="note" maxlength="1500" rows="5" placeholder="What would you like them to find?" required></textarea>
+    </label>
+    <button id="create" class="btn pri" type="submit">Hide the note</button>
+  </form>
+
+  <section id="links" class="trail-card" hidden>
+    <h2 tabindex="-1">Your note is hidden</h2>
+    <p>Save the clue link somewhere handy and text it when you’re ready. The clue link works for 365 days.</p>
+    <label>Clue link to send
+      <input id="inviteLink" readonly>
+    </label>
+    <button class="btn pri" type="button" data-copy="inviteLink">Copy clue link</button>
+    <label>Deletion link to keep
+      <input id="deleteLink" readonly>
+    </label>
+    <button class="btn" type="button" data-copy="deleteLink">Copy deletion link</button>
+    <p class="trail-muted">Anyone with the clue link can open the note. Keep the deletion link for yourself.</p>
+  </section>
+
+  <section id="hunt" class="trail-card" hidden>
+    <h2 id="huntHeading" tabindex="-1">Follow the clue</h2>
+    <p id="hiddenDate" class="trail-muted"></p>
+    <p id="clueText" class="trail-message"></p>
+    <details>
+      <summary>Show the outdoor spot</summary>
+      <p id="stopText"></p>
+    </details>
+    <div class="btns">
+      <button id="checkIn" class="btn pri" type="button">I’m here</button>
+      <button id="openNow" class="btn" type="button">Open now</button>
+    </div>
+    <p class="trail-muted">Use “I’m here” to check your location on this phone, or open the note wherever you are.</p>
+  </section>
+
+  <section id="reveal" class="trail-card" hidden>
+    <h2 tabindex="-1">You found your note</h2>
+    <p id="foundDate" class="trail-muted"></p>
+    <p id="noteText" class="trail-message"></p>
+    <p id="signoff"></p>
+  </section>
+
+  <section id="manage" class="trail-card" hidden>
+    <h2>Delete a hidden note</h2>
+    <p>Deleting the note disables its clue link.</p>
+    <button id="remove" class="btn danger" type="button">Delete note</button>
+  </section>
+
+  <div id="trailStatus" class="trail-status" role="status"></div>
+  <button id="retry" class="btn" type="button" hidden>Try again</button>
+  <footer><a href="privacy.html">Privacy &amp; data</a></footer>
+  <noscript><p>You've Got Trail needs JavaScript to open private notes.</p></noscript>
+</main>
+</body>
+</html>

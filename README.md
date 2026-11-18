@@ -151,3 +151,11 @@ Each year, update `TERMS` in `schedule-core.js` from the CU academic calendar (f
 The app opens on the featured roam (tabs: Roam · Map · Herd · You; walking lives on Map). A roam is a scavenger hunt at `herd.html`: five outdoor checkpoints, five puzzles, 20–40 minutes, solo or as a herd. **Friends Mode** needs no sign-in and writes nothing to the database; teammates sync phone to phone through an encrypted relay whose key lives only in the invite link's `#fragment`. **Competition Mode** (signed in) stores which checkpoints a player completed and a team's name, avatar and score, and feeds weekly herd and dorm standings plus a demo reward token (*Demo reward — not redeemable. No purchase benefit is available.*). **Demo Practice** simulates check-ins for trying it anywhere. The phone compares GPS with the checkpoint itself; coordinates are never sent or stored.
 
 Three demo routes ship with every coordinate and on-site detail flagged `needs_onsite_check` until someone walks them. Add a hunt admin: `insert into public.admin_allowlist (email) values ('you@colorado.edu');` then open `herd-admin.html`. Setup, rules, known limits and the on-campus test checklist: [docs/HERD_AND_SEEK.md](docs/HERD_AND_SEEK.md).
+
+## You've Got Trail
+
+From the Roam tab, choose **You've Got Trail · Hide a note**. Pick one outdoor campus stop, use the suggested clue or write your own, and add a note. Copy the private clue link and text it whenever you're ready. Keep the separate deletion link.
+
+Recipients open the clue in their phone browser. They can read the clue, reveal the outdoor spot for a hint, and check in there to open the note. **Open now** works from anywhere and needs no location permission. Sender and recipient need no accounts.
+
+The page uses the existing Supabase configuration and the `20261118160000_youve_got_trail.sql` migration. Notes are encrypted on the phone and readable to anyone with the full clue link. The GPS check runs on the recipient's phone. The initial outdoor stops, Norlin Quad and Macky's south plaza, reuse demo Roam pins. Walk both approaches and confirm GPS check-in from the public walkway before announcing the feature.

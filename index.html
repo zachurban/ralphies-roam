@@ -30,7 +30,7 @@
     </header>
     <div id="offline" role="status">You’re offline. Walks still record and save on this phone and sync when you reconnect.</div>
     <main id="views">
-      <section class="view act" id="v-home" aria-label="Roam"><div class="mapcard" id="homeMapSlot"><span class="hero-chip" id="roamChip" hidden></span></div><div id="homeRoam"></div></section>
+      <section class="view act" id="v-home" aria-label="Roam"><div class="mapcard" id="homeMapSlot"><span class="hero-chip" id="roamChip" hidden></span></div><div id="homeRoam"></div><p><a class="btn block-btn" href="trail.html">You've Got Trail · Hide a note</a></p></section>
       <section class="view" id="v-explore" aria-label="Map"><div id="exploreMap"></div><div id="sheet"><button id="sheetHandle" aria-label="Show more" aria-expanded="false" aria-controls="sheetBody"></button><div id="sheetBody"></div></div></section>
       <section class="view" id="v-progress" aria-label="You"><div id="progressBody"></div><div id="homeClasses"></div><div id="progressMore"></div><div class="label">Account</div><div id="cloudBox"></div><div id="dataBox"></div></section>
       <section class="view" id="v-community" aria-label="Herd"></section>
@@ -776,14 +776,14 @@ map.on('contextmenu',e=>{ if(PLACING) return; const sg=pathAt(e.latlng); if(sg) 
 /* =====================================================================
    PRIVACY NOTICE + DATA DELETION  (keep in sync with PRIVACY.md)
    ===================================================================== */
-const PRIVACY_UPDATED='November 14, 2026';
+const PRIVACY_UPDATED='November 18, 2026';
 function privacyHTML(){
   const contact=(window.RR_CONFIG&&RR_CONFIG.contactEmail)||'';
   return '<div class="privacy">'+
   '<p class="pmeta">Last updated '+PRIVACY_UPDATED+'</p>'+
   '<p>BuffPrints is an independent student project. It is not an official University of Colorado Boulder app, and it is not monitored by CU or emergency services. In an emergency, call 911.</p>'+
   '<h4>What stays on your phone</h4><ul>'+
-  '<li><b>Your location</b>, only while you are recording a walk or have a roam open. It is used to work out which paths you walk, to check you in at a roam’s stops, and to show how far the next stop is.</li>'+
+  '<li><b>Your location</b>, only while you are recording a walk, have a roam open, or check in for You’ve Got Trail. It is used to work out which paths you walk, to check you in at a roam’s stops, and to show how far the next stop is.</li>'+
   '<li><b>Your detailed route</b> (a log of GPS points) is saved only on this device. It is never uploaded.</li>'+
   '<li>Your progress: claimed paths, miles, badges, streaks, goals and walk summaries (with a route shape that leaves out the start and finish).</li>'+
   '<li>Improvement requests you save on the Safety page, and the follow-up notes you add.</li>'+
@@ -797,6 +797,9 @@ function privacyHTML(){
   '<li><b>Friends Mode and Demo Practice</b> save nothing about you or your herd on our servers. No sign-in. (For routes that aren’t stored in the app, an answer you type is sent to be checked and is not kept.)</li>'+
   '<li><b>Competition Mode</b> (signed in) saves to your account: which checkpoints you completed and when, each marked “inside: yes”, and whether your email was a verified colorado.edu address (yes or no). For your team: its name and avatar, the route, hints used, puzzles solved and score. Finishing all five earns a demo reward token. “Demo reward — not redeemable. No purchase benefit is available.”</li>'+
   '<li><b>Totals, not people.</b> We count how many times a route is viewed, started, each checkpoint completed, hints used and finishes. These are plain counters with no account, device, or time attached. There is no per-person activity log.</li></ul>'+
+  '<h4>You’ve Got Trail</h4><p>You’ve Got Trail lets someone hide a private note at an outdoor campus stop. The clue link contains the key needed to read it. Anyone with that link can open the note, so share it only with your intended recipient.</p>'+
+  '<p>Supabase stores the encrypted note, sender’s sign-off, clue and chosen stop together, plus a random ID, the creation date and a fingerprint of the separate deletion key. Creating and opening a note does not require an account. If a recipient checks in, GPS is used only on that phone. The location, check-in and whether the recipient opens the note are not sent to Supabase or the sender.</p>'+
+  '<p>Clue links expire after 365 days. Expired notes are cleared when new notes are created. To remove a note sooner, use the deletion link saved when it was created.</p>'+
   '<h4>What is saved to your account (only if you sign in)</h4><ul>'+
   '<li>Your email address, used only to sign you in.</li>'+
   '<li>Your public nickname, your dorm or team, and when you last changed your nickname. A nickname is generated from campus words or typed by you — never from your email, name or schedule.</li>'+
