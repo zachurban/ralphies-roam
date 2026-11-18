@@ -124,13 +124,17 @@ test('picker is offered to accounts without a nickname (format rules in username
 test('suggestions: campus-themed, valid, screened, available, and accepted as-is', {skip}, () => {
   const u = newUser('flatiron.fox.jane.doe@colorado.edu');
   exec(`update public.profiles set dorm = 'Farrand Hall' where id = ${lit(u)}`);
+  const [{refs, words}] = sql('select public.rr_name_refs() as refs, public.rr_name_words() as words');
+  const campusNames = new Set(refs.flatMap(ref => words.map(word => ref + word)));
+  // Seed one session so the suggestions, including overlapping words like BoulderadoExplorer, are repeatable.
+  const suggestions = asUser(u, `with seed as materialized (select setseed(0.122))
+    select public.suggest_username() as r from seed cross join generate_series(1, 12)`);
   const seen = new Set();
-  for (let i = 0; i < 12; i++) {
-    const r = rpc(u, 'suggest_username');
+  for (const {r} of suggestions) {
     assert.equal(r.status, 'ok');
     assert.match(r.name, /^[A-Za-z]+[0-9]{0,3}$/); assert.ok(r.name.length <= 24);
     assert.equal(problem(r.name), null);
-    assert.ok(!/jane|doe|farrand/i.test(r.name.replace(/^Farrand/, '')) || r.name.startsWith('Farrand'), 'not built from the email or dorm');
+    assert.ok(campusNames.has(r.name.replace(/[0-9]+$/, '')), 'built from curated campus words: ' + r.name);
     seen.add(r.name);
   }
   assert.ok(seen.size >= 8, 'shuffle gives different names');
